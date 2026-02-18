@@ -12,3 +12,179 @@ AntragAbwesenheitAnlegenView.tsx:83 antragsGruppeId 01
 AntragAbwesenheitAnlegenView.tsx:85 antragsSchluesselIdFromURL U200
 AntragAbwesenheitAnlegenView.tsx:89 antragsGruppe {id: '01', bezeichnung: 'Urlaubsantrag', beschreibung: '', iconId: 1, isAktiv: false, …}
 AntragAbwesenheitAnlegenView.tsx:91 isUrlaubAntrag true
+=============================================================================================================================
+import { IdTimestamp, IdTimestampConstants } from '../../constants/IDTimestampConstants';
+import { KonfAntragskategorieRead } from '../../apl/pzw/konfigUiModule/KonfAntragskategorieRead';
+import { AntragAbwesenheitWrite } from '../../apl/pzw/antragUiModule/AntragAbwesenheitWrite';
+import z from 'zod';
+import dayjs, { Dayjs } from 'dayjs';
+import { KonfAntragRead } from '../../apl/pzw/konfigUiModule/KonfAntragRead';
+import { t } from 'i18next';
+import { AntragAbwesenheitConstants } from '../../constants/AntragAbwesenheitConstants';
+
+type ParsedAntraegeUebersichtItem = {
+  bezeichnung: string;
+  kategorie: string;
+  kategorieId: string;
+  gruppeId: string;
+  schluessel?: string;
+  isExtern?: boolean;
+  iconId: number;
+};
+
+export function parseAntraegeListFromKonfig(antragskategorien: KonfAntragskategorieRead[]): {
+  antragGruppen: ParsedAntraegeUebersichtItem[];
+  favorite: ParsedAntraegeUebersichtItem[];
+} {
+  console.log('antragskategorien: KonfAntragskategorieRead[]', antragskategorien);
+  const antragsGruppe: ParsedAntraegeUebersichtItem[] = [];
+  const favorite: ParsedAntraegeUebersichtItem[] = [];
+  //antragskategorie = Abwesenheiten / Gesundheit / Bildung
+  for (const { bezeichnung: kategorieBezeichnung, antragsgruppen, id: kategorieId } of antragskategorien) {
+    //antragsgruppe = Ausbildung / Berufsschule / Fortbildung
+    for (const {
+      bezeichnung: gruppenBezeichnung,
+      id: gruppenId,
+      antraege: abwesenheitsschluessel,
+      iconId: gruppenIconId,
+    } of antragsgruppen) {
+      const aktiveSchluessel = abwesenheitsschluessel.filter((schuessel) => schuessel.isAktiv);
+      if (aktiveSchluessel.length > 0) {
+        antragsGruppe.push({
+          bezeichnung: gruppenBezeichnung,
+          kategorie: kategorieBezeichnung,
+          kategorieId: kategorieId,
+          gruppeId: gruppenId,
+          iconId: gruppenIconId,
+          isExtern: false,
+        });
+      }
+      //antragsSchluessel = Forbildung intern / extern / allgemein
+      for (const {
+        schluessel,
+        bezeichnung: schluesselBezeichnung,
+        isFavorit: isSchluesselFavorit,
+        isUrl,
+        url,
+      } of aktiveSchluessel) {
+        const lastAntragGruppe = antragsGruppe[antragsGruppe.length - 1];
+        if (isUrl) {
+          lastAntragGruppe.isExtern = true;
+          lastAntragGruppe.gruppeId = url;
+        }
+        if (isSchluesselFavorit) {
+          favorite.push({
+            bezeichnung: schluesselBezeichnung,
+            schluessel: schluessel,
+            gruppeId: lastAntragGruppe.gruppeId,
+            iconId: gruppenIconId,
+            isExtern: lastAntragGruppe.isExtern,
+            kategorie: kategorieBezeichnung,
+            kategorieId: kategorieId,
+          });
+        }
+      }
+    }
+  }
+  return {
+    antragGruppen: antragsGruppe,
+    favorite: favorite,
+  };
+}
+
+type AntragSchemaTyp = 'mehrtaegig' | 'eintaegigMitUhrzeit' | 'eintaegigOhneUhrzeit';
+export function deriveAntragSchema(antragSchluessel: KonfAntragRead, toggleGanztaegig: boolean): AntragSchemaTyp {
+  const isMaxEintaegig = antragSchluessel.maxAnzahlTage === 1;
+  if (antragSchluessel.isUhrzeit && !toggleGanztaegig) {
+    return 'eintaegigMitUhrzeit';
+  }
+  if (isMaxEintaegig && antragSchluessel.isUhrzeit) {
+    return 'eintaegigOhneUhrzeit';
+  }
+  return 'mehrtaegig';
+}
+
+const zodDateJs = z.instanceof(dayjs as unknown as typeof Dayjs);
+export const formSchemaMap = {
+  eintaegigMitUhrzeit: z
+    .object({
+      datum: z.iso.date(),
+      uhrzeitAnfang: zodDateJs,
+      uhrzeitEnde: zodDateJs,
+    })
+    .refine((zodObject) => zodObject.uhrzeitAnfang.isSameOrBefore(zodObject.uhrzeitEnde), {
+      error: t('AnfangszeitVorEndzeit'),
+      path: ['uhrzeitEnde'],
+    }),
+  eintaegigOhneUhrzeit: z.object({
+    datum: z.iso.date(),
+  }),
+  mehrtaegig: z
+    .object({
+      datumAnfang: z.iso.date(),
+      datumEnde: z.iso.date(),
+      anzahlTage: z.number().optional(),
+    })
+    .refine((zodObject) => dayjs(zodObject.datumAnfang).isSameOrBefore(dayjs(zodObject.datumEnde)), {
+      error: t('AnfangsdatumVorEnddatum'),
+      path: ['datumEnde'],
+    }),
+} as const;
+
+export const getFormSchema = (antragSchemaName: AntragSchemaTyp) =>
+  z.object({
+    antraege: z.array(formSchemaMap[antragSchemaName]),
+    toggleGanztaegig: z.boolean(),
+    kommentar: z.string().default(''),
+  } as const);
+
+export function antragFormDataToAntragWriteMapper(
+  formData: z.infer<ReturnType<typeof getFormSchema>>,
+  antragSchemaTyp: AntragSchemaTyp,
+  schluessel: string,
+  dokumentId?: string
+): AntragAbwesenheitWrite[] {
+  return formData.antraege.map((antrag) => {
+    const baseAntrag = {
+      abwesenheitsgrundId: schluessel,
+      stornierungskennzeichen: 'N',
+      abwesenheitszyklus:
+        antragSchemaTyp === 'eintaegigMitUhrzeit'
+          ? AntragAbwesenheitConstants.Abwesenheitszyklus.HALBTAGS
+          : AntragAbwesenheitConstants.Abwesenheitszyklus.GANZTAEGIG,
+      mitarbeiterHinweis: formData.kommentar,
+      dokumentId: dokumentId as IdTimestamp,
+    } as const;
+
+    if (antragSchemaTyp === 'eintaegigOhneUhrzeit') {
+      const parsedAntrag = formSchemaMap.eintaegigOhneUhrzeit.parse(antrag);
+      return {
+        ...baseAntrag,
+        anfangTimestamp: (parsedAntrag.datum + IdTimestampConstants.BEGINN_UHRZEIT) as IdTimestamp,
+        endeTimestamp: (parsedAntrag.datum + IdTimestampConstants.ENDE_UHRZEIT) as IdTimestamp,
+      };
+    }
+
+    if (antragSchemaTyp === 'eintaegigMitUhrzeit') {
+      const parsedAntrag = formSchemaMap.eintaegigMitUhrzeit.parse(antrag);
+      return {
+        ...baseAntrag,
+        anfangTimestamp: (parsedAntrag.datum +
+          '-' +
+          parsedAntrag.uhrzeitAnfang.format('HH.mm') +
+          '.00.000000') as IdTimestamp,
+        endeTimestamp: (parsedAntrag.datum +
+          '-' +
+          parsedAntrag.uhrzeitEnde.format('HH.mm') +
+          '.00.000000') as IdTimestamp,
+      };
+    }
+
+    const parsedAntrag = formSchemaMap.mehrtaegig.parse(antrag);
+    return {
+      ...baseAntrag,
+      anfangTimestamp: (parsedAntrag.datumAnfang + IdTimestampConstants.BEGINN_UHRZEIT) as IdTimestamp,
+      endeTimestamp: (parsedAntrag.datumEnde + IdTimestampConstants.ENDE_UHRZEIT) as IdTimestamp,
+    };
+  });
+}
