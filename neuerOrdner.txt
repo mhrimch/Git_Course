@@ -1,168 +1,433 @@
-=====================================================================================================================
+import { useInputModel, useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import { IcBackArrowS } from '@finanzinformatik/mcd-module-icons';
+import { Button, ButtonBase, Typography, useTheme } from '@mui/material';
+import { Stack } from '@mui/system';
+import { t } from 'i18next';
+import { useState } from 'react';
+import { KalenderNavToggleButton } from '../components/kalender/KalenderNavToggleButton';
+import { KalenderViewGrid } from '../components/kalender/KalenderViewGrid';
+import AntraegeAbwesenheitTabelle from '../components/zeitEreignisse/AntraegeAbwesenheitTabelle';
+import { AuswertungTabelle } from '../components/zeitEreignisse/AuswertungTabelle';
+import ZeitkontoTabelle from '../components/zeitEreignisse/ZeitkontoTabelle';
+import { ThemeConstants } from '../constants/ThemeConstants';
+import { navigateToZeitwirtschaft } from '../utils/bookmarkUtil';
+import dayjs from 'dayjs';
+import { KalenderConstants } from '../constants/KalenderConstants';
+import { ZeitereignissePageModel } from '../models/ZeitereignissePageModel';
 
-type ParsedAntraegeUebersichtItem = {
-  bezeichnung: string;
-  kategorie: string;
-  kategorieId: string;
-  gruppeId: string;
-  schluessel?: string;
-  isExtern?: boolean;
+type Tables = 'zeitkonto' | 'antraege' | 'auswertung';
+export type ZeitereignisseTabelleProps = {
+  hidden: boolean;
+  anfangDatum: string;
+  endeDatum: string;
+};
+export default function ZeitereignisseView() {
+  const [table, setTable] = useState<Tables>('zeitkonto');
+  const buttons: { id: Tables; title: string }[] = [
+    { id: 'zeitkonto', title: t('zeitkonto') },
+    { id: 'antraege', title: t('antraege') },
+    { id: 'auswertung', title: t('auswertung') },
+  ];
+  const theme = useTheme();
+  const workflowservice = useWorkflowService();
+  const { anfangDatum, endeDatum } = useInputModel<ZeitereignissePageModel>() as ZeitereignissePageModel;
+  let anfangDatumQuery = anfangDatum;
+  let endeDatumQuery = endeDatum;
+  if (!anfangDatum || !endeDatum) {
+    const wocheAnfang = dayjs().day(KalenderConstants.MONTAG).format(KalenderConstants.DATUM_ISO_FORMAT_STRING);
+    const wocheEnde = dayjs().day(KalenderConstants.FREITAG).format(KalenderConstants.DATUM_ISO_FORMAT_STRING);
+    anfangDatumQuery = wocheAnfang;
+    endeDatumQuery = wocheEnde;
+  }
+  return (
+    <>
+      <KalenderViewGrid>
+        <Stack gap={10}>
+          <Stack alignItems="center" direction="row" spacing={2}>
+            <ButtonBase
+              onClick={() => {
+                navigateToZeitwirtschaft(workflowservice);
+              }}
+            >
+              <Stack alignItems="center" direction="row" spacing={2}>
+                <IcBackArrowS />
+                <Typography variant="button01UnderlineLight">{t('zurueckZeitwirtschaft')}</Typography>
+              </Stack>
+            </ButtonBase>
+          </Stack>
+
+          <Stack direction={'row'} justifyContent={'space-between'} alignItems="flex-start">
+            <Stack spacing={2}>
+              <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE02}>{t('zeitereignisseUndAntraege')}</Typography>
+              <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE04}>
+                {anfangDatum} - {endeDatumQuery}
+              </Typography>
+            </Stack>
+            <KalenderNavToggleButton value="Zeitereignisse" />
+          </Stack>
+
+          <Stack alignItems="center" direction="row" spacing={2}>
+            {buttons.map((btn) => (
+              <Button
+                key={btn.id}
+                onClick={() => setTable(btn.id)}
+                variant="outlined"
+                size="small"
+                sx={
+                  btn.id === table
+                    ? {
+                        color: 'white',
+                        backgroundColor: theme.palette.secondary.main,
+                      }
+                    : {}
+                }
+              >
+                {btn.title}
+              </Button>
+            ))}
+          </Stack>
+          <ZeitkontoTabelle hidden={table !== 'zeitkonto'} anfangDatum={anfangDatumQuery} endeDatum={endeDatumQuery} />
+          <AntraegeAbwesenheitTabelle
+            hidden={table !== 'antraege'}
+            anfangDatum={anfangDatumQuery}
+            endeDatum={endeDatumQuery}
+          />
+          {table === 'auswertung' && <AuswertungTabelle />}
+        </Stack>
+      </KalenderViewGrid>
+    </>
+  );
+}
+===============================================================================
+import { useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import { IcCancelCircleS, IcCheckCircleS, IcCircleEmptyDotsS, IcNextS } from '@finanzinformatik/mcd-module-icons';
+import { IconButton, Chip, Typography } from '@mui/material';
+import { Stack } from '@mui/system';
+import { t } from 'i18next';
+import { ThemeConstants } from '../../constants/ThemeConstants';
+import { navigateToAntragAbwesenheitAnzeigen } from '../../utils/bookmarkUtil';
+import { AntragAbwesenheitStatusConstants } from './ZeitereignisseConstants';
+import { useReadAntraegeAbwesenheit } from '../../tanstack/antrag/useReadAntraegeStatus';
+import { Dayjs } from 'dayjs';
+import { KalenderConstants } from '../../constants/KalenderConstants';
+import { AntragAbwesenheitRead, AntragAbwesenheitStatus } from '../../apl/pzw/antragUiModule/AntraegeAbwesenheitRead';
+import { useReadKonfAntraege } from '../../tanstack/konfiguration/useReadKonfAntraege';
+import { KonfAntragskategorieRead } from '../../apl/pzw/konfigUiModule/KonfAntragskategorieRead';
+import { useMemo } from 'react';
+import { idTimestampToDayjs } from '../../utils/DateUtils';
+import { FITabelleProps, FITabelle } from '@finanzinformatik/cpl-module-reactui';
+import { ValueGetterParams } from '@finanzinformatik/cpl-module-reactui/build/esm/components/FITabelle';
+import { GetRowIdParams } from 'ag-grid-community';
+import { ZeitereignisseTabelleProps } from '../../views/ZeitereignisseView';
+import { AntragIcon } from '../antraege/abwesenheit/AntragAbwesenheitItem';
+import { IdTimestamp } from '../../constants/IDTimestampConstants';
+import { IconConstants } from './EreignisIcons';
+
+export type AntraegeRow = {
+  einfuegungDatum: Dayjs;
+  einfuegungTimestamp: IdTimestamp;
+  typ: string;
+  anfangTs: IdTimestamp;
+  endeTs: IdTimestamp;
+  anzahlTage?: number;
+  zeitraum: string;
+  status: AntragAbwesenheitStatus;
+  antragSchluessel: string;
+  antragGruppeId: string;
+  mitarbeiterKommentar: string;
+  fuehrungskraftKommentar: string;
+  isGanztaegig: boolean;
   iconId: number;
+  antragBezeichnung: string;
+  absVgngPrzId: IdTimestamp;
+  isStornierung: boolean;
+};
+export function parseReadAntraegeAbwesenheitToAntraegeTabelleRow(
+  data: AntragAbwesenheitRead[],
+  schluesselPropertiesMap: SchluesselPropertiesMap
+): AntraegeRow[] {
+  const { DATUM_FORMAT_STRING, UHRZEIT_FORMAT_STRING } = KalenderConstants;
+  return data
+    .map(
+      ({
+        einfuegungDatum,
+        antragsSchluessel,
+        timestampVon,
+        timestampBis,
+        isGanztaegig,
+        anzahlTage,
+        antragStatus,
+        mitarbeiterKommentar,
+        fuehrungskraftKommentar,
+        absVgngPrzId,
+        isStorniert,
+      }) => {
+        const schluesselProperties = schluesselPropertiesMap[antragsSchluessel];
+        const dayjsBeginn = idTimestampToDayjs(timestampVon);
+        const dayjsEnde = idTimestampToDayjs(timestampBis);
+        if (schluesselProperties !== undefined) {
+          return {
+            einfuegungDatum: idTimestampToDayjs(einfuegungDatum),
+            einfuegungTimestamp: einfuegungDatum,
+            typ: isStorniert
+              ? schluesselProperties.antragBezeichnung + ' - ' + t('Stornierung')
+              : schluesselProperties.antragBezeichnung,
+            anfangTs: timestampVon,
+            endeTs: timestampBis,
+            zeitraum: isGanztaegig
+              ? `${dayjsBeginn.format(DATUM_FORMAT_STRING)} - ${dayjsEnde.format(DATUM_FORMAT_STRING)}`
+              : `${dayjsBeginn.format(DATUM_FORMAT_STRING)} ${dayjsBeginn.format(UHRZEIT_FORMAT_STRING)} - ${dayjsEnde.format(UHRZEIT_FORMAT_STRING)}`,
+            status: antragStatus,
+            antragSchluessel: antragsSchluessel,
+            antragGruppeId: schluesselProperties.gruppeId,
+            iconId: schluesselProperties.iconId,
+            antragBezeichnung: schluesselProperties.antragBezeichnung,
+            anzahlTage,
+            mitarbeiterKommentar,
+            fuehrungskraftKommentar,
+            isGanztaegig,
+            absVgngPrzId,
+            isStornierung: isStorniert,
+          };
+        }
+        return undefined;
+      }
+    )
+    .filter((item) => item !== undefined) as AntraegeRow[];
+}
+
+type SchluesselProperties = {
+  iconId: number;
+  kategorie: string;
+  gruppe: string;
+  gruppeId: string;
+  antragBezeichnung: string;
+};
+type SchluesselPropertiesMap = Record<string, SchluesselProperties | undefined>;
+export function getSchluesselToPropertiesMap(konfAntraege: KonfAntragskategorieRead[]): SchluesselPropertiesMap {
+  const mapper: SchluesselPropertiesMap = {};
+  for (const kategorie of konfAntraege) {
+    for (const gruppe of kategorie.antragsgruppen) {
+      for (const schluessel of gruppe.antraege) {
+        mapper[schluessel.schluessel] = {
+          kategorie: kategorie.bezeichnung,
+          gruppe: gruppe.bezeichnung,
+          gruppeId: gruppe.id,
+          iconId: gruppe.iconId,
+          antragBezeichnung: schluessel.bezeichnung,
+        };
+      }
+    }
+  }
+  return mapper;
+}
+
+export default function AntraegeAbwesenheitTabelle({ hidden, anfangDatum, endeDatum }: ZeitereignisseTabelleProps) {
+  const konfAntraege = useReadKonfAntraege().data?.antragskategorien ?? [];
+  const defaultData = useReadAntraegeAbwesenheit(anfangDatum, endeDatum).data ?? [];
+
+  const schluesselPropertiesMap = useMemo(() => getSchluesselToPropertiesMap(konfAntraege), [konfAntraege]);
+  const parsedData = parseReadAntraegeAbwesenheitToAntraegeTabelleRow(defaultData, schluesselPropertiesMap);
+
+  const workflowService = useWorkflowService();
+
+  if (hidden) {
+    return;
+  }
+  return (
+    <AntraegeFITabelle
+      rows={parsedData}
+      onButtonClick={(antrag: AntraegeRow) => {
+        navigateToAntragAbwesenheitAnzeigen(workflowService, {
+          beginn: antrag.anfangTs,
+          ende: antrag.endeTs,
+          erstellungszeitpunkt: antrag.einfuegungTimestamp,
+        });
+      }}
+    />
+  );
+}
+
+type AntragStatusProps = {
+  antragStatus?: AntragAbwesenheitStatus;
 };
 
-export function parseAntraegeListFromKonfig(antragskategorien: KonfAntragskategorieRead[]): {
-  antragGruppen: ParsedAntraegeUebersichtItem[];
-  favorite: ParsedAntraegeUebersichtItem[];
-} {
-  const antragsGruppe: ParsedAntraegeUebersichtItem[] = [];
-  const favorite: ParsedAntraegeUebersichtItem[] = [];
-  //antragskategorie = Abwesenheiten / Gesundheit / Bildung
-  for (const { bezeichnung: kategorieBezeichnung, antragsgruppen, id: kategorieId } of antragskategorien) {
-    //antragsgruppe = Ausbildung / Berufsschule / Fortbildung
-    for (const {
-      bezeichnung: gruppenBezeichnung,
-      id: gruppenId,
-      antraege: abwesenheitsschluessel,
-      iconId: gruppenIconId,
-    } of antragsgruppen) {
-      const aktiveSchluessel = abwesenheitsschluessel.filter((schuessel) => schuessel.isAktiv);
-      if (aktiveSchluessel.length > 0) {
-        antragsGruppe.push({
-          bezeichnung: gruppenBezeichnung,
-          kategorie: kategorieBezeichnung,
-          kategorieId: kategorieId,
-          gruppeId: gruppenId,
-          iconId: gruppenIconId,
-          isExtern: false,
-        });
-      }
-      //antragsSchluessel = Forbildung intern / extern / allgemein
-      for (const {
-        schluessel,
-        bezeichnung: schluesselBezeichnung,
-        isFavorit: isSchluesselFavorit,
-        isUrl,
-        url,
-      } of aktiveSchluessel) {
-        const lastAntragGruppe = antragsGruppe[antragsGruppe.length - 1];
-        if (isUrl) {
-          lastAntragGruppe.isExtern = true;
-          lastAntragGruppe.gruppeId = url;
+export function AntragStatus({ antragStatus }: AntragStatusProps) {
+  switch (antragStatus) {
+    case AntragAbwesenheitStatusConstants.STORNIERT:
+      return <Chip icon={<IcCancelCircleS />} color="error" label={t('Storniert')} />;
+    case AntragAbwesenheitStatusConstants.ABGELEHNT:
+      return <Chip icon={<IcCancelCircleS />} color="error" label={t('abgelehnt')} />;
+
+    case AntragAbwesenheitStatusConstants.FREIGEGEBEN:
+    case AntragAbwesenheitStatusConstants.FREIGEGEBEN_SAP:
+      return <Chip icon={<IcCheckCircleS />} color="success" label={t('genehmigt')} />;
+
+    case AntragAbwesenheitStatusConstants.IN_GENEHMIGUNG:
+    default:
+      return <Chip icon={<IcCircleEmptyDotsS />} color="attention" label={t('inGenehmigung')} />;
+  }
+}
+
+function AntraegeFITabelle({
+  rows,
+  onButtonClick,
+}: {
+  rows: AntraegeRow[];
+  onButtonClick: (antrag: AntraegeRow) => void;
+}) {
+  const coldefs: FITabelleProps['colDefs'] = [
+    {
+      comparator: (valueA: Dayjs, valueB: Dayjs) => {
+        if (valueA.isBefore(valueB)) {
+          return -1;
         }
-        if (isSchluesselFavorit) {
-          favorite.push({
-            bezeichnung: schluesselBezeichnung,
-            schluessel: schluessel,
-            gruppeId: lastAntragGruppe.gruppeId,
-            iconId: gruppenIconId,
-            isExtern: lastAntragGruppe.isExtern,
-            kategorie: kategorieBezeichnung,
-            kategorieId: kategorieId,
-          });
+        if (valueA.isAfter(valueB)) {
+          return 1;
         }
-      }
-    }
-  }
-  return {
-    antragGruppen: antragsGruppe,
-    favorite: favorite,
-  };
+        return 0;
+      },
+      sort: 'desc',
+      autoHeight: true,
+      headerName: t('datum'),
+      field: 'einfuegungDatum',
+      cellRenderer: (params: ValueGetterParams<AntraegeRow>) =>
+        params.data && (
+          <Typography width="100%">
+            {params.data.einfuegungDatum.format(KalenderConstants.DATUM_FORMAT_STRING)}
+          </Typography>
+        ),
+    },
+    {
+      autoHeight: true,
+      headerName: t('typ'),
+      field: 'typ',
+      cellStyle: () => ({ height: 'auto', justifyContent: 'center' }),
+      cellRenderer: (params: ValueGetterParams<AntraegeRow>) =>
+        params.data && (
+          <Stack gap={2} alignItems="center" direction="row">
+            <AntragIcon iconId={params.data.iconId} size={IconConstants.ICON_36} />
+            {params.data.typ}
+          </Stack>
+        ),
+    },
+    {
+      autoHeight: true,
+      headerName: t('zeitenZeitraum'),
+      field: 'zeitraum',
+    },
+    {
+      autoHeight: true,
+      headerName: t('statusZeitSaldo'),
+      field: 'status',
+      wrapText: true,
+      cellRenderer: (params: ValueGetterParams<AntraegeRow>) =>
+        params.data && (
+          <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
+            <AntragStatus antragStatus={params.data.status} />
+            <IconButton type="button" onClick={() => params.data && onButtonClick(params.data)} aria-label="next">
+              <IcNextS />
+            </IconButton>
+          </Stack>
+        ),
+    },
+  ];
+  return (
+    <FITabelle
+      selektionsVariante="NONE"
+      colDefs={coldefs}
+      rows={rows}
+      sideBar={false}
+      getRowId={(params: GetRowIdParams<AntraegeRow>) => `${params.data.einfuegungDatum} ${params.data.zeitraum}`}
+      disableSettingsSection={true}
+      statusBar={undefined}
+      minHeight={ThemeConstants.TABLE_MIN_HEIGHT}
+    ></FITabelle>
+  );
 }
+=====================================================================================================
+import type { DefaultMenuItem, FilterChangedEvent } from 'ag-grid-community';
+import type { ColumnState, GetContextMenuItemsParams, GridApi, GridOptions, IServerSideDatasource, MenuItemDef } from 'ag-grid-enterprise';
+import React from 'react';
+import { SettingsSectionProps, UserSettingsIdentifier } from '../SettingsSection/index.js';
+import { ProcessCellForExportParams } from './AgGridTypes.js';
+import { CustomColDef, CustomColGroup, GridModel, Row, SelektionsVariantenType } from './FITabelle.types.js';
+export type FITabelleProps = GridOptions & {
+    /**
+     * Mindesthöhe der Tabelle, z.B. `"300px"`
+     */
+    minHeight?: string;
+    /**
+     * Anzahl der Zeilen, die bei der erweiterten Ansicht angezeigt werden
+     */
+    expandedRowCount?: number;
+    /**
+     * Wenn 'fillParent' gesetzt ist muss das umschließende Element eine explizite Höhe setzen oder über 'height:100%' / flex / grid eine Höhe bereitstellen
+     */
+    fillParent?: boolean;
+    /**
+     * Gibt die Definierung der Tabellen-Kopfzeile an bestehend aus einem Array mit Objekten. Zudem können dort
+     *  Zusatz-Funktionen von AG Grid angegeben werden wie z.B. ob die Spalte filterbar, sortierbar oder in der Größe
+     *  veränderbar ist.
+     */
+    colDefs?: (CustomColDef | CustomColGroup)[];
+    dynamicColDefs?: (CustomColDef | CustomColGroup)[];
+    loading?: boolean;
+    loadingOverlay?: boolean;
+    /**
+     * Gibt die Daten für die Tabellen-Zeilen an bestehend aus einem Array mit Objekten. Der Objekt-key ist zudem
+     *  über den 'field' Parameter in den colDefs ansprechbar.
+     */
+    rows?: Row[];
+    initialGridModel?: GridModel;
+    gridOptions?: GridOptions;
+    rowModelType?: 'serverSide';
+    serverSideDatasource?: IServerSideDatasource;
+    getApis?: (api: GridApi) => void;
+    onRowCountChange?: (count: number) => void;
+    onGridModelChange?: (model: GridModel) => void;
+    actions?: React.ReactNode;
+    /**
+     * UserSettings-Objekt für die {@link SettingsSection}
+     *
+     * @deprecated Sollte über `SettingsSectionProps` übergeben werden.
+     */
+    userSettings?: UserSettingsIdentifier;
+    editableIcons?: boolean;
+    disableSettingsSection?: boolean;
+    disableSelectbox?: boolean;
+    selectRowOnDoubleClick?: boolean;
+    customProcessCellForClipboard?(params: ProcessCellForExportParams): string;
+    selektionsVariante: SelektionsVariantenType;
+    updateResetModelOnColDefsChange?: boolean;
+    customMenuItems?: (contentMenuItemsParams: GetContextMenuItemsParams) => (DefaultMenuItem | MenuItemDef)[];
+    /** Wird vorm Anwenden von in UserSettings gespeicherten GridModels angewendet */
+    mapGridModelBeforeApply?: (apis: {
+        api: GridApi;
+    }, model: GridModel) => GridModel;
+    omitColumnStateAttributes?: (keyof ColumnState)[];
+    addMissingRowsOnPaste?: boolean;
+    /** Sorgt dafür, dass beim Einfügen von Text keine Zeilenumbrüche verloren gehen und AG-Grid diese nicht als neue Zeile einfügt. */
+    keepLinesOnPaste?: boolean;
+    onAfterFilterChanged?(event: FilterChangedEvent): void;
+    disabledOnFilterChanged?: boolean;
+    /** Darstellung der Tabelle */
+    abstand?: 'kompakt' | 'normal';
+    gridSize?: number;
+    /**
+     * Properties der {@link SettingsSection} dieser Tabelle. Wird ignoriert, falls die Settings via
+     * `disableSettingsSection` deaktiviert werden.
+     */
+    SettingsSectionProps?: SettingsSectionProps;
+};
+/**
+ * FITabelle provides a transparent wrapper for the react AgGrid component
+ *
+ */
+declare const FITabelle: React.FC<React.PropsWithChildren<FITabelleProps>>;
+export * from './AgGridTypes.js';
+export { LicenseManager } from 'ag-grid-enterprise';
+export type { SelektionsVariantenType };
+export default FITabelle;
 
-type AntragSchemaTyp = 'mehrtaegig' | 'eintaegigMitUhrzeit' | 'eintaegigOhneUhrzeit';
-export function deriveAntragSchema(antragSchluessel: KonfAntragRead, toggleGanztaegig: boolean): AntragSchemaTyp {
-  const isMaxEintaegig = antragSchluessel.maxAnzahlTage === 1;
-  if (antragSchluessel.isUhrzeit && !toggleGanztaegig) {
-    return 'eintaegigMitUhrzeit';
-  }
-  if (isMaxEintaegig && antragSchluessel.isUhrzeit) {
-    return 'eintaegigOhneUhrzeit';
-  }
-  return 'mehrtaegig';
-}
 
-const zodDateJs = z.instanceof(dayjs as unknown as typeof Dayjs);
-export const formSchemaMap = {
-  eintaegigMitUhrzeit: z
-    .object({
-      datum: z.iso.date(),
-      uhrzeitAnfang: zodDateJs,
-      uhrzeitEnde: zodDateJs,
-    })
-    .refine((zodObject) => zodObject.uhrzeitAnfang.isSameOrBefore(zodObject.uhrzeitEnde), {
-      error: t('AnfangszeitVorEndzeit'),
-      path: ['uhrzeitEnde'],
-    }),
-  eintaegigOhneUhrzeit: z.object({
-    datum: z.iso.date(),
-  }),
-  mehrtaegig: z
-    .object({
-      datumAnfang: z.iso.date(),
-      datumEnde: z.iso.date(),
-      anzahlTage: z.number().optional(),
-    })
-    .refine((zodObject) => dayjs(zodObject.datumAnfang).isSameOrBefore(dayjs(zodObject.datumEnde)), {
-      error: t('AnfangsdatumVorEnddatum'),
-      path: ['datumEnde'],
-    }),
-} as const;
-
-export const getFormSchema = (antragSchemaName: AntragSchemaTyp) =>
-  z.object({
-    antraege: z.array(formSchemaMap[antragSchemaName]),
-    toggleGanztaegig: z.boolean(),
-    kommentar: z.string().default(''),
-  } as const);
-
-export function antragFormDataToAntragWriteMapper(
-  formData: z.infer<ReturnType<typeof getFormSchema>>,
-  antragSchemaTyp: AntragSchemaTyp,
-  schluessel: string,
-  dokumentId?: string
-): AntragAbwesenheitWrite[] {
-  return formData.antraege.map((antrag) => {
-    const baseAntrag = {
-      abwesenheitsgrundId: schluessel,
-      stornierungskennzeichen: 'N',
-      abwesenheitszyklus:
-        antragSchemaTyp === 'eintaegigMitUhrzeit'
-          ? AntragAbwesenheitConstants.Abwesenheitszyklus.HALBTAGS
-          : AntragAbwesenheitConstants.Abwesenheitszyklus.GANZTAEGIG,
-      mitarbeiterHinweis: formData.kommentar,
-      dokumentId: dokumentId as IdTimestamp,
-    } as const;
-
-    if (antragSchemaTyp === 'eintaegigOhneUhrzeit') {
-      const parsedAntrag = formSchemaMap.eintaegigOhneUhrzeit.parse(antrag);
-      return {
-        ...baseAntrag,
-        anfangTimestamp: (parsedAntrag.datum + IdTimestampConstants.BEGINN_UHRZEIT) as IdTimestamp,
-        endeTimestamp: (parsedAntrag.datum + IdTimestampConstants.ENDE_UHRZEIT) as IdTimestamp,
-      };
-    }
-
-    if (antragSchemaTyp === 'eintaegigMitUhrzeit') {
-      const parsedAntrag = formSchemaMap.eintaegigMitUhrzeit.parse(antrag);
-      return {
-        ...baseAntrag,
-        anfangTimestamp: (parsedAntrag.datum +
-          '-' +
-          parsedAntrag.uhrzeitAnfang.format('HH.mm') +
-          '.00.000000') as IdTimestamp,
-        endeTimestamp: (parsedAntrag.datum +
-          '-' +
-          parsedAntrag.uhrzeitEnde.format('HH.mm') +
-          '.00.000000') as IdTimestamp,
-      };
-    }
-
-    const parsedAntrag = formSchemaMap.mehrtaegig.parse(antrag);
-    return {
-      ...baseAntrag,
-      anfangTimestamp: (parsedAntrag.datumAnfang + IdTimestampConstants.BEGINN_UHRZEIT) as IdTimestamp,
-      endeTimestamp: (parsedAntrag.datumEnde + IdTimestampConstants.ENDE_UHRZEIT) as IdTimestamp,
-    };
-  });
-}
-=========================================================================================================================
