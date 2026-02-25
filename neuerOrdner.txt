@@ -616,6 +616,45 @@ public class PmgtPzwAntragLesenAusgabe extends FachobjektOoBase {
     }
 }
 =================================================================
+package osplus.pzw.repository.pzw;
 
+import osplus.apl.core.api.AplComponent;
+import osplus.apl.core.api.AplLogging;
+import osplus.dynssee.zeitwirtschaft.fo.ErmittlePmgtPzwAntragTageUeberPctlPersSchlEingabe;
+import osplus.dynssee.zeitwirtschaft.fo.PmgtPzwAntragTageErmAusgabe;
+import osplus.fo.dyns.schnittstelle.IPmgtPzwAntragTageErmService;
+import osplus.psk.core.apl.AbstractOspeAusgabeServiceRepository;
+import osplus.psk.core.apl.exception.OspeException;
+import osplus.psk.core.apl.messages.PmgtDynSMessageUtil;
+
+import java.util.Optional;
+
+/**
+ * Repository für
+ * <a href="https://wiki.intern/spaces/pem/pages/646262956/OSPE-Service+PMGT_PZW_ANTRAG_TAGE_ERM">PMGT_PZW_ANTRAG_TAGE_ERM</a>
+ */
+@AplComponent
+public class PmgtPzwAntragTageErmRepository extends AbstractOspeAusgabeServiceRepository<IPmgtPzwAntragTageErmService, PmgtPzwAntragTageErmAusgabe> {
+
+    public PmgtPzwAntragTageErmRepository(
+            final IPmgtPzwAntragTageErmService pmgtPzwAntragTageErmService,
+            final PmgtDynSMessageUtil pmgtDynSMessageUtil
+    ) {
+        super(pmgtPzwAntragTageErmService, pmgtDynSMessageUtil);
+    }
+
+    /**
+     * Funktion ermittlePmgtPzwAntragTageUeberPctlPersSchl ermittelt in einem Zeitraum verbrauchten Urlaubstage.
+     *
+     * @param eingabe ErmittlePmgtPzwAntragTageUeberPctlPersSchlEingabe
+     * @throws OspeException OspeException
+     */
+    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
+    public Optional<PmgtPzwAntragTageErmAusgabe> ermittlePmgtPzwAntragTageUeberPctlPersSchl(
+            final ErmittlePmgtPzwAntragTageUeberPctlPersSchlEingabe eingabe
+    ) throws OspeException {
+        return readWrapper(eingabe, getService()::ermittlePmgtPzwAntragTageUeberPctlPersSchl);
+    }
+}
 
 
