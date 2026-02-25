@@ -656,5 +656,53 @@ public class PmgtPzwAntragTageErmRepository extends AbstractOspeAusgabeServiceRe
         return readWrapper(eingabe, getService()::ermittlePmgtPzwAntragTageUeberPctlPersSchl);
     }
 }
+======================================================================================================================
+import { useUuiService, UuiServiceClientDef, UuiServiceResponse } from '@finanzinformatik/cpl-module-reactlib';
+
+import {
+  ExtendedUuiServiceMessage,
+  NotificationStoreActions,
+  useNotificationStoreActions,
+} from '@personalsysteme/notification-handler';
+import { queryOptions, useQuery, UseQueryResult } from '@tanstack/react-query';
+import { callValidateUrlaubszeitraum } from '../../apl/pzw/antragUiModule/AntragUiModule.api';
+import { ValidateUrlaubszeitraumResponse } from '../../apl/pzw/antragUiModule/ValidateUrlaub';
+import { IdTimestamp } from '../../constants/IDTimestampConstants';
+import { TanstackConstants } from '../../constants/TanstackConstants';
+import { AntragAbwesenheitConstants } from '../../constants/AntragAbwesenheitConstants';
+
+export function useValidateUrlaubszeitraumOptions(
+  uuiService: Readonly<UuiServiceClientDef>,
+  notificationStoreActions: NotificationStoreActions,
+  anfangDatum: IdTimestamp,
+  endeDatum: IdTimestamp,
+  enabled: boolean
+) {
+  return queryOptions({
+    queryKey: AntragAbwesenheitConstants.urlaubszeitraumValidateKey(anfangDatum, endeDatum),
+    queryFn: async () =>
+      callValidateUrlaubszeitraum(uuiService, anfangDatum, endeDatum).then(
+        (response: UuiServiceResponse<ValidateUrlaubszeitraumResponse | undefined>) => {
+          notificationStoreActions.handleMessages(response.messages as ExtendedUuiServiceMessage[], true);
+          return response.payload;
+        }
+      ),
+    staleTime: TanstackConstants.LONG_STALE_TIME,
+    enabled: enabled,
+  });
+}
+
+export function useValidateUrlaubszeitraum(
+  anfangDatum: IdTimestamp,
+  endeDatum: IdTimestamp,
+  enabled: boolean
+): UseQueryResult<ValidateUrlaubszeitraumResponse | undefined> {
+  console.log('useValidateUrlaubszeitraum()  ', anfangDatum, endeDatum, enabled);
+  const uuiService = useUuiService(),
+    notificationStoreActions = useNotificationStoreActions();
+  return useQuery(
+    useValidateUrlaubszeitraumOptions(uuiService, notificationStoreActions, anfangDatum, endeDatum, enabled)
+  );
+}
 
 
