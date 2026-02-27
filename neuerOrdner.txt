@@ -596,8 +596,123 @@ export interface AntragAbwesenheitAnzeigenPagemodel {
   bezeichnung: string | undefined;
   iconNr: number | undefined;
 }
+=================================================================
 
+package osplus.pzw.workflows;
 
+import kotlin.Unit;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import osplus.apl.cpl.api.mapi.v2.annotation.CplComponent;
+import osplus.apl.cpl.api.mapi.v2.annotation.Expose;
+import osplus.apl.cpl.api.mapi.v2.context.EnterStateContext;
+import osplus.apl.cpl.api.mapi.v2.context.PlatformContext;
+import osplus.apl.cpl.api.mapi.v2.description.TypeInfo;
+import osplus.apl.cpl.api.mapi.v2.flow.Bookmark;
+import osplus.apl.cpl.api.mapi.v2.flow.FlowKey;
+import osplus.apl.cpl.api.mapi.v2.navigation.NavigationCommand;
+import osplus.apl.cpl.api.mapi.v2.restriction.AuthenticationStatus;
+import osplus.apl.cpl.api.mapi.v2.restriction.Channel;
+import osplus.apl.cpl.api.mapi.v2.restriction.RestrictAuthenticationStatus;
+import osplus.apl.cpl.api.mapi.v2.restriction.RestrictionValidator;
+import osplus.apl.cpl.api.mapi.v2.runtime.Page;
+import osplus.apl.cpl.api.mapi.v2.utils.KotlinTools;
+import osplus.pzw.PzwCplConstants;
+import osplus.pzw.PzwCplWorkflows;
+
+import java.util.List;
+
+@CplComponent
+public class AntragAbwesenheitAnzeigenPage implements Page<AntragAbwesenheitAnzeigenPage> {
+
+    @Expose
+    private String beginn;
+    @Expose
+    private String ende;
+    @Expose
+    private String erstellungszeitpunkt;
+    @Expose
+    private String bezeichnung;
+    @Expose
+    private String iconNr;
+
+    @NotNull
+    @Override
+    public FlowKey getKey() {
+        return new FlowKey(PzwCplWorkflows.ANTRAGDETAILS.appId, PzwCplWorkflows.ANTRAGDETAILS.workflow, PzwCplWorkflows.ANTRAGDETAILS.workflowVersion);
+    }
+
+    @Nullable
+    @Override
+    public Bookmark getBookmark() {
+        return new Bookmark(PzwCplConstants.Bookmarks.ANTRAG_ABWESENHEIT_ANZEIGEN);
+    }
+
+    @NotNull
+    @Override
+    public String title(@NotNull PlatformContext platformContext) {
+        return platformContext.getI18n().get("zeitwirtschaft.antragdetails");
+    }
+
+    @NotNull
+    @Override
+    public List<Channel> getAllowedChannels() {
+        return List.of(
+                Channel.STATIONAER,
+                Channel.UNKNOWN
+        );
+    }
+
+    @NotNull
+    @Override
+    public List<RestrictionValidator> restrictions() {
+        return List.of(
+                new RestrictAuthenticationStatus(AuthenticationStatus.FULL_AUTHENTICATION)
+        );
+    }
+
+    @NotNull
+    @Override
+    public TypeInfo<AntragAbwesenheitAnzeigenPage> getInputType() {
+        return KotlinTools.typeOf(AntragAbwesenheitAnzeigenPage.class);
+    }
+
+    @NotNull
+    @Override
+    public NavigationCommand enter(@NotNull EnterStateContext<AntragAbwesenheitAnzeigenPage> context) {
+        context.withInput(antragDetailsPage ->
+                {
+                    beginn = context.getInput().beginn;
+                    ende = context.getInput().ende;
+                    erstellungszeitpunkt = context.getInput().erstellungszeitpunkt;
+                    bezeichnung = context.getInput().bezeichnung;
+                    iconNr = context.getInput().iconNr;
+                    return Unit.INSTANCE;
+                }
+        );
+        return NavigationCommand.STAY;
+    }
+
+    public @NotNull String getBeginn() {
+        return beginn;
+    }
+
+    public @NotNull String getEnde() {
+        return ende;
+    }
+
+    public @NotNull String getErstellungszeitpunkt() {
+        return erstellungszeitpunkt;
+    }
+
+    public @NotNull String getBezeichnung() {
+        return bezeichnung;
+    }
+
+    public String getIconNr() {
+        return iconNr;
+    }
+}
 
 
 
