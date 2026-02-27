@@ -1,708 +1,605 @@
-ackage osplus.pzw.uimodule;
+dayjs.extend(weekOfYear);
+export type AnsichtArt = 'Arbeitswoche' | 'Woche' | 'Monat';
 
-import org.springframework.http.HttpStatus;
-import osplus.apl.core.api.AplLogging;
-import osplus.apl.core.api.KursPermission;
-import osplus.apl.core.api.i18n.I18nService;
-import osplus.apl.core.api.validation.AplValidated;
-import osplus.apl.uui.api.MethodType;
-import osplus.apl.uui.api.ServiceParam;
-import osplus.apl.uui.api.ServiceResponse;
-import osplus.apl.uui.api.ServiceReturnType;
-import osplus.apl.uui.api.UiModule;
-import osplus.apl.uui.api.UiService;
-import osplus.apl.uui.api.UiServiceReturnType;
-import osplus.apl.uui.api.message.MessageService;
-import osplus.fi.core.uui.api.message.MessageType;
-import osplus.josp.types.IdTimestamp;
-import osplus.psk.core.apl.AbstractUiModule;
-import osplus.psk.core.apl.exception.UiServiceException;
-import osplus.psk.core.apl.messages.MessageCallType;
-import osplus.psk.core.apl.messages.MessageCode;
-import osplus.psk.core.apl.messages.MessageMetadata;
-import osplus.psk.core.apl.messages.MessageScope;
-import osplus.psk.kurs.KursRechtConstants;
-import osplus.pzw.PzwKursRechtConstants;
-import osplus.pzw.constants.AntragUiModuleConstants;
-import osplus.pzw.model.antrag.AntragAbwesenheitRead;
-import osplus.pzw.model.antrag.AntragAbwesenheitStatusUpdate;
-import osplus.pzw.model.antrag.AntragAbwesenheitWrite;
-import osplus.pzw.model.antrag.AntragValidateRead;
-import osplus.pzw.service.AntragService;
-
-import java.time.LocalDate;
-import java.util.List;
-
-
-/**
- * UiModule für Service-Funktionen zum Antrag.
- *
- * @see UiModule
- */
-@UiModule(AntragUiModuleConstants.NAME)
-@AplValidated
-public class AntragUiModule extends AbstractUiModule {
-
-    private final transient AntragService antragService;
-
-    public AntragUiModule(
-            final MessageService messageService,
-            final I18nService i18nService,
-            final AntragService antragService
-    ) {
-        super(messageService, i18nService);
-        this.antragService = antragService;
+export default function Kalender() {
+  const [kalenderansicht, setKalenderansicht] = useState<AnsichtArt>('Arbeitswoche'),
+    [beginn, setBeginn] = useQueryState(
+      KalenderConstants.QUERY_KEYS.BEGINN,
+      parseAsString
+        .withDefault(dayjs().day(KalenderConstants.MONTAG).format(KalenderConstants.DATUM_ISO_FORMAT_STRING))
+        .withOptions({ clearOnDefault: false })
+    ),
+    [ende, setEnde] = useQueryState(
+      KalenderConstants.QUERY_KEYS.ENDE,
+      parseAsString
+        .withDefault(dayjs().day(KalenderConstants.FREITAG).format(KalenderConstants.DATUM_ISO_FORMAT_STRING))
+        .withOptions({ clearOnDefault: false })
+    ),
+    [selectedTag, setSelectedTag] = useState<string | undefined>(
+      dayjs().format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
+    ),
+    [selectedMonatBeginn, setSelectedMonatBeginn] = useState<string>(
+      dayjs().startOf(KalenderConstants.MONAT).format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
+    ),
+    { data: kalenderData, isFetching: isKalenderFetching } = useReadKalender(beginn, ende),
+    grenzeMonateZurueck = dayjs()
+      .startOf(KalenderConstants.MONAT)
+      .subtract(KalenderConstants.MONATS_GRENZE_ZURUECK, KalenderConstants.MONAT),
+    grenzeMonateVor = dayjs()
+      .startOf(KalenderConstants.MONAT)
+      .add(KalenderConstants.MONATS_GRENZE_VOR, KalenderConstants.MONAT),
+    { t } = useTranslation(),
+    workflowService = useWorkflowService();
+  useEffect(() => {
+    if (kalenderansicht === KalenderConstants.ANSICHTARTEN.MONAT) {
+      updateGrenzenMonatsansicht();
     }
+  }, [selectedMonatBeginn, kalenderansicht]);
+  const handleChangeKalenderansicht = (ansichtart: AnsichtArt) => {
+    setKalenderansicht(ansichtart);
+    resetBeginnUndEnde(ansichtart);
+  };
+  const resetBeginnUndEnde = (ansichtart: AnsichtArt) => {
+    if (ansichtart === KalenderConstants.ANSICHTARTEN.MONAT) {
+      setSelectedMonatBeginn(
+        dayjs().startOf(KalenderConstants.MONAT).format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
+      );
+    } else if (ansichtart === KalenderConstants.ANSICHTARTEN.WOCHE) {
+      setBeginn(dayjs().day(KalenderConstants.MONTAG).format(KalenderConstants.DATUM_ISO_FORMAT_STRING));
+      setEnde(
+        dayjs().day() === KalenderConstants.SONNTAG
+          ? dayjs().format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
+          : dayjs().day(KalenderConstants.SONNTAG_FOLGEWOCHE).format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
+      );
+    } else {
+      setBeginn(dayjs().day(KalenderConstants.MONTAG).format(KalenderConstants.DATUM_ISO_FORMAT_STRING));
+      setEnde(dayjs().day(KalenderConstants.FREITAG).format(KalenderConstants.DATUM_ISO_FORMAT_STRING));
+    }
+  };
 
-    /**
-     * Die Funktion createAntrag legt einen Antrag an.
-     *
-     * @return ServiceResponse<Void>
-     */
-    @UiService(value = AntragUiModuleConstants.UI_SERVICE_CREATE_ANTRAG_ABWESENHEIT, method = MethodType.POST, internalOnly = true)
-    @UiServiceReturnType(value = {
-            @ServiceReturnType(statusCode = 200),
-            @ServiceReturnType(statusCode = 400),
-            @ServiceReturnType(statusCode = 502)
-    })
-    @KursPermission(value = {PzwKursRechtConstants.PE_ZW_MA_ANLEGEN})
-    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
-    public ServiceResponse<Void> createAntragAbwesenheit(
-            @AplValidated AntragAbwesenheitWrite antragAbwesenheitWrite
-    ) {
-        try {
-            antragService.createAntrag(antragAbwesenheitWrite);
-            messageService.addMessage(MessageType.SUCCESS, MessageCode.OK,
-                    i18nService.getMessage("Antrag.Write.HttpStatus.200"),
-                    MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
-            return new ServiceResponse<>(HttpStatus.OK.value());
-        } catch (UiServiceException uiServiceException) {
-            handleException(uiServiceException);
-            return new ServiceResponse<>(Integer.parseInt(uiServiceException.getMessageCode()));
+  const addToDatum = (addValue: number) => {
+    setBeginn(dayjs(beginn).add(addValue, KalenderConstants.WOCHE).format(KalenderConstants.DATUM_ISO_FORMAT_STRING));
+    setEnde(dayjs(ende).add(addValue, KalenderConstants.WOCHE).format(KalenderConstants.DATUM_ISO_FORMAT_STRING));
+  };
+  const subtractFromDatum = (subtractValue: number) => {
+    setBeginn(
+      dayjs(beginn).subtract(subtractValue, KalenderConstants.WOCHE).format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
+    );
+    setEnde(
+      dayjs(ende).subtract(subtractValue, KalenderConstants.WOCHE).format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
+    );
+  };
+  const updateGrenzenMonatsansicht = () => {
+    setBeginn(
+      dayjs(selectedMonatBeginn).startOf(KalenderConstants.MONAT).day() === KalenderConstants.SONNTAG
+        ? dayjs(selectedMonatBeginn)
+            .day(KalenderConstants.MONTAG_VORWOCHE)
+            .format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
+        : dayjs(selectedMonatBeginn).day(KalenderConstants.MONTAG).format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
+    );
+    setEnde(
+      dayjs(selectedMonatBeginn).endOf(KalenderConstants.MONAT).day() === KalenderConstants.SONNTAG
+        ? dayjs(selectedMonatBeginn).endOf(KalenderConstants.MONAT).format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
+        : dayjs(selectedMonatBeginn)
+            .endOf(KalenderConstants.MONAT)
+            .day(KalenderConstants.SONNTAG_FOLGEWOCHE)
+            .format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
+    );
+  };
+  const handleClickVorwaerts = () => {
+    if (kalenderansicht === KalenderConstants.ANSICHTARTEN.MONAT) {
+      setSelectedMonatBeginn((prevState) =>
+        dayjs(prevState).add(1, KalenderConstants.MONAT).format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
+      );
+    } else {
+      addToDatum(KalenderConstants.EINHEIT_WOCHE);
+    }
+    setSelectedTag(undefined);
+  };
+  const handleClickZurueck = () => {
+    if (kalenderansicht === KalenderConstants.ANSICHTARTEN.MONAT) {
+      setSelectedMonatBeginn((prevState) =>
+        dayjs(prevState).subtract(1, KalenderConstants.MONAT).format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
+      );
+    } else {
+      subtractFromDatum(KalenderConstants.EINHEIT_WOCHE);
+    }
+    setSelectedTag(undefined);
+  };
+  const handleClickHeute = () => {
+    setSelectedTag(dayjs().format(KalenderConstants.DATUM_ISO_FORMAT_STRING));
+    resetBeginnUndEnde(kalenderansicht);
+  };
+  const selectedMonat = () => {
+    return dayjs(selectedMonatBeginn).locale(PzwConstants.LOCALES_DE).format(KalenderConstants.MONAT_FORMAT_STRING);
+  };
+  const kalendertag = kalenderData?.kalendertage.find((tag) => tag.datum === selectedTag);
+  if (!kalenderData?.isRollout) {
+    return <></>;
+  }
+  const zurueckMoeglich = () => {
+    if (kalenderansicht === KalenderConstants.ANSICHTARTEN.MONAT) {
+      return dayjs(selectedMonatBeginn).subtract(1, KalenderConstants.MONAT).isSameOrAfter(grenzeMonateZurueck);
+    }
+    return dayjs(beginn)
+      .subtract(KalenderConstants.EINHEIT_WOCHE, KalenderConstants.WOCHE)
+      .isSameOrAfter(grenzeMonateZurueck);
+  };
+  const vorwaertsMoeglich = () => {
+    if (kalenderansicht === KalenderConstants.ANSICHTARTEN.MONAT) {
+      return dayjs(selectedMonatBeginn).add(1, KalenderConstants.MONAT).isSameOrBefore(grenzeMonateVor);
+    }
+    return dayjs(ende).add(KalenderConstants.EINHEIT_WOCHE, KalenderConstants.WOCHE).isSameOrBefore(grenzeMonateVor);
+  };
+  return (
+    <Stack spacing={ThemeConstants.GRID_CONTAINER_SPACING}>
+      <Box>
+        <Button startIcon={<IcBackArrowS />} onClick={() => navigateToZeitwirtschaft(workflowService)}>
+          {t('ZurueckZuZeitwirtschaft')}
+        </Button>
+      </Box>
+      <KalenderToolbar
+        kalenderansicht={kalenderansicht}
+        handleChangeKalenderansicht={handleChangeKalenderansicht}
+        handleClickZurueck={zurueckMoeglich() ? handleClickZurueck : undefined}
+        handleClickVorwaerts={vorwaertsMoeglich() ? handleClickVorwaerts : undefined}
+        selectedKwoderMonat={
+          kalenderansicht === KalenderConstants.ANSICHTARTEN.MONAT
+            ? selectedMonat()
+            : t('KW') + ' ' + dayjs(beginn).week().toString()
         }
-    }
-
-    /**
-     * Die Funktion updateAntragAbwesenheitStatus ändert den Status eines Antrags.
-     *
-     * @return ServiceResponse<Void>
-     */
-    @UiService(value = AntragUiModuleConstants.UI_SERVICE_UPDATE_ANTRAG_ABWESENHEIT_STATUS, method = MethodType.PUT, internalOnly = true)
-    @UiServiceReturnType(value = {
-            @ServiceReturnType(statusCode = 200),
-            @ServiceReturnType(statusCode = 400),
-            @ServiceReturnType(statusCode = 502)
-    })
-    @KursPermission(value = {
-            PzwKursRechtConstants.PE_ZW_MA_AENDERN,
-            PzwKursRechtConstants.PE_ZW_FK_DIR_AENDERN,
-            PzwKursRechtConstants.PE_ZW_FK_VTR_AENDERN
-    })
-    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
-    public ServiceResponse<Void> updateAntragAbwesenheitStatus(
-            @AplValidated AntragAbwesenheitStatusUpdate antragAbwesenheitStatusUpdate
-    ) {
-        try {
-            antragService.updateAntragAbwesenheitStatus(antragAbwesenheitStatusUpdate);
-            messageService.addMessage(MessageType.SUCCESS, MessageCode.OK,
-                    i18nService.getMessage("Antrag.Update.HttpStatus.200"),
-                    MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
-            return new ServiceResponse<>(HttpStatus.OK.value());
-        } catch (UiServiceException uiServiceException) {
-            handleException(uiServiceException);
-            return new ServiceResponse<>(Integer.parseInt(uiServiceException.getMessageCode()));
-        }
-    }
-
-    /**
-     * Die Funktion validateUrlaubszeitraum validiert Tage und Resturlaubstage für einen Urlaubsantrag.
-     *
-     * @return ServiceResponse<UrlaubsAntragValidateRead>
-     */
-    @UiService(value = AntragUiModuleConstants.UI_SERVICE_VALIDATE_URLAUBSZEITRAUM, method = MethodType.GET, internalOnly = true)
-    @UiServiceReturnType(value = {
-            @ServiceReturnType(statusCode = 200, value = AntragValidateRead.class),
-            @ServiceReturnType(statusCode = 400),
-            @ServiceReturnType(statusCode = 502)
-    })
-    @KursPermission(value = {KursRechtConstants.PE_ZW_MA})
-    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
-    public ServiceResponse<AntragValidateRead> validateUrlaubszeitraum(
-            @ServiceParam(value = AntragUiModuleConstants.PARAM_ANFANG_TIMESTAMP) IdTimestamp anfangTimestamp,
-            @ServiceParam(value = AntragUiModuleConstants.PARAM_ENDE_TIMESTAMP) IdTimestamp endeTimestamp
-    ) {
-        try {
-            var res = antragService.validateUrlaubszeitraum(anfangTimestamp, endeTimestamp);
-            messageService.addMessage(MessageType.SUCCESS, MessageCode.OK,
-                    i18nService.getMessage("Antrag.Validation.HttpStatus.200"),
-                    MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
-            return new ServiceResponse<>(HttpStatus.OK.value(), res);
-        } catch (UiServiceException uiServiceException) {
-            handleException(uiServiceException);
-            return new ServiceResponse<>(Integer.parseInt(uiServiceException.getMessageCode()));
-        }
-    }
-
-    /**
-     * Die Funktion liest die Anträge des aufrufenden Users.
-     *
-     * @return ServiceResponse<List<AntragAbwesenheitRead>>
-     */
-    @UiService(value = AntragUiModuleConstants.UI_SERVICE_READ_ANTRAEGE_ABWESENHEIT, method = MethodType.GET, internalOnly = true)
-    @UiServiceReturnType(value = {
-            @ServiceReturnType(statusCode = 200, value = AntragAbwesenheitRead.class, containerType = List.class),
-            @ServiceReturnType(statusCode = 400),
-            @ServiceReturnType(statusCode = 502)
-    })
-    @KursPermission(KursRechtConstants.PE_ZW_MA)
-    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
-    public ServiceResponse<List<AntragAbwesenheitRead>> readAntraegeAbwesenheit(
-            @ServiceParam(value = AntragUiModuleConstants.PARAM_BEGINN) LocalDate beginn,
-            @ServiceParam(value = AntragUiModuleConstants.PARAM_ENDE) LocalDate ende
-    ) {
-        System.out.println("3 - AntragUIModule Controller --> readAntraegeAbwesenheit(beginn, ende)");
-        try {
-            var res = antragService.readAntraegeAbwesenheit(beginn, ende);
-            messageService.addMessage(MessageType.SUCCESS, MessageCode.OK,
-                    i18nService.getMessage("Antraege.Read.HttpStatus.200"),
-                    MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
-            return new ServiceResponse<>(HttpStatus.OK.value(), res);
-        } catch (UiServiceException uiServiceException) {
-            handleException(uiServiceException);
-            return new ServiceResponse<>(Integer.parseInt(uiServiceException.getMessageCode()));
-        }
-    }
-}
-
-==================================================================
-package osplus.pzw.service;
-
-import osplus.apl.core.api.AplComponent;
-import osplus.apl.core.api.AplLogging;
-import osplus.dynssee.zeitwirtschaft.fo.ErmittlePmgtPzwAntragTageUeberPctlPersSchlEingabe;
-import osplus.dynssee.zeitwirtschaft.fo.LegPmgtPzwAntragAnUeberAbwesenheitEingabe;
-import osplus.dynssee.zeitwirtschaft.fo.LiesPmgtPzwAntragUeberUserEingabe;
-import osplus.dynssee.zeitwirtschaft.fo.SetzPmgtPzwAntragStatusEingabe;
-import osplus.fi.core.uui.api.message.MessageType;
-import osplus.josp.types.IdTimestamp;
-import osplus.psk.DateFormatConstants;
-import osplus.psk.core.apl.exception.OspeException;
-import osplus.psk.core.apl.exception.UiServiceException;
-import osplus.psk.core.apl.messages.MessageCallType;
-import osplus.psk.core.apl.messages.MessageCode;
-import osplus.psk.core.apl.messages.MessageMetadata;
-import osplus.psk.core.apl.messages.MessageScope;
-import osplus.psk.core.apl.services.UserService;
-import osplus.pzw.PzwAntraegeConstants;
-import osplus.pzw.mapper.AntraegeMapper;
-import osplus.pzw.model.antrag.AntragAbwesenheitRead;
-import osplus.pzw.model.antrag.AntragAbwesenheitStatusUpdate;
-import osplus.pzw.model.antrag.AntragAbwesenheitWrite;
-import osplus.pzw.model.antrag.AntragValidateRead;
-import osplus.pzw.repository.pzw.PmgtPzwAntragAnlegenRepository;
-import osplus.pzw.repository.pzw.PmgtPzwAntragLesenRepository;
-import osplus.pzw.repository.pzw.PmgtPzwAntragStatusSetzRepository;
-import osplus.pzw.repository.pzw.PmgtPzwAntragTageErmRepository;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Locale;
-
-/**
- * Service für die Abwesenheitsanträge.
- */
-@AplComponent
-public class AntragService implements IAntragService {
-
-    private final transient UserService userService;
-    private final transient PmgtPzwAntragAnlegenRepository antragAnlegenRepository;
-    private final transient PmgtPzwAntragTageErmRepository antragTageErmRepository;
-    private final transient PmgtPzwAntragLesenRepository antragLesenRepository;
-    private final transient PmgtPzwAntragStatusSetzRepository antragStatusSetzRepository;
-
-    public AntragService(
-            final UserService userService,
-            final PmgtPzwAntragAnlegenRepository antragAnlegenRepository,
-            final PmgtPzwAntragTageErmRepository antragTageErmRepository,
-            final PmgtPzwAntragLesenRepository antragLesenRepository,
-            final PmgtPzwAntragStatusSetzRepository antragStatusSetzRepository
-    ) {
-        this.userService = userService;
-        this.antragAnlegenRepository = antragAnlegenRepository;
-        this.antragTageErmRepository = antragTageErmRepository;
-        this.antragLesenRepository = antragLesenRepository;
-        this.antragStatusSetzRepository = antragStatusSetzRepository;
-    }
-
-    /**
-     * Die Funktion createAntrag legt einen Antrag an.
-     *
-     * @throws UiServiceException UiServiceException
-     */
-    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
-    public void createAntrag(
-            AntragAbwesenheitWrite antragAbwesenheitWrite
-    ) throws UiServiceException {
-        String personalnummer = userService.getPersonalnummer();
-        LegPmgtPzwAntragAnUeberAbwesenheitEingabe eingabe = AntraegeMapper.antragWriteToOspe(antragAbwesenheitWrite, personalnummer);
-        try {
-            antragAnlegenRepository.legPmgtPzwAntragAnUeberAbwesenheit(eingabe);
-        } catch (OspeException e) {
-            throw new UiServiceException(MessageType.ERROR, MessageCode.ERROR,
-                    "Antrag.Write.HttpStatus.502",
-                    MessageMetadata.instance(MessageCallType.CREATE, MessageScope.APL));
-        }
-    }
-
-    /**
-     * Die Funktion antragAbwesenheitStatusSetzen ändert einen Antrag.
-     *
-     * @throws UiServiceException UiServiceException
-     */
-    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
-    public void updateAntragAbwesenheitStatus(
-            AntragAbwesenheitStatusUpdate antragAbwesenheitStatusUpdate
-    ) throws UiServiceException {
-        String personalnummer = userService.getPersonalnummer();
-        SetzPmgtPzwAntragStatusEingabe eingabe = AntraegeMapper.antragAbwesenheitStatusUpdateToOSPE(antragAbwesenheitStatusUpdate, personalnummer);
-        try {
-            antragStatusSetzRepository.setzPmgtPzwAntragStatus(eingabe);
-        } catch (OspeException e) {
-            throw new UiServiceException(MessageType.ERROR, MessageCode.ERROR,
-                    "Antrag.Update.HttpStatus.502",
-                    MessageMetadata.instance(MessageCallType.CREATE, MessageScope.APL));
-        }
-    }
-
-    /**
-     * Die Funktion validateUrlaubszeitraum validiert Tage und Resturlaubstage für einen Urlaubsantrag.
-     *
-     * @return UrlaubszeitraumValidateResponse
-     */
-    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
-    public AntragValidateRead validateUrlaubszeitraum(
-            IdTimestamp anfangTimestamp,
-            IdTimestamp endeTimestamp
-    ) throws UiServiceException {
-        ErmittlePmgtPzwAntragTageUeberPctlPersSchlEingabe eingabe = AntraegeMapper.createAntragTageUeberPctlPersSchlEingabe(anfangTimestamp, endeTimestamp, userService.getPersonalnummer());
-        try {
-            return antragTageErmRepository.ermittlePmgtPzwAntragTageUeberPctlPersSchl(eingabe)
-                    .map(AntraegeMapper::ospeToAntragValidate)
-                    .orElse(null);
-        } catch (OspeException e) {
-            throw new UiServiceException(MessageType.ERROR, MessageCode.ERROR,
-                    "Antrag.Validation.HttpStatus.502",
-                    MessageMetadata.instance(MessageCallType.CREATE, MessageScope.APL));
-        }
-    }
-
-    /**
-     * Die Funktion liest die Anträge des aufrufenden Users.
-     *
-     * @return List<AntragAbwesenheitRead>
-     */
-    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
-    public List<AntragAbwesenheitRead> readAntraegeAbwesenheit(
-            LocalDate beginn,
-            LocalDate ende
-    ) throws UiServiceException {
-        try {
-            LocalDateTime localDateTimeAnfang = beginn.atTime(0, 0, 0);
-            LocalDateTime localDateTimeEnde = ende.atTime(23, 59, 59);
-            DateTimeFormatter tsFormatter = DateTimeFormatter.ofPattern((DateFormatConstants.TIMESTAMP_FORMAT), Locale.GERMANY);
-            LiesPmgtPzwAntragUeberUserEingabe eingabe = new LiesPmgtPzwAntragUeberUserEingabe();
-            eingabe.setPctlPersSchl(userService.getPersonalnummer());
-            eingabe.setTsGueltigAb(new IdTimestamp(localDateTimeAnfang.format(tsFormatter)));
-            eingabe.setTsGueltigBis(new IdTimestamp(localDateTimeEnde.format(tsFormatter)));
-            eingabe.setPzwAntrArt(PzwAntraegeConstants.ANTRAGSART_ABWESENHEITEN);
-            return antragLesenRepository
-                    .liesPmgtPzwAntragUeberUser(eingabe)
-                    .map(AntraegeMapper::ospeToantragAbwesenheitRead)
-                    .orElse(null);
-        } catch (OspeException e) {
-            throw new UiServiceException(MessageType.ERROR, MessageCode.ERROR,
-                    "Antraege.Read.HttpStatus.502",
-                    MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
-        }
-    }
-}
-
-============================================================================================
-package osplus.pzw.mapper;
-
-import osplus.dynssee.zeitwirtschaft.fo.ErmittlePmgtPzwAntragTageUeberPctlPersSchlEingabe;
-import osplus.dynssee.zeitwirtschaft.fo.LegPmgtPzwAntragAnUeberAbwesenheitEingabe;
-import osplus.dynssee.zeitwirtschaft.fo.PmgtPzwAntragLesenAusgabe;
-import osplus.dynssee.zeitwirtschaft.fo.PmgtPzwAntragTageErmAusgabe;
-import osplus.dynssee.zeitwirtschaft.fo.SetzPmgtPzwAntragStatusEingabe;
-import osplus.josp.types.IdTimestamp;
-import osplus.psk.PskConstants;
-import osplus.pzw.model.antrag.Abwesenheitszyklus;
-import osplus.pzw.model.antrag.AntragAbwesenheitRead;
-import osplus.pzw.model.antrag.AntragAbwesenheitStatus;
-import osplus.pzw.model.antrag.AntragAbwesenheitStatusUpdate;
-import osplus.pzw.model.antrag.AntragAbwesenheitWrite;
-import osplus.pzw.model.antrag.AntragValidateRead;
-
-import java.util.List;
-import java.util.Optional;
-
-public class AntraegeMapper {
-    public static LegPmgtPzwAntragAnUeberAbwesenheitEingabe antragWriteToOspe(AntragAbwesenheitWrite antragAbwesenheitWrite, String personalNummer) {
-        LegPmgtPzwAntragAnUeberAbwesenheitEingabe eingabe = new LegPmgtPzwAntragAnUeberAbwesenheitEingabe();
-        eingabe.setPctlPersSchl(personalNummer);
-        eingabe.setPzwAbwtSchl(antragAbwesenheitWrite.abwesenheitsgrundId());
-        eingabe.setPzwAntrStrnKz(antragAbwesenheitWrite.stornierungskennzeichen());
-        eingabe.setPzwAntrZrmAts(antragAbwesenheitWrite.anfangTimestamp());
-        eingabe.setPzwAntrZrmEts(antragAbwesenheitWrite.endeTimestamp());
-        eingabe.setPzwAntrZyklSchl(antragAbwesenheitWrite.abwesenheitszyklus().getZyklusSchluessel());
-        eingabe.setPzwAntrMaHnws(antragAbwesenheitWrite.mitarbeiterHinweis());
-        eingabe.setMassVgngId(antragAbwesenheitWrite.dokumentId());
-        return eingabe;
-    }
-
-    public static SetzPmgtPzwAntragStatusEingabe antragAbwesenheitStatusUpdateToOSPE(AntragAbwesenheitStatusUpdate request, String nutzerPersonalnummer) {
-        SetzPmgtPzwAntragStatusEingabe eingabe = new SetzPmgtPzwAntragStatusEingabe();
-        eingabe.setPctlPersSchl(nutzerPersonalnummer);
-        eingabe.setPzwAntrArt(request.antragArt());
-        eingabe.setTsEinfuegung(request.antragEinfuegungTimestamp());
-        eingabe.setPzwAntrStat(request.antragStatus());
-        eingabe.setAbsVgngAtgId(request.absVgngAtgId());
-        eingabe.setPzwAntrFrgbHnws(request.freigabeHinweis());
-        eingabe.setAbsAtgName(request.absAtgName());
-        Optional.ofNullable(request.mitarbeiterPersonalnummer()).ifPresent(eingabe::setMaPctlPersSchl);
-        if (request.nutzerIstFuehrungskraft()) {
-            eingabe.setFrkrPctlPersSchl(nutzerPersonalnummer);
-        }
-        return eingabe;
-    }
-
-    public static List<AntragAbwesenheitRead> ospeToantragAbwesenheitRead(PmgtPzwAntragLesenAusgabe ausgabe) {
-        return Optional.ofNullable(ausgabe.getPmgtPzwAntragMitarbeiter())
-                .stream()
-                .flatMap(antragMitarbeiter -> antragMitarbeiter.getPmgtPzwAntragAbwht().stream())
-                .map(antrag -> new AntragAbwesenheitRead(
-                        antrag.getPzwAntrZrmAts(),
-                        antrag.getPzwAntrZrmEts(),
-                        PskConstants.JA.equals(antrag.getPzwAntrStrnKz()),
-                        antrag.getPzwAbwtSchl(),
-                        antrag.getPzwAntrTageAnz().toBigInteger().intValue(),
-                        Abwesenheitszyklus.GANZTAGS.getZyklusSchluessel().equals(antrag.getPzwAntrZyklSchl()),
-                        antrag.getPzwAntrMaHnws(),
-                        antrag.getPzwAntrFrgbHnws(),
-                        antrag.getTsEinfuegung(),
-                        AntragAbwesenheitStatus.getAntragStatus(antrag.getPzwAntrStat()),
-                        antrag.getAbsVgngPrzId()
-                )).toList();
-    }
-
-    public static AntragValidateRead ospeToAntragValidate(PmgtPzwAntragTageErmAusgabe ausgabe) {
-        return new AntragValidateRead(
-                ausgabe.getPzwAntrTageAnz().intValue(),
-                ausgabe.getPzwUrlbTageRest().intValue()
-        );
-    }
-
-    public static ErmittlePmgtPzwAntragTageUeberPctlPersSchlEingabe createAntragTageUeberPctlPersSchlEingabe(
-            IdTimestamp anfangTimestamp,
-            IdTimestamp endeTimestamp,
-            String personalNummer
-    ) {
-        ErmittlePmgtPzwAntragTageUeberPctlPersSchlEingabe eingabe = new ErmittlePmgtPzwAntragTageUeberPctlPersSchlEingabe();
-        eingabe.setPzwAntrZrmAts(anfangTimestamp);
-        eingabe.setPzwAntrZrmEts(endeTimestamp);
-        eingabe.setPctlPersSchl(personalNummer);
-        return eingabe;
-    }
-}
-
-========================================================================================================================
-package osplus.dynssee.zeitwirtschaft.fo;
-
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlType;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-import osplus.dyns.dsm.jaxb.DynsFeldUdm;
-import osplus.dyns.dsm.jaxb.JakartaXmlAdapterIdTimestamp;
-import osplus.dyns.dsm.jaxb.JakartaXmlAdapterString;
-import osplus.dyns.dsm.jaxb.XmlAdapterIdTimestamp;
-import osplus.dyns.dsm.jaxb.XmlAdapterString;
-import osplus.fo.impl.FachobjektOoBase;
-import osplus.josp.types.IdTimestamp;
-
-@XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(
-    name = "LiesPmgtPzwAntragUeberUserEingabe",
-    namespace = "http://fo.zeitwirtschaft.dynssee.osplus/",
-    propOrder = {"pctlPersSchl", "tsGueltigAb", "tsGueltigBis", "pzwAntrArt"}
-)
-@jakarta.xml.bind.annotation.XmlAccessorType(jakarta.xml.bind.annotation.XmlAccessType.FIELD)
-@jakarta.xml.bind.annotation.XmlType(
-    name = "LiesPmgtPzwAntragUeberUserEingabe",
-    namespace = "http://fo.zeitwirtschaft.dynssee.osplus/",
-    propOrder = {"pctlPersSchl", "tsGueltigAb", "tsGueltigBis", "pzwAntrArt"}
-)
-public class LiesPmgtPzwAntragUeberUserEingabe extends FachobjektOoBase {
-    @XmlElement(
-        name = "PctlPersSchl",
-        required = true,
-        nillable = true
-    )
-    @DynsFeldUdm(
-        feldUdmName = "PCTL_PERS_SCHL",
-        dpTypNummer = 1,
-        dpMaxLaenge = 8,
-        isMussParameter = true
-    )
-    @XmlJavaTypeAdapter(XmlAdapterString.class)
-    @jakarta.xml.bind.annotation.XmlElement(
-        name = "PctlPersSchl",
-        required = true,
-        nillable = true
-    )
-    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
-    protected String pctlPersSchl;
-    @XmlElement(
-        name = "TsGueltigAb",
-        required = true,
-        type = String.class,
-        nillable = true
-    )
-    @DynsFeldUdm(
-        feldUdmName = "TS_GUELTIG_AB",
-        dpTypNummer = 1,
-        dpMaxLaenge = 26,
-        isMussParameter = true
-    )
-    @XmlJavaTypeAdapter(XmlAdapterIdTimestamp.class)
-    @jakarta.xml.bind.annotation.XmlElement(
-        name = "TsGueltigAb",
-        required = true,
-        type = String.class,
-        nillable = true
-    )
-    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterIdTimestamp.class)
-    protected IdTimestamp tsGueltigAb;
-    @XmlElement(
-        name = "TsGueltigBis",
-        required = true,
-        type = String.class,
-        nillable = true
-    )
-    @DynsFeldUdm(
-        feldUdmName = "TS_GUELTIG_BIS",
-        dpTypNummer = 1,
-        dpMaxLaenge = 26,
-        isMussParameter = true
-    )
-    @XmlJavaTypeAdapter(XmlAdapterIdTimestamp.class)
-    @jakarta.xml.bind.annotation.XmlElement(
-        name = "TsGueltigBis",
-        required = true,
-        type = String.class,
-        nillable = true
-    )
-    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterIdTimestamp.class)
-    protected IdTimestamp tsGueltigBis;
-    @XmlElement(
-        name = "PzwAntrArt",
-        required = true,
-        type = Short.class,
-        nillable = true
-    )
-    @DynsFeldUdm(
-        feldUdmName = "PZW_ANTR_ART",
-        dpTypNummer = 5,
-        dpMaxLaenge = 2
-    )
-    @jakarta.xml.bind.annotation.XmlElement(
-        name = "PzwAntrArt",
-        required = true,
-        type = Short.class,
-        nillable = true
-    )
-    protected Short pzwAntrArt;
-    private static final long serialVersionUID = 20260218135407L;
-
-    public LiesPmgtPzwAntragUeberUserEingabe() {
-    }
-
-    public String getPctlPersSchl() {
-        return this.pctlPersSchl;
-    }
-
-    public void setPctlPersSchl(String value) {
-        this.pctlPersSchl = value;
-    }
-
-    public IdTimestamp getTsGueltigAb() {
-        return this.tsGueltigAb;
-    }
-
-    public void setTsGueltigAb(IdTimestamp value) {
-        this.tsGueltigAb = value;
-    }
-
-    public IdTimestamp getTsGueltigBis() {
-        return this.tsGueltigBis;
-    }
-
-    public void setTsGueltigBis(IdTimestamp value) {
-        this.tsGueltigBis = value;
-    }
-
-    public Short getPzwAntrArt() {
-        return this.pzwAntrArt;
-    }
-
-    public void setPzwAntrArt(Short value) {
-        this.pzwAntrArt = value;
-    }
-}
-=======================================================================
-
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
-
-package osplus.dynssee.zeitwirtschaft.fo;
-
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlType;
-import osplus.dyns.dsm.jaxb.DynsFachobjektTyp;
-import osplus.fo.impl.FachobjektOoBase;
-
-@XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(
-    name = "PmgtPzwAntragLesenAusgabe",
-    namespace = "http://fo.zeitwirtschaft.dynssee.osplus/",
-    propOrder = {"pmgtPzwAntragMitarbeiter"}
-)
-@jakarta.xml.bind.annotation.XmlAccessorType(jakarta.xml.bind.annotation.XmlAccessType.FIELD)
-@jakarta.xml.bind.annotation.XmlType(
-    name = "PmgtPzwAntragLesenAusgabe",
-    namespace = "http://fo.zeitwirtschaft.dynssee.osplus/",
-    propOrder = {"pmgtPzwAntragMitarbeiter"}
-)
-public class PmgtPzwAntragLesenAusgabe extends FachobjektOoBase {
-    @XmlElement(
-        name = "PmgtPzwAntragMitarbeiter"
-    )
-    @DynsFachobjektTyp(
-        maximaleKardinalitaet = 1
-    )
-    @jakarta.xml.bind.annotation.XmlElement(
-        name = "PmgtPzwAntragMitarbeiter"
-    )
-    protected PmgtPzwAntragMitarbeiter pmgtPzwAntragMitarbeiter;
-    private static final long serialVersionUID = 20260218135407L;
-
-    public PmgtPzwAntragLesenAusgabe() {
-    }
-
-    public PmgtPzwAntragMitarbeiter getPmgtPzwAntragMitarbeiter() {
-        return this.pmgtPzwAntragMitarbeiter;
-    }
-
-    public void setPmgtPzwAntragMitarbeiter(PmgtPzwAntragMitarbeiter value) {
-        this.pmgtPzwAntragMitarbeiter = value;
-    }
-}
-=================================================================
-package osplus.pzw.repository.pzw;
-
-import osplus.apl.core.api.AplComponent;
-import osplus.apl.core.api.AplLogging;
-import osplus.dynssee.zeitwirtschaft.fo.ErmittlePmgtPzwAntragTageUeberPctlPersSchlEingabe;
-import osplus.dynssee.zeitwirtschaft.fo.PmgtPzwAntragTageErmAusgabe;
-import osplus.fo.dyns.schnittstelle.IPmgtPzwAntragTageErmService;
-import osplus.psk.core.apl.AbstractOspeAusgabeServiceRepository;
-import osplus.psk.core.apl.exception.OspeException;
-import osplus.psk.core.apl.messages.PmgtDynSMessageUtil;
-
-import java.util.Optional;
-
-/**
- * Repository für
- * <a href="https://wiki.intern/spaces/pem/pages/646262956/OSPE-Service+PMGT_PZW_ANTRAG_TAGE_ERM">PMGT_PZW_ANTRAG_TAGE_ERM</a>
- */
-@AplComponent
-public class PmgtPzwAntragTageErmRepository extends AbstractOspeAusgabeServiceRepository<IPmgtPzwAntragTageErmService, PmgtPzwAntragTageErmAusgabe> {
-
-    public PmgtPzwAntragTageErmRepository(
-            final IPmgtPzwAntragTageErmService pmgtPzwAntragTageErmService,
-            final PmgtDynSMessageUtil pmgtDynSMessageUtil
-    ) {
-        super(pmgtPzwAntragTageErmService, pmgtDynSMessageUtil);
-    }
-
-    /**
-     * Funktion ermittlePmgtPzwAntragTageUeberPctlPersSchl ermittelt in einem Zeitraum verbrauchten Urlaubstage.
-     *
-     * @param eingabe ErmittlePmgtPzwAntragTageUeberPctlPersSchlEingabe
-     * @throws OspeException OspeException
-     */
-    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
-    public Optional<PmgtPzwAntragTageErmAusgabe> ermittlePmgtPzwAntragTageUeberPctlPersSchl(
-            final ErmittlePmgtPzwAntragTageUeberPctlPersSchlEingabe eingabe
-    ) throws OspeException {
-        return readWrapper(eingabe, getService()::ermittlePmgtPzwAntragTageUeberPctlPersSchl);
-    }
-}
-======================================================================================================================
-import { useUuiService, UuiServiceClientDef, UuiServiceResponse } from '@finanzinformatik/cpl-module-reactlib';
-
-import {
-  ExtendedUuiServiceMessage,
-  NotificationStoreActions,
-  useNotificationStoreActions,
-} from '@personalsysteme/notification-handler';
-import { queryOptions, useQuery, UseQueryResult } from '@tanstack/react-query';
-import { callValidateUrlaubszeitraum } from '../../apl/pzw/antragUiModule/AntragUiModule.api';
-import { ValidateUrlaubszeitraumResponse } from '../../apl/pzw/antragUiModule/ValidateUrlaub';
-import { IdTimestamp } from '../../constants/IDTimestampConstants';
-import { TanstackConstants } from '../../constants/TanstackConstants';
-import { AntragAbwesenheitConstants } from '../../constants/AntragAbwesenheitConstants';
-
-export function useValidateUrlaubszeitraumOptions(
-  uuiService: Readonly<UuiServiceClientDef>,
-  notificationStoreActions: NotificationStoreActions,
-  anfangDatum: IdTimestamp,
-  endeDatum: IdTimestamp,
-  enabled: boolean
-) {
-  return queryOptions({
-    queryKey: AntragAbwesenheitConstants.urlaubszeitraumValidateKey(anfangDatum, endeDatum),
-    queryFn: async () =>
-      callValidateUrlaubszeitraum(uuiService, anfangDatum, endeDatum).then(
-        (response: UuiServiceResponse<ValidateUrlaubszeitraumResponse | undefined>) => {
-          notificationStoreActions.handleMessages(response.messages as ExtendedUuiServiceMessage[], true);
-          return response.payload;
-        }
-      ),
-    staleTime: TanstackConstants.LONG_STALE_TIME,
-    enabled: enabled,
-  });
-}
-
-export function useValidateUrlaubszeitraum(
-  anfangDatum: IdTimestamp,
-  endeDatum: IdTimestamp,
-  enabled: boolean
-): UseQueryResult<ValidateUrlaubszeitraumResponse | undefined> {
-  console.log('useValidateUrlaubszeitraum()  ', anfangDatum, endeDatum, enabled);
-  const uuiService = useUuiService(),
-    notificationStoreActions = useNotificationStoreActions();
-  return useQuery(
-    useValidateUrlaubszeitraumOptions(uuiService, notificationStoreActions, anfangDatum, endeDatum, enabled)
+        handleClickHeute={handleClickHeute}
+        anfangDatum={beginn}
+        endeDatum={ende}
+      />
+      {isKalenderFetching ? (
+        <KalenderGridSkeleton kalenderansicht={kalenderansicht}></KalenderGridSkeleton>
+      ) : (
+        <KalenderGrid
+          kalenderData={kalenderData}
+          kalenderansicht={kalenderansicht}
+          selectedTag={selectedTag}
+          setSelectedTag={setSelectedTag}
+        ></KalenderGrid>
+      )}
+      {kalendertag && <KalenderDetails kalendertag={kalendertag} widget={false} />}
+    </Stack>
   );
 }
+===============================================================================
+
+import { useInputModel, useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import { IcBackArrowS } from '@finanzinformatik/mcd-module-icons';
+import { Button, ButtonBase, Typography, useTheme } from '@mui/material';
+import { Stack } from '@mui/system';
+import { t } from 'i18next';
+import { useState } from 'react';
+import { KalenderNavToggleButton } from '../components/kalender/KalenderNavToggleButton';
+import { KalenderViewGrid } from '../components/kalender/KalenderViewGrid';
+import AntraegeAbwesenheitTabelle from '../components/zeitEreignisse/AntraegeAbwesenheitTabelle';
+import { AuswertungTabelle } from '../components/zeitEreignisse/AuswertungTabelle';
+import ZeitkontoTabelle from '../components/zeitEreignisse/ZeitkontoTabelle';
+import { ThemeConstants } from '../constants/ThemeConstants';
+import { navigateToZeitwirtschaft } from '../utils/bookmarkUtil';
+import dayjs from 'dayjs';
+import { KalenderConstants } from '../constants/KalenderConstants';
+import { ZeitereignissePageModel } from '../models/ZeitereignissePageModel';
+
+type Tables = 'zeitkonto' | 'antraege' | 'auswertung';
+export type ZeitereignisseTabelleProps = {
+  hidden: boolean;
+  anfangDatum: string;
+  endeDatum: string;
+};
+export default function ZeitereignisseView() {
+  const [table, setTable] = useState<Tables>('zeitkonto');
+  const buttons: { id: Tables; title: string }[] = [
+    { id: 'zeitkonto', title: t('zeitkonto') },
+    { id: 'antraege', title: t('antraege') },
+    { id: 'auswertung', title: t('auswertung') },
+  ];
+  const theme = useTheme();
+  const workflowservice = useWorkflowService();
+  const { anfangDatum, endeDatum } = useInputModel<ZeitereignissePageModel>() as ZeitereignissePageModel;
+  let anfangDatumQuery = anfangDatum;
+  let endeDatumQuery = endeDatum;
+  if (!anfangDatum || !endeDatum) {
+    const wocheAnfang = dayjs().day(KalenderConstants.MONTAG).format(KalenderConstants.DATUM_ISO_FORMAT_STRING);
+    const wocheEnde = dayjs().day(KalenderConstants.FREITAG).format(KalenderConstants.DATUM_ISO_FORMAT_STRING);
+    anfangDatumQuery = wocheAnfang;
+    endeDatumQuery = wocheEnde;
+  }
+  return (
+    <>
+      <KalenderViewGrid>
+        <Stack gap={10}>
+          <Stack alignItems="center" direction="row" spacing={2}>
+            <ButtonBase
+              onClick={() => {
+                navigateToZeitwirtschaft(workflowservice);
+              }}
+            >
+              <Stack alignItems="center" direction="row" spacing={2}>
+                <IcBackArrowS />
+                <Typography variant="button01UnderlineLight">{t('zurueckZeitwirtschaft')}</Typography>
+              </Stack>
+            </ButtonBase>
+          </Stack>
+
+          <Stack direction={'row'} justifyContent={'space-between'} alignItems="flex-start">
+            <Stack spacing={2}>
+              <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE02}>{t('zeitereignisseUndAntraege')}</Typography>
+              <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE04}>
+                {anfangDatum} - {endeDatumQuery}
+              </Typography>
+            </Stack>
+            <KalenderNavToggleButton value="Zeitereignisse" />
+          </Stack>
+
+          <Stack alignItems="center" direction="row" spacing={2}>
+            {buttons.map((btn) => (
+              <Button
+                key={btn.id}
+                onClick={() => setTable(btn.id)}
+                variant="outlined"
+                size="small"
+                sx={
+                  btn.id === table
+                    ? {
+                        color: 'white',
+                        backgroundColor: theme.palette.secondary.main,
+                      }
+                    : {}
+                }
+              >
+                {btn.title}
+              </Button>
+            ))}
+          </Stack>
+          <ZeitkontoTabelle hidden={table !== 'zeitkonto'} anfangDatum={anfangDatumQuery} endeDatum={endeDatumQuery} />
+          <AntraegeAbwesenheitTabelle
+            hidden={table !== 'antraege'}
+            anfangDatum={anfangDatumQuery}
+            endeDatum={endeDatumQuery}
+          />
+          {table === 'auswertung' && <AuswertungTabelle />}
+        </Stack>
+      </KalenderViewGrid>
+    </>
+  );
+}
+
+========================================================================
+
+import { useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import { IcCancelCircleS, IcCheckCircleS, IcCircleEmptyDotsS, IcNextS } from '@finanzinformatik/mcd-module-icons';
+import { Chip, IconButton, Typography } from '@mui/material';
+import { Stack } from '@mui/system';
+import { t } from 'i18next';
+import { ThemeConstants } from '../../constants/ThemeConstants';
+import { navigateToAntragAbwesenheitAnzeigen } from '../../utils/bookmarkUtil';
+import { AntragAbwesenheitStatusConstants } from './ZeitereignisseConstants';
+import { useReadAntraegeAbwesenheit } from '../../tanstack/antrag/useReadAntraegeStatus';
+import { Dayjs } from 'dayjs';
+import { KalenderConstants } from '../../constants/KalenderConstants';
+import { AntragAbwesenheitRead, AntragAbwesenheitStatus } from '../../apl/pzw/antragUiModule/AntragAbwesenheitRead';
+import { useReadKonfAntraege } from '../../tanstack/konfiguration/useReadKonfAntraege';
+import { KonfAntragskategorieRead } from '../../apl/pzw/konfigUiModule/KonfAntragskategorieRead';
+import { useMemo } from 'react';
+import { idTimestampToDayjs } from '../../utils/DateUtils';
+import { FITabelle, FITabelleProps } from '@finanzinformatik/cpl-module-reactui';
+import { ValueGetterParams } from '@finanzinformatik/cpl-module-reactui/build/esm/components/FITabelle';
+import { GetRowIdParams } from 'ag-grid-community';
+import { ZeitereignisseTabelleProps } from '../../views/ZeitereignisseView';
+import { AntragIcon } from '../antraege/abwesenheit/AntragAbwesenheitItem';
+import { IdTimestamp } from '../../constants/IDTimestampConstants';
+import { IconConstants } from './EreignisIcons';
+
+export type AntraegeRow = {
+  einfuegungDatum: Dayjs;
+  einfuegungTimestamp: IdTimestamp;
+  typ: string;
+  anfangTs: IdTimestamp;
+  endeTs: IdTimestamp;
+  anzahlTage?: number;
+  zeitraum: string;
+  status: AntragAbwesenheitStatus;
+  antragSchluessel: string;
+  antragGruppeId: string;
+  mitarbeiterKommentar: string;
+  fuehrungskraftKommentar: string;
+  isGanztaegig: boolean;
+  iconId: number;
+  antragBezeichnung: string;
+  absVgngPrzId: IdTimestamp;
+  isStornierung: boolean;
+};
+export function parseReadAntraegeAbwesenheitToAntraegeTabelleRow(
+  data: AntragAbwesenheitRead[],
+  schluesselPropertiesMap: SchluesselPropertiesMap
+): AntraegeRow[] {
+  const { DATUM_FORMAT_STRING, UHRZEIT_FORMAT_STRING } = KalenderConstants;
+  return data
+    .map(
+      ({
+        einfuegungDatum,
+        antragsSchluessel,
+        timestampVon,
+        timestampBis,
+        isGanztaegig,
+        anzahlTage,
+        antragStatus,
+        mitarbeiterKommentar,
+        fuehrungskraftKommentar,
+        absVgngPrzId,
+        isStorniert,
+      }) => {
+        const schluesselProperties = schluesselPropertiesMap[antragsSchluessel];
+        const dayjsBeginn = idTimestampToDayjs(timestampVon);
+        const dayjsEnde = idTimestampToDayjs(timestampBis);
+        if (schluesselProperties !== undefined) {
+          return {
+            einfuegungDatum: idTimestampToDayjs(einfuegungDatum),
+            einfuegungTimestamp: einfuegungDatum,
+            typ: isStorniert
+              ? schluesselProperties.antragBezeichnung + ' - ' + t('Stornierung')
+              : schluesselProperties.antragBezeichnung,
+            anfangTs: timestampVon,
+            endeTs: timestampBis,
+            zeitraum: isGanztaegig
+              ? `${dayjsBeginn.format(DATUM_FORMAT_STRING)} - ${dayjsEnde.format(DATUM_FORMAT_STRING)}`
+              : `${dayjsBeginn.format(DATUM_FORMAT_STRING)} ${dayjsBeginn.format(UHRZEIT_FORMAT_STRING)} - ${dayjsEnde.format(UHRZEIT_FORMAT_STRING)}`,
+            status: antragStatus,
+            antragSchluessel: antragsSchluessel,
+            antragGruppeId: schluesselProperties.gruppeId,
+            iconId: schluesselProperties.iconId,
+            antragBezeichnung: schluesselProperties.antragBezeichnung,
+            anzahlTage,
+            mitarbeiterKommentar,
+            fuehrungskraftKommentar,
+            isGanztaegig,
+            absVgngPrzId,
+            isStornierung: isStorniert,
+          };
+        }
+        return undefined;
+      }
+    )
+    .filter((item) => item !== undefined) as AntraegeRow[];
+}
+
+type SchluesselProperties = {
+  iconId: number;
+  kategorie: string;
+  gruppe: string;
+  gruppeId: string;
+  antragBezeichnung: string;
+};
+type SchluesselPropertiesMap = Record<string, SchluesselProperties | undefined>;
+export function getSchluesselToPropertiesMap(konfAntraege: KonfAntragskategorieRead[]): SchluesselPropertiesMap {
+  const mapper: SchluesselPropertiesMap = {};
+  for (const kategorie of konfAntraege) {
+    for (const gruppe of kategorie.antragsgruppen) {
+      for (const schluessel of gruppe.antraege) {
+        mapper[schluessel.schluessel] = {
+          kategorie: kategorie.bezeichnung,
+          gruppe: gruppe.bezeichnung,
+          gruppeId: gruppe.id,
+          iconId: gruppe.iconId,
+          antragBezeichnung: schluessel.bezeichnung,
+        };
+      }
+    }
+  }
+  return mapper;
+}
+
+export default function AntraegeAbwesenheitTabelle({ hidden, anfangDatum, endeDatum }: ZeitereignisseTabelleProps) {
+  const konfAntraege = useReadKonfAntraege().data?.antragskategorien ?? [];
+  const defaultData = useReadAntraegeAbwesenheit(anfangDatum, endeDatum).data ?? [];
+
+  const schluesselPropertiesMap = useMemo(() => getSchluesselToPropertiesMap(konfAntraege), [konfAntraege]);
+  const parsedData = parseReadAntraegeAbwesenheitToAntraegeTabelleRow(defaultData, schluesselPropertiesMap);
+
+  const workflowService = useWorkflowService();
+
+  if (hidden) {
+    return;
+  }
+  return (
+    <AntraegeFITabelle
+      rows={parsedData}
+      onButtonClick={(antrag: AntraegeRow) => {
+        navigateToAntragAbwesenheitAnzeigen(workflowService, {
+          beginn: antrag.anfangTs,
+          ende: antrag.endeTs,
+          erstellungszeitpunkt: antrag.einfuegungTimestamp,
+        });
+      }}
+    />
+  );
+}
+
+==============================================================================
+import { WorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import { App, Bookmarks } from '../constants/ServiceConstants';
+
+export const navigateToZeitwirtschaft = (workflowService: WorkflowService): void => {
+  workflowService.startBookmark(App.PZW, Bookmarks.ZEITWIRTSCHAFT);
+};
+export const navigateToKonfAntraege = (workflowService: WorkflowService): void => {
+  workflowService.startBookmark(App.PZW, Bookmarks.KONF_ANTRAEGE);
+};
+export const navigateToKonfArbeitsorte = (workflowService: WorkflowService): void => {
+  workflowService.startBookmark(App.PZW, Bookmarks.KONF_ARBEITSORTE);
+};
+export const navigateToKalender = (workflowService: WorkflowService): void => {
+  workflowService.startBookmark(App.PZW, Bookmarks.KALENDER);
+};
+export const navigateToZeitereignisse = (
+  workflowService: WorkflowService,
+  params?: { anfangDatum: string; endeDatum: string }
+): void => {
+  workflowService.startBookmark(
+    App.PZW,
+    Bookmarks.ZEITEREIGNISSE + `?anfangDatum=${params?.anfangDatum}&endeDatum=${params?.endeDatum}`
+  );
+};
+export const navigateToAntragAbwesenheitAnlegen = (
+  workflowService: WorkflowService,
+  params: { antragGruppeId: string; antragSchluessel?: string }
+): void => {
+  const { antragGruppeId: antragId, antragSchluessel: schluessel } = params;
+  workflowService.startBookmark(
+    App.PZW,
+    Bookmarks.ANTRAG_ABWESENHEIT_ANLEGEN + `/${antragId}?antragSchluessel=${schluessel ?? ''}`
+  );
+};
+export const navigateToZeitkorrektur = (
+  workflowService: WorkflowService,
+  absVgngPrzId: string,
+  meldungsId: string
+): void => {
+  workflowService.startBookmark(App.PZW, Bookmarks.ZEITKORREKTUR + `/${meldungsId}?absVgngPrzId=${absVgngPrzId}`);
+};
+
+export const navigateToZeitkorrekturOhneMeldung = (workflowService: WorkflowService, datum: string) => {
+  workflowService.startBookmark(App.PZW, Bookmarks.ZEITKORREKTUR_OHNE_MELDUNG + `?korrekturdatum=${datum}`);
+};
+
+export const navigateToFreigabe = (workflowService: WorkflowService): void => {
+  workflowService.startBookmark(App.PZW, Bookmarks.FREIGABE);
+};
+export const navigateToAntragAbwesenheitAnzeigen = (
+  workflowService: WorkflowService,
+  searchParams: { beginn: string; ende: string; erstellungszeitpunkt?: string; bezeichnung?: string; iconNr?: number }
+): void => {
+  const { beginn, ende, erstellungszeitpunkt, bezeichnung, iconNr } = searchParams;
+  workflowService.startBookmark(
+    App.PZW,
+    Bookmarks.ANTRAG_ABWESENHEIT_ANZEIGEN +
+      `?beginn=${beginn}&ende=${ende}&erstellungszeitpunkt=${erstellungszeitpunkt ?? ''}&bezeichnung=${bezeichnung ?? ''}&iconNr=${iconNr ?? ''}`
+  );
+};
+export const navigateToPskMeinBereich = (workflowService: WorkflowService): void => {
+    workflowService.startBookmark(App.PSK, Bookmarks.PSK_MEIN_BEREICH);
+  },
+  navigateToPskKonfiguration = (workflowService: WorkflowService): void => {
+    workflowService.startBookmark(App.PSK, Bookmarks.PSK_KONFIGURATION);
+  };
+
+============================================================================================
+
+package osplus.pzw.workflows.ui;
+
+import osplus.apl.cpl.api.mapi.v2.annotation.UserInterface;
+import osplus.apl.cpl.api.mapi.v2.ui.UI;
+import osplus.pzw.PzwCplConstants;
+import osplus.pzw.workflows.AntragAbwesenheitAnzeigenPage;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+@UserInterface(AntragAbwesenheitAnzeigenPage.class)
+public class AntragAbwesenheitAnzeigenReactUI implements UI.ReactUI {
+
+    @NotNull
+    @Override
+    public String getApp() {
+        return PzwCplConstants.REACT_APP_ZEITWIRTSCHAFT;
+    }
+
+    @Nullable
+    @Override
+    public String getView() {
+        return PzwCplConstants.ReactViews.ANTRAG_ABWESENHEIT_ANZEIGEN;
+    }
+}
+================================================================================
+import { useMemo } from 'react';
+import AntragAbwesenheitSapAnzeigen from '../components/antraege/abwesenheit/AntragAbwesenheitSapAnzeigen';
+import { KalenderViewGrid } from '../components/kalender/KalenderViewGrid';
+import {
+  getSchluesselToPropertiesMap,
+  parseReadAntraegeAbwesenheitToAntraegeTabelleRow,
+} from '../components/zeitEreignisse/AntraegeAbwesenheitTabelle';
+import AntragAbwesenheitAnzeigen from '../components/antraege/abwesenheit/AntragAbwesenheitAnzeigen';
+import { AntragAbwesenheitStatusConstants } from '../components/zeitEreignisse/ZeitereignisseConstants';
+import { KalenderConstants } from '../constants/KalenderConstants';
+import { useReadAntraegeAbwesenheit } from '../tanstack/antrag/useReadAntraegeStatus';
+import { useReadKonfAntraege } from '../tanstack/konfiguration/useReadKonfAntraege';
+import { idTimestampToDayjs } from '../utils/DateUtils';
+import { useInputModel } from '@finanzinformatik/cpl-module-reactlib';
+import { AntragAbwesenheitAnzeigenPagemodel } from '../models/AntragAbwesenheitAnzeigenPagemodel';
+import { Antragsschluessel } from '../components/zeitwirtschaft/ZeitwirtschaftConstants';
+
+export default function AntragAbwesenheitAnzeigenView() {
+  const inputModel = useInputModel<AntragAbwesenheitAnzeigenPagemodel>();
+  if (!inputModel) {
+    return;
+  }
+  const { beginn, ende, erstellungszeitpunkt } = inputModel;
+  const anfangDayjs = idTimestampToDayjs(beginn);
+  const endeDayjs = idTimestampToDayjs(ende);
+  const anfangIso = anfangDayjs.format(KalenderConstants.DATUM_ISO_FORMAT_STRING);
+  const endeIso = endeDayjs.format(KalenderConstants.DATUM_ISO_FORMAT_STRING);
+
+  const { data: antraegeRead, isPending: isAntragPending } = useReadAntraegeAbwesenheit(anfangIso, endeIso);
+  const konfAntraege = useReadKonfAntraege().data?.antragskategorien ?? [];
+  const schluesselPropertiesMap = useMemo(() => getSchluesselToPropertiesMap(konfAntraege), [konfAntraege]);
+  const parsedData = antraegeRead
+    ? parseReadAntraegeAbwesenheitToAntraegeTabelleRow(antraegeRead, schluesselPropertiesMap)
+    : [];
+  const currentAntrag = erstellungszeitpunkt
+    ? parsedData.find(
+        (antrag) =>
+          antrag.anfangTs === beginn && antrag.endeTs === ende && antrag.einfuegungTimestamp === erstellungszeitpunkt
+      )
+    : parsedData.find(
+        (antrag) =>
+          antrag.anfangTs === beginn &&
+          antrag.endeTs === ende &&
+          antrag.status === AntragAbwesenheitStatusConstants.FREIGEGEBEN_SAP
+      );
+  const isUrlaubsantrag = currentAntrag?.antragSchluessel === Antragsschluessel.urlaubsantrag;
+  if (!isUrlaubsantrag && currentAntrag?.anzahlTage) {
+    currentAntrag.anzahlTage = endeDayjs.diff(anfangDayjs, KalenderConstants.TAG);
+  }
+  if (!isAntragPending && !currentAntrag && inputModel.bezeichnung && inputModel.iconNr) {
+    return (
+      <KalenderViewGrid>
+        {
+          <AntragAbwesenheitSapAnzeigen
+            antragBezeichnung={inputModel.bezeichnung}
+            anfangTs={inputModel.beginn}
+            endeTs={inputModel.ende}
+            iconId={inputModel.iconNr}
+          />
+        }
+      </KalenderViewGrid>
+    );
+  }
+  return (
+    <KalenderViewGrid>
+      {currentAntrag && (
+        <AntragAbwesenheitAnzeigen antragData={currentAntrag} dokumente={antraegeRead?.[0].dokumente} />
+      )}
+    </KalenderViewGrid>
+  );
+}
+=================================================================================
+import { IdTimestamp } from '../constants/IDTimestampConstants';
+
+export interface AntragAbwesenheitAnzeigenPagemodel {
+  beginn: IdTimestamp;
+  ende: IdTimestamp;
+  erstellungszeitpunkt: IdTimestamp | undefined;
+  bezeichnung: string | undefined;
+  iconNr: number | undefined;
+}
+
+
+
+
+
 
 
