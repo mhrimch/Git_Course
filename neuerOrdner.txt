@@ -469,4 +469,94 @@ export function AntragAbwesenheitStornierenModal({
     </>
   );
 }
+============================
+export const CenteredDialogActions = styled(DialogActions)({
+  justifyContent: 'center',
+});
+
+interface DialogProps {
+  isOpen: boolean;
+  onClose?: OnCloseFunctionType;
+  title?: string;
+  width: DialogWidthType;
+  children: ReactNode;
+  actions: DialogAction[];
+  showCloseButton?: boolean;
+  contentSx?: SxProps<Theme>; // Überschreiben von default Styles
+  actionsSx?: SxProps<Theme>; // Überschreiben von default Styles
+  fullWidth?: boolean;
+  centerActions?: boolean;
+  fullWidthActions?: boolean;
+}
+
+export function DialogProvider({
+  isOpen,
+  onClose,
+  title,
+  width,
+  children,
+  actions,
+  showCloseButton = true,
+  contentSx,
+  actionsSx,
+  centerActions = false,
+  fullWidthActions = false,
+}: DialogProps) {
+  const ActionsComponent = centerActions ? CenteredDialogActions : DialogActions,
+    finalActionsSx = centerActions && !actionsSx ? { p: 2 } : actionsSx || { p: 2 };
+
+  return (
+    <Dialog open={isOpen} fullWidth={true} maxWidth={width}>
+      {title && (
+        <DialogTitle
+          sx={{
+            fontSize: 24,
+            marginTop: 20,
+            mt: 2.5,
+            textAlign: 'center',
+          }}
+        >
+          {title}
+        </DialogTitle>
+      )}
+      {showCloseButton && (
+        <IconButton
+          sx={{
+            position: 'absolute',
+            right: 8,
+            top: 8,
+          }}
+          onClick={onClose}
+          aria-label="close"
+        >
+          <IcCancelS />
+        </IconButton>
+      )}
+      <DialogContent sx={contentSx}>{children}</DialogContent>
+      {actions.length > 0 && (
+        <ActionsComponent sx={finalActionsSx}>
+          {actions.map((action, index) => {
+            return (
+              <Button
+                variant={action.variant ?? 'contained'}
+                onClick={action.onClick}
+                disabled={action.disabled}
+                type={action.type ?? 'button'}
+                form={action.form}
+                key={index.toString()}
+                startIcon={action.startIcon}
+                endIcon={action.endIcon}
+                fullWidth={fullWidthActions}
+                loading={action.loading}
+                loadingPosition={'start'}
+              >
+                {action.label}
+              </Button>
+            );
+          })}
+        </ActionsComponent>
+      )}
+    </Dialog>
+  );
+}
 
