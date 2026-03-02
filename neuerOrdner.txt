@@ -148,64 +148,62 @@ export default function AntragAbwesenheitAnlegenView() {
               void handleSubmit(onSubmit)(event);
             }}
           >
-            <fieldset disabled={isSubmitting} style={{ border: 'none', padding: 0 }}>
-              <Grid container spacing={2} margin={2}>
-                {antragsGruppe?.antraege.length !== 1 && (
-                  <Grid size={12}>
-                    <Select
-                      fullWidth
-                      label="Antragsart"
-                      value={currentAntragSchluessel.schluessel}
-                      onChange={(event) =>
-                        setCurrentAntragSchluessel(
-                          antragsGruppe?.antraege.find((schluessel) => schluessel.schluessel === event.target.value)
-                        )
-                      }
-                    >
-                      {antragsGruppe?.antraege.map((schluessel) => (
-                        <MenuItem key={schluessel.schluessel} value={schluessel.schluessel}>
-                          {schluessel.bezeichnung}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </Grid>
-                )}
-                {Array.from({ length: antragsAnzahl }, (v, i) => i).map((count) => (
-                  <ConfigurableDateTimeField
-                    key={count}
-                    antragSchluessel={currentAntragSchluessel}
-                    count={count}
-                    isUrlaubAntrag={isUrlaubAntrag}
-                  />
-                ))}
-                {isUrlaubAntrag && (
-                  <Button onClick={() => setAntragsAnzahl((anzahl) => anzahl + 1)}>{t('WeiterenUrlaub')}</Button>
-                )}
-                {antraegeErrors.map(
-                  (antragError) =>
-                    antragError && <InfoGridItem key={antragError} severity="error" label={antragError} />
-                )}
-                {verfuegbareUrlaubstage.map((it) => (
-                  <InfoGridItem
-                    key={it.jahr}
-                    label={t('verfuegbareUrlaubstage') + ` ${it.jahr}: ` + it.verfuegbareUrlaubstage.toString()}
-                  />
-                ))}
-                <AntraegeTabelle />
-                <TextboxGridItem name={'kommentar'} label={'Kommentar'} required={isKommentarRequired} />
-                {currentAntragSchluessel.isDocumentUpload && (
-                  <DokumentTabelle dokumente={dokumente} setDokumente={setDokumente} readOnly={false} />
-                )}
-              </Grid>
-            </fieldset>
+            <Grid container spacing={2} margin={2}>
+              {antragsGruppe?.antraege.length !== 1 && (
+                <Grid size={12}>
+                  <Select
+                    fullWidth
+                    label="Antragsart"
+                    value={currentAntragSchluessel.schluessel}
+                    onChange={(event) =>
+                      setCurrentAntragSchluessel(
+                        antragsGruppe?.antraege.find((schluessel) => schluessel.schluessel === event.target.value)
+                      )
+                    }
+                  >
+                    {antragsGruppe?.antraege.map((schluessel) => (
+                      <MenuItem key={schluessel.schluessel} value={schluessel.schluessel}>
+                        {schluessel.bezeichnung}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </Grid>
+              )}
+              {Array.from({ length: antragsAnzahl }, (v, i) => i).map((count) => (
+                <ConfigurableDateTimeField
+                  key={count}
+                  antragSchluessel={currentAntragSchluessel}
+                  count={count}
+                  isUrlaubAntrag={isUrlaubAntrag}
+                />
+              ))}
+              {isUrlaubAntrag && (
+                <Button onClick={() => setAntragsAnzahl((anzahl) => anzahl + 1)}>{t('WeiterenUrlaub')}</Button>
+              )}
+              {antraegeErrors.map(
+                (antragError) => antragError && <InfoGridItem key={antragError} severity="error" label={antragError} />
+              )}
+              {verfuegbareUrlaubstage.map((it) => (
+                <InfoGridItem
+                  key={it.jahr}
+                  label={t('verfuegbareUrlaubstage') + ` ${it.jahr}: ` + it.verfuegbareUrlaubstage.toString()}
+                />
+              ))}
+              <AntraegeTabelle />
+              <TextboxGridItem name={'kommentar'} label={'Kommentar'} required={isKommentarRequired} />
+              {currentAntragSchluessel.isDocumentUpload && (
+                <DokumentTabelle dokumente={dokumente} setDokumente={setDokumente} readOnly={false} />
+              )}
+            </Grid>
             <Grid container spacing={2} justifyContent="flex-end">
-              <Button variant="outlined" type="reset" onClick={() => reset()}>
+              <Button variant="outlined" type="reset" onClick={() => reset()} disabled={isSubmitting}>
                 {t('verwerfen')}
               </Button>
+
               <Button
                 variant="contained"
                 type="submit"
-                disabled={isSubmitting || !isValid || antraegeErrors.filter((error) => error).length > 0}
+                disabled={isSubmitting || !isValid || antraegeErrors.some(Boolean)}
                 endIcon={isSubmitting ? <CircularProgress size={20} /> : null}
               >
                 {isSubmitting ? t('antragGesendet') : t('antragAbsenden')}
@@ -277,4 +275,3 @@ function AbwesenheitsantragLoadingView() {
     </AbwesenheitsantragViewWrapper>
   );
 }
-
