@@ -713,8 +713,210 @@ public class AntragAbwesenheitAnzeigenPage implements Page<AntragAbwesenheitAnze
         return iconNr;
     }
 }
+====================================================================================================
 
 
+import { useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import { Button, Typography } from '@mui/material';
+import { t } from 'i18next';
+import { useState } from 'react';
+import { AntragAbwesenheitStatus } from '../../../apl/pzw/antragUiModule/AntragAbwesenheitRead';
+import {
+  AntragAbwesenheitConstants,
+  AntragAbwesenheitStatusUpdateConstants,
+} from '../../../constants/AntragAbwesenheitConstants';
+import { IdTimestamp } from '../../../constants/IDTimestampConstants';
+import { useAntragAbwesenheitStatusUpdate } from '../../../tanstack/antrag/useAntragAbwesenheitStatusUpdate';
+import { useCreateAntragAbwesenheit } from '../../../tanstack/antrag/useCreateAntragAbwesenheit';
+import { navigateToKalender } from '../../../utils/bookmarkUtil';
+import { AntragAbwesenheitStatusConstants } from '../../zeitEreignisse/ZeitereignisseConstants';
+import { DialogProvider } from '@personalsysteme/dialog-provider';
 
+type StornierenButtonProps = {
+  antragSchluessel: string;
+  anfangTs: IdTimestamp;
+  endeTs: IdTimestamp;
+  isGanztaegig: boolean;
+  absPrzId: string;
+  antragStatus: AntragAbwesenheitStatus;
+  einfuegungTimestamp: IdTimestamp;
+  anzahlTage?: number;
+};
+
+export function AntragAbwesenheitStornierenModal({
+  anfangTs,
+  endeTs,
+  antragStatus,
+  antragSchluessel,
+  isGanztaegig,
+  einfuegungTimestamp,
+  absPrzId,
+  anzahlTage,
+}: StornierenButtonProps) {
+  const [isModalOpen, setModalOpen] = useState(false);
+  const isStornierbar =
+    antragStatus !== AntragAbwesenheitStatusConstants.ABGELEHNT &&
+    antragStatus !== AntragAbwesenheitStatusConstants.STORNIERT;
+
+  const workflowService = useWorkflowService();
+  const { mutateAsync: createAntrag, isPending: isCreatePending } = useCreateAntragAbwesenheit();
+  const { mutateAsync: updateAntrag, isPending: isUpdatePending } = useAntragAbwesenheitStatusUpdate();
+  const isLoading = isCreatePending || isUpdatePending;
+
+  function handleStornieren() {
+    if (antragStatus === AntragAbwesenheitStatusConstants.FREIGEGEBEN_SAP) {
+      createAntrag({
+        anfangTimestamp: anfangTs,
+        endeTimestamp: endeTs,
+        abwesenheitsgrundId: antragSchluessel,
+        abwesenheitszyklus: isGanztaegig
+          ? AntragAbwesenheitConstants.Abwesenheitszyklus.GANZTAEGIG
+          : AntragAbwesenheitConstants.Abwesenheitszyklus.HALBTAGS,
+        stornierungskennzeichen: 'J',
+        dokumente: [],
+      }).then(() => {
+        navigateToKalender(workflowService);
+      });
+    }
+    if (
+      antragStatus === AntragAbwesenheitStatusConstants.FREIGEGEBEN ||
+      antragStatus === AntragAbwesenheitStatusConstants.IN_GENEHMIGUNG
+    ) {
+      updateAntrag({
+        antragArt: AntragAbwesenheitStatusUpdateConstants.Antragsarten.ABWESENHEITEN,
+        antragEinfuegungTimestamp: einfuegungTimestamp,
+        antragStatus: AntragAbwesenheitStatusUpdateConstants.AntragStatus.Storniert.WERT,
+        nutzerIstFuehrungskraft: false,
+      }).then(() => {
+        setModalOpen(false);
+      });
+    }
+  }
+
+  const dialogActions: React.ComponentProps<typeof DialogProvider>['actions'] = [
+    {
+      variant: 'outlined',
+      label: t('Abbrechen'),
+      onClick: () => setModalOpen(false),
+      disabled: isLoading,
+    },
+    {
+      variant: 'contained',
+      label: t('Stornieren'),
+      onClick: handleStornieren,
+      disabled: !isStornierbar || isLoading,
+    },
+  ];
+
+  return (
+    <>
+      <Button variant="outlined" color="primary" onClick={() => setModalOpen(true)}>
+        {t('Stornieren')}
+      </Button>
+      <DialogProvider isOpen={isModalOpen} width="lg" actions={dialogActions} title={t('WirklichStornierenTitel')}>
+        <Typography variant="multiline01">
+          {isStornierbar ? t('WirklichStornierenBeschreibung') : t('StornierteAntragStornieren')}
+        </Typography>
+      </DialogProvider>
+    </>
+  );
+}
+
+==========================================================================================================
+import { IcCancelS } from '@finanzinformatik/mcd-module-icons';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, styled } from '@mui/material';
+import { SxProps, Theme } from '@mui/system';
+import { ReactNode } from 'react';
+import { DialogAction, DialogWidthType, OnCloseFunctionType } from './dialogTypes';
+
+export const CenteredDialogActions = styled(DialogActions)({
+  justifyContent: 'center',
+});
+
+interface DialogProps {
+  isOpen: boolean;
+  onClose?: OnCloseFunctionType;
+  title?: string;
+  width: DialogWidthType;
+  children: ReactNode;
+  actions: DialogAction[];
+  showCloseButton?: boolean;
+  contentSx?: SxProps<Theme>; // Überschreiben von default Styles
+  actionsSx?: SxProps<Theme>; // Überschreiben von default Styles
+  fullWidth?: boolean;
+  centerActions?: boolean;
+  fullWidthActions?: boolean;
+}
+
+export function DialogProvider({
+  isOpen,
+  onClose,
+  title,
+  width,
+  children,
+  actions,
+  showCloseButton = true,
+  contentSx,
+  actionsSx,
+  centerActions = false,
+  fullWidthActions = false,
+}: DialogProps) {
+  const ActionsComponent = centerActions ? CenteredDialogActions : DialogActions,
+    finalActionsSx = centerActions && !actionsSx ? { p: 2 } : actionsSx || { p: 2 };
+
+  return (
+    <Dialog open={isOpen} fullWidth={true} maxWidth={width}>
+      {title && (
+        <DialogTitle
+          sx={{
+            fontSize: 24,
+            marginTop: 20,
+            mt: 2.5,
+            textAlign: 'center',
+          }}
+        >
+          {title}
+        </DialogTitle>
+      )}
+      {showCloseButton && (
+        <IconButton
+          sx={{
+            position: 'absolute',
+            right: 8,
+            top: 8,
+          }}
+          onClick={onClose}
+          aria-label="close"
+        >
+          <IcCancelS />
+        </IconButton>
+      )}
+      <DialogContent sx={contentSx}>{children}</DialogContent>
+      {actions.length > 0 && (
+        <ActionsComponent sx={finalActionsSx}>
+          {actions.map((action, index) => {
+            return (
+              <Button
+                variant={action.variant ?? 'contained'}
+                onClick={action.onClick}
+                disabled={action.disabled}
+                type={action.type ?? 'button'}
+                form={action.form}
+                key={index.toString()}
+                startIcon={action.startIcon}
+                endIcon={action.endIcon}
+                fullWidth={fullWidthActions}
+                loading={action.loading}
+                loadingPosition={'start'}
+              >
+                {action.label}
+              </Button>
+            );
+          })}
+        </ActionsComponent>
+      )}
+    </Dialog>
+  );
+}
 
 
