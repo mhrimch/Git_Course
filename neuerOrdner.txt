@@ -1,1 +1,280 @@
+import { useInputModel, useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import { IcBackArrowS } from '@finanzinformatik/mcd-module-icons';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Button,
+  ButtonBase,
+  CircularProgress,
+  Grid,
+  MenuItem,
+  Select,
+  Skeleton,
+  Stack,
+  Typography,
+} from '@mui/material';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+import { t } from 'i18next';
+import { PropsWithChildren, useEffect, useState } from 'react';
+import { FormProvider, useForm, useFormContext } from 'react-hook-form';
+import z from 'zod';
+import { InfoGridItem, TextboxGridItem } from '../components/antraege/abwesenheit/AntragFormComponents';
+import {
+  antragFormDataToAntragWriteMapper,
+  deriveAntragSchema,
+  getFormSchema,
+} from '../components/antraege/AntragUtils';
+import { useCreateAntragAbwesenheit } from '../tanstack/antrag/useCreateAntragAbwesenheit';
+import { useReadKonfAntraege } from '../tanstack/konfiguration/useReadKonfAntraege';
+import { navigateToZeitwirtschaft } from '../utils/bookmarkUtil';
+import { useReadBenutzerUrlaub } from '../tanstack/benutzer/useReadBenutzerUrlaub';
+import { ConfigurableDateTimeField } from '../components/antraege/abwesenheit/ConfigurableDateTimeField';
+import { KonfAntragRead } from '../apl/pzw/konfigUiModule/KonfAntragRead';
+import { useQueryClient } from '@tanstack/react-query';
+import { BenutzerKeys } from '../tanstack/benutzer/Benutzer.keys';
+import { AntragAbwesenheitAnlegenPageModel } from '../models/AntragAbwesenheitAnlegenPageModel';
+import AntraegeAbwesenheitTabelle from '../components/zeitEreignisse/AntraegeAbwesenheitTabelle';
+import { DokumentTabelle } from '../components/dokumente/DokumentTabelle';
+import { DokumentRead } from '../apl/pzw/dokumenteUiModule/DokumentRead';
+
+export default function AntragAbwesenheitAnlegenView() {
+  const [antragsAnzahl, setAntragsAnzahl] = useState(1);
+  const [currentAntragSchluessel, setCurrentAntragSchluessel] = useState<undefined | KonfAntragRead>();
+  const [isSubmitting, setSubmitting] = useState(false);
+  const [dokumente, setDokumente] = useState<DokumentRead[]>([]);
+  const [antragSchemaType, setAntragSchemaType] = useState<ReturnType<typeof deriveAntragSchema>>('mehrtaegig');
+
+  const workflowService = useWorkflowService();
+  const createAntrag = useCreateAntragAbwesenheit();
+  const queryClient = useQueryClient();
+
+  const isKommentarRequired = (currentAntragSchluessel?.isFreigabe && currentAntragSchluessel.isKommentar) ?? false;
+  const formSchema = isKommentarRequired
+    ? getFormSchema(antragSchemaType).required({ kommentar: true })
+    : getFormSchema(antragSchemaType);
+
+  const formMethods = useForm<z.input<typeof formSchema>, unknown, z.output<typeof formSchema>>({
+    defaultValues: {
+      toggleGanztaegig: false,
+      antraege: [{ uhrzeitAnfang: '', uhrzeitEnde: '', datum: '', datumAnfang: '', datumEnde: '' }],
+    },
+    mode: 'all',
+    resolver: zodResolver(formSchema),
+  });
+  const {
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors, isValid },
+  } = formMethods;
+
+  const antraegeErrors = errors.antraege?.map ? errors.antraege.map((err) => err?.message) : [errors.antraege?.message];
+  const toggleGanztaegig = watch('toggleGanztaegig');
+
+  const konfAntraege = useReadKonfAntraege().data?.antragskategorien ?? [];
+  const pageInputModel = useInputModel<AntragAbwesenheitAnlegenPageModel>();
+  const antragsGruppeId = pageInputModel?.antragGruppeId as string;
+  const antragsSchluesselIdFromURL = pageInputModel?.antragSchluessel ?? null;
+  const antragsGruppe = konfAntraege
+    .flatMap((kategorie) => {
+      return kategorie.antragsgruppen;
+    })
+    .find((gruppe) => gruppe.id === antragsGruppeId);
+
+  const isUrlaubAntrag = parseInt(antragsGruppeId, 10) === 1;
+  const verfuegbareUrlaubstage = isUrlaubAntrag ? (useReadBenutzerUrlaub().data?.kalenderjahre ?? []) : [];
+
+  useEffect(() => {
+    if (!currentAntragSchluessel) {
+      return;
+    }
+    const antragSchema = deriveAntragSchema(currentAntragSchluessel, toggleGanztaegig);
+    setAntragSchemaType(antragSchema);
+  }, [toggleGanztaegig, currentAntragSchluessel]);
+
+  useEffect(() => {
+    if (!currentAntragSchluessel) {
+      if (antragsGruppe) {
+        if (antragsSchluesselIdFromURL) {
+          setCurrentAntragSchluessel(antragsGruppe.antraege.find((s) => s.schluessel === antragsSchluesselIdFromURL));
+        }
+        if (!antragsSchluesselIdFromURL) {
+          setCurrentAntragSchluessel(antragsGruppe.antraege[0]);
+        }
+      }
+    }
+  }, [antragsGruppe]);
+
+  if (!currentAntragSchluessel) {
+    return <AbwesenheitsantragLoadingView />;
+  }
+
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    setSubmitting(true);
+    const antragWriteList = antragFormDataToAntragWriteMapper(
+      data,
+      antragSchemaType,
+      currentAntragSchluessel.schluessel,
+      dokumente
+    );
+    const promises = antragWriteList.map(async (antragWrite) => createAntrag.mutateAsync(antragWrite));
+    const res = await Promise.allSettled(promises);
+    await queryClient.invalidateQueries({ queryKey: BenutzerKeys.urlaub });
+    const succesfullPromises = res.filter((promise) => promise.status === 'fulfilled');
+    if (succesfullPromises.length === res.length) {
+      navigateToZeitwirtschaft(workflowService);
+    }
+  };
+
+  return (
+    <AbwesenheitsantragViewWrapper>
+      <Typography variant="headline02" margin={5}>
+        {antragsGruppe?.bezeichnung}
+      </Typography>
+      {/*
+       * @SI:REVIEWED: (hoch 602) Nutzung des Spread-Operators in React
+       * LFNR=2 SIQAID=602
+       * Pruefer: David Mueller, 16.01.2026 12:20
+       *
+       * Nutzung des Spread-Operators in React
+       * Begründung der Einplanung: Nutzung von Spread-Operator wird bewusst genutzt und bietet keine Möglichkeit externen Code auszuführen.
+       */}
+      {/* eslint-disable-next-line @finanzinformatik/fiqa-eslint/spread-operator-in-react_602 */}
+      <FormProvider {...formMethods}>
+        <LocalizationProvider adapterLocale="de" dateAdapter={AdapterDayjs}>
+          <form
+            onSubmit={(event) => {
+              void handleSubmit(onSubmit)(event);
+            }}
+          >
+            <fieldset disabled={isSubmitting} style={{ border: 'none', padding: 0 }}>
+              <Grid container spacing={2} margin={2}>
+                {antragsGruppe?.antraege.length !== 1 && (
+                  <Grid size={12}>
+                    <Select
+                      fullWidth
+                      label="Antragsart"
+                      value={currentAntragSchluessel.schluessel}
+                      onChange={(event) =>
+                        setCurrentAntragSchluessel(
+                          antragsGruppe?.antraege.find((schluessel) => schluessel.schluessel === event.target.value)
+                        )
+                      }
+                    >
+                      {antragsGruppe?.antraege.map((schluessel) => (
+                        <MenuItem key={schluessel.schluessel} value={schluessel.schluessel}>
+                          {schluessel.bezeichnung}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </Grid>
+                )}
+                {Array.from({ length: antragsAnzahl }, (v, i) => i).map((count) => (
+                  <ConfigurableDateTimeField
+                    key={count}
+                    antragSchluessel={currentAntragSchluessel}
+                    count={count}
+                    isUrlaubAntrag={isUrlaubAntrag}
+                  />
+                ))}
+                {isUrlaubAntrag && (
+                  <Button onClick={() => setAntragsAnzahl((anzahl) => anzahl + 1)}>{t('WeiterenUrlaub')}</Button>
+                )}
+                {antraegeErrors.map(
+                  (antragError) =>
+                    antragError && <InfoGridItem key={antragError} severity="error" label={antragError} />
+                )}
+                {verfuegbareUrlaubstage.map((it) => (
+                  <InfoGridItem
+                    key={it.jahr}
+                    label={t('verfuegbareUrlaubstage') + ` ${it.jahr}: ` + it.verfuegbareUrlaubstage.toString()}
+                  />
+                ))}
+                <AntraegeTabelle />
+                <TextboxGridItem name={'kommentar'} label={'Kommentar'} required={isKommentarRequired} />
+                {currentAntragSchluessel.isDocumentUpload && (
+                  <DokumentTabelle dokumente={dokumente} setDokumente={setDokumente} readOnly={false} />
+                )}
+              </Grid>
+              <Grid container spacing={2} justifyContent="flex-end">
+                <Button variant="outlined" type="reset" onClick={() => reset()}>
+                  {t('verwerfen')}
+                </Button>
+                <Button
+                  variant="contained"
+                  type="submit"
+                  disabled={isSubmitting || !isValid || antraegeErrors.filter((error) => error).length > 0}
+                  endIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+                >
+                  {isSubmitting ? t('antragGesendet') : t('antragAbsenden')}
+                </Button>
+              </Grid>
+            </fieldset>
+          </form>
+        </LocalizationProvider>
+      </FormProvider>
+    </AbwesenheitsantragViewWrapper>
+  );
+}
+
+function AbwesenheitsantragViewWrapper({ children }: PropsWithChildren) {
+  const workflowService = useWorkflowService();
+  return (
+    <Grid container spacing={2}>
+      <Grid size={12}>
+        <ButtonBase
+          onClick={() => {
+            navigateToZeitwirtschaft(workflowService);
+          }}
+        >
+          <Stack alignItems="center" direction="row" spacing={2}>
+            <IcBackArrowS />
+            <Typography variant="button01UnderlineLight">{t('zurueck')}</Typography>
+          </Stack>
+        </ButtonBase>
+        {children}
+      </Grid>
+    </Grid>
+  );
+}
+
+function AntraegeTabelle() {
+  const context = useFormContext();
+  const {
+    formState: { errors },
+  } = context;
+  if (errors.antraege) {
+    return null;
+  }
+  const formAntraegeData = context.getValues(['antraege'])[0] as {
+    datum?: string;
+    datumAnfang?: string;
+    datumEnde?: string;
+  }[];
+  const datum = formAntraegeData[0].datum;
+  if (datum) {
+    return <AntraegeAbwesenheitTabelle hidden={false} anfangDatum={datum} endeDatum={datum} />;
+  }
+  if (formAntraegeData[0].datumAnfang && formAntraegeData[0].datumEnde) {
+    const allDates = formAntraegeData.flatMap((antrag) => [antrag.datumAnfang, antrag.datumEnde]);
+    const sortedAllDates = (allDates.filter((date) => date !== undefined) as string[]).sort((a, b) => {
+      return dayjs(a).unix() - dayjs(b).unix();
+    });
+    return (
+      <AntraegeAbwesenheitTabelle
+        hidden={false}
+        anfangDatum={sortedAllDates[0]}
+        endeDatum={sortedAllDates[sortedAllDates.length - 1]}
+      />
+    );
+  }
+}
+function AbwesenheitsantragLoadingView() {
+  return (
+    <AbwesenheitsantragViewWrapper>
+      <Skeleton variant="rounded" animation="wave" width="100%" height={screen.height * 0.7} />
+    </AbwesenheitsantragViewWrapper>
+  );
+}
 
