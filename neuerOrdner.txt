@@ -197,20 +197,20 @@ export default function AntragAbwesenheitAnlegenView() {
                   <DokumentTabelle dokumente={dokumente} setDokumente={setDokumente} readOnly={false} />
                 )}
               </Grid>
-              <Grid container spacing={2} justifyContent="flex-end">
-                <Button variant="outlined" type="reset" onClick={() => reset()}>
-                  {t('verwerfen')}
-                </Button>
-                <Button
-                  variant="contained"
-                  type="submit"
-                  disabled={isSubmitting || !isValid || antraegeErrors.filter((error) => error).length > 0}
-                  endIcon={isSubmitting ? <CircularProgress size={20} /> : null}
-                >
-                  {isSubmitting ? t('antragGesendet') : t('antragAbsenden')}
-                </Button>
-              </Grid>
             </fieldset>
+            <Grid container spacing={2} justifyContent="flex-end">
+              <Button variant="outlined" type="reset" onClick={() => reset()}>
+                {t('verwerfen')}
+              </Button>
+              <Button
+                variant="contained"
+                type="submit"
+                disabled={isSubmitting || !isValid || antraegeErrors.filter((error) => error).length > 0}
+                endIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+              >
+                {isSubmitting ? t('antragGesendet') : t('antragAbsenden')}
+              </Button>
+            </Grid>
           </form>
         </LocalizationProvider>
       </FormProvider>
