@@ -1,562 +1,209 @@
-import { useInputModel, useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
-import { IcBackArrowS } from '@finanzinformatik/mcd-module-icons';
-import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Button,
-  ButtonBase,
-  CircularProgress,
-  Grid,
-  MenuItem,
-  Select,
-  Skeleton,
-  Stack,
-  Typography,
-} from '@mui/material';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import dayjs from 'dayjs';
-import { t } from 'i18next';
-import { PropsWithChildren, useEffect, useState } from 'react';
-import { FormProvider, useForm, useFormContext } from 'react-hook-form';
-import z from 'zod';
-import { InfoGridItem, TextboxGridItem } from '../components/antraege/abwesenheit/AntragFormComponents';
-import {
-  antragFormDataToAntragWriteMapper,
-  deriveAntragSchema,
-  getFormSchema,
-} from '../components/antraege/AntragUtils';
-import { useCreateAntragAbwesenheit } from '../tanstack/antrag/useCreateAntragAbwesenheit';
-import { useReadKonfAntraege } from '../tanstack/konfiguration/useReadKonfAntraege';
-import { navigateToZeitwirtschaft } from '../utils/bookmarkUtil';
-import { useReadBenutzerUrlaub } from '../tanstack/benutzer/useReadBenutzerUrlaub';
-import { ConfigurableDateTimeField } from '../components/antraege/abwesenheit/ConfigurableDateTimeField';
-import { KonfAntragRead } from '../apl/pzw/konfigUiModule/KonfAntragRead';
-import { useQueryClient } from '@tanstack/react-query';
-import { BenutzerKeys } from '../tanstack/benutzer/Benutzer.keys';
-import { AntragAbwesenheitAnlegenPageModel } from '../models/AntragAbwesenheitAnlegenPageModel';
-import AntraegeAbwesenheitTabelle from '../components/zeitEreignisse/AntraegeAbwesenheitTabelle';
-import { DokumentTabelle } from '../components/dokumente/DokumentTabelle';
-import { DokumentRead } from '../apl/pzw/dokumenteUiModule/DokumentRead';
-
-export default function AntragAbwesenheitAnlegenView() {
-  const [antragsAnzahl, setAntragsAnzahl] = useState(1);
-  const [currentAntragSchluessel, setCurrentAntragSchluessel] = useState<undefined | KonfAntragRead>();
-  const [isSubmitting, setSubmitting] = useState(false);
-  const [dokumente, setDokumente] = useState<DokumentRead[]>([]);
-  const [antragSchemaType, setAntragSchemaType] = useState<ReturnType<typeof deriveAntragSchema>>('mehrtaegig');
-
-  const workflowService = useWorkflowService();
-  const createAntrag = useCreateAntragAbwesenheit();
-  const queryClient = useQueryClient();
-
-  const isKommentarRequired = (currentAntragSchluessel?.isFreigabe && currentAntragSchluessel.isKommentar) ?? false;
-  const formSchema = isKommentarRequired
-    ? getFormSchema(antragSchemaType).required({ kommentar: true })
-    : getFormSchema(antragSchemaType);
-
-  const formMethods = useForm<z.input<typeof formSchema>, unknown, z.output<typeof formSchema>>({
-    defaultValues: {
-      toggleGanztaegig: false,
-      antraege: [{ uhrzeitAnfang: '', uhrzeitEnde: '', datum: '', datumAnfang: '', datumEnde: '' }],
-    },
-    mode: 'all',
-    resolver: zodResolver(formSchema),
+ const defaultData = useReadAntraegeAbwesenheit(anfangDatum, endeDatum).data ?? [];
+======================================
+export function readAntraegeAbwesenheit(
+  uuiService: Readonly<UuiServiceClientDef>,
+  notificationStoreActions: NotificationStoreActions,
+  beginn: string,
+  ende: string
+) {
+  return queryOptions({
+    queryKey: AntragKeys.readAntraegeAbwesenheit(beginn, ende),
+    queryFn: async () =>
+      callReadAntraegeAbwesenheit(uuiService, beginn, ende).then(
+        (response: UuiServiceResponse<AntragAbwesenheitRead[]>) => {
+          notificationStoreActions.handleMessages(response.messages as ExtendedUuiServiceMessage[], true);
+          return response.payload;
+        }
+      ),
+    enabled: Boolean(beginn && ende),
+    staleTime: TanstackConstants.LONG_STALE_TIME,
   });
-  const {
-    handleSubmit,
-    reset,
-    watch,
-    formState: { errors, isValid },
-  } = formMethods;
-
-  const antraegeErrors = errors.antraege?.map ? errors.antraege.map((err) => err?.message) : [errors.antraege?.message];
-  const toggleGanztaegig = watch('toggleGanztaegig');
-
-  const konfAntraege = useReadKonfAntraege().data?.antragskategorien ?? [];
-  const pageInputModel = useInputModel<AntragAbwesenheitAnlegenPageModel>();
-  const antragsGruppeId = pageInputModel?.antragGruppeId as string;
-  const antragsSchluesselIdFromURL = pageInputModel?.antragSchluessel ?? null;
-  const antragsGruppe = konfAntraege
-    .flatMap((kategorie) => {
-      return kategorie.antragsgruppen;
-    })
-    .find((gruppe) => gruppe.id === antragsGruppeId);
-
-  const isUrlaubAntrag = parseInt(antragsGruppeId, 10) === 1;
-  const verfuegbareUrlaubstage = isUrlaubAntrag ? (useReadBenutzerUrlaub().data?.kalenderjahre ?? []) : [];
-
-  useEffect(() => {
-    if (!currentAntragSchluessel) {
-      return;
-    }
-    const antragSchema = deriveAntragSchema(currentAntragSchluessel, toggleGanztaegig);
-    setAntragSchemaType(antragSchema);
-  }, [toggleGanztaegig, currentAntragSchluessel]);
-
-  useEffect(() => {
-    if (!currentAntragSchluessel) {
-      if (antragsGruppe) {
-        if (antragsSchluesselIdFromURL) {
-          setCurrentAntragSchluessel(antragsGruppe.antraege.find((s) => s.schluessel === antragsSchluesselIdFromURL));
-        }
-        if (!antragsSchluesselIdFromURL) {
-          setCurrentAntragSchluessel(antragsGruppe.antraege[0]);
-        }
-      }
-    }
-  }, [antragsGruppe]);
-
-  if (!currentAntragSchluessel) {
-    return <AbwesenheitsantragLoadingView />;
-  }
-
-  const onSubmit = async (data: z.infer<typeof formSchema>) => {
-    setSubmitting(true);
-    const antragWriteList = antragFormDataToAntragWriteMapper(
-      data,
-      antragSchemaType,
-      currentAntragSchluessel.schluessel,
-      dokumente
-    );
-    const promises = antragWriteList.map(async (antragWrite) => createAntrag.mutateAsync(antragWrite));
-    const res = await Promise.allSettled(promises);
-    await queryClient.invalidateQueries({ queryKey: BenutzerKeys.urlaub });
-    const succesfullPromises = res.filter((promise) => promise.status === 'fulfilled');
-    if (succesfullPromises.length === res.length) {
-      navigateToZeitwirtschaft(workflowService);
-    }
-  };
-
-  return (
-    <AbwesenheitsantragViewWrapper>
-      <Typography variant="headline02" margin={5}>
-        {antragsGruppe?.bezeichnung}
-      </Typography>
-      {/*
-       * @SI:REVIEWED: (hoch 602) Nutzung des Spread-Operators in React
-       * LFNR=2 SIQAID=602
-       * Pruefer: David Mueller, 16.01.2026 12:20
-       *
-       * Nutzung des Spread-Operators in React
-       * Begründung der Einplanung: Nutzung von Spread-Operator wird bewusst genutzt und bietet keine Möglichkeit externen Code auszuführen.
-       */}
-      {/* eslint-disable-next-line @finanzinformatik/fiqa-eslint/spread-operator-in-react_602 */}
-      <FormProvider {...formMethods}>
-        <LocalizationProvider adapterLocale="de" dateAdapter={AdapterDayjs}>
-          <form
-            onSubmit={(event) => {
-              void handleSubmit(onSubmit)(event);
-            }}
-          >
-            <Grid container spacing={2} margin={2}>
-              {antragsGruppe?.antraege.length !== 1 && (
-                <Grid size={12}>
-                  <Select
-                    fullWidth
-                    label="Antragsart"
-                    value={currentAntragSchluessel.schluessel}
-                    onChange={(event) =>
-                      setCurrentAntragSchluessel(
-                        antragsGruppe?.antraege.find((schluessel) => schluessel.schluessel === event.target.value)
-                      )
-                    }
-                  >
-                    {antragsGruppe?.antraege.map((schluessel) => (
-                      <MenuItem key={schluessel.schluessel} value={schluessel.schluessel}>
-                        {schluessel.bezeichnung}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </Grid>
-              )}
-              {Array.from({ length: antragsAnzahl }, (v, i) => i).map((count) => (
-                <ConfigurableDateTimeField
-                  key={count}
-                  antragSchluessel={currentAntragSchluessel}
-                  count={count}
-                  isUrlaubAntrag={isUrlaubAntrag}
-                />
-              ))}
-              {isUrlaubAntrag && (
-                <Button onClick={() => setAntragsAnzahl((anzahl) => anzahl + 1)}>{t('WeiterenUrlaub')}</Button>
-              )}
-              {antraegeErrors.map(
-                (antragError) => antragError && <InfoGridItem key={antragError} severity="error" label={antragError} />
-              )}
-              {verfuegbareUrlaubstage.map((it) => (
-                <InfoGridItem
-                  key={it.jahr}
-                  label={t('verfuegbareUrlaubstage') + ` ${it.jahr}: ` + it.verfuegbareUrlaubstage.toString()}
-                />
-              ))}
-              <AntraegeTabelle />
-              <TextboxGridItem name={'kommentar'} label={'Kommentar'} required={isKommentarRequired} />
-              {currentAntragSchluessel.isDocumentUpload && (
-                <DokumentTabelle dokumente={dokumente} setDokumente={setDokumente} readOnly={false} />
-              )}
-            </Grid>
-            <Grid container spacing={2} justifyContent="flex-end">
-              <Button variant="outlined" type="reset" onClick={() => reset()} disabled={isSubmitting}>
-                {t('verwerfen')}
-              </Button>
-
-              <Button
-                variant="contained"
-                type="submit"
-                disabled={isSubmitting || !isValid || antraegeErrors.some(Boolean)}
-                endIcon={isSubmitting ? <CircularProgress size={20} /> : null}
-              >
-                {isSubmitting ? t('antragGesendet') : t('antragAbsenden')}
-              </Button>
-            </Grid>
-          </form>
-        </LocalizationProvider>
-      </FormProvider>
-    </AbwesenheitsantragViewWrapper>
-  );
 }
 
-function AbwesenheitsantragViewWrapper({ children }: PropsWithChildren) {
-  const workflowService = useWorkflowService();
-  return (
-    <Grid container spacing={2}>
-      <Grid size={12}>
-        <ButtonBase
-          onClick={() => {
-            navigateToZeitwirtschaft(workflowService);
-          }}
-        >
-          <Stack alignItems="center" direction="row" spacing={2}>
-            <IcBackArrowS />
-            <Typography variant="button01UnderlineLight">{t('zurueck')}</Typography>
-          </Stack>
-        </ButtonBase>
-        {children}
-      </Grid>
-    </Grid>
-  );
+export function useReadAntraegeAbwesenheit(
+  beginn: string,
+  ende: string
+): UseQueryResult<AntragAbwesenheitRead[] | undefined> {
+  const uuiService = useUuiService();
+  const notificationStoreActions = useNotificationStoreActions();
+  return useQuery(readAntraegeAbwesenheit(uuiService, notificationStoreActions, beginn, ende));
 }
-
-function AntraegeTabelle() {
-  const context = useFormContext();
-  const {
-    formState: { errors },
-  } = context;
-  if (errors.antraege) {
-    return null;
-  }
-  const formAntraegeData = context.getValues(['antraege'])[0] as {
-    datum?: string;
-    datumAnfang?: string;
-    datumEnde?: string;
-  }[];
-  const datum = formAntraegeData[0].datum;
-  if (datum) {
-    return <AntraegeAbwesenheitTabelle hidden={false} anfangDatum={datum} endeDatum={datum} />;
-  }
-  if (formAntraegeData[0].datumAnfang && formAntraegeData[0].datumEnde) {
-    const allDates = formAntraegeData.flatMap((antrag) => [antrag.datumAnfang, antrag.datumEnde]);
-    const sortedAllDates = (allDates.filter((date) => date !== undefined) as string[]).sort((a, b) => {
-      return dayjs(a).unix() - dayjs(b).unix();
-    });
-    return (
-      <AntraegeAbwesenheitTabelle
-        hidden={false}
-        anfangDatum={sortedAllDates[0]}
-        endeDatum={sortedAllDates[sortedAllDates.length - 1]}
-      />
-    );
-  }
-}
-function AbwesenheitsantragLoadingView() {
-  return (
-    <AbwesenheitsantragViewWrapper>
-      <Skeleton variant="rounded" animation="wave" width="100%" height={screen.height * 0.7} />
-    </AbwesenheitsantragViewWrapper>
-  );
-}
-
-=============
-  const dialogActions: React.ComponentProps<typeof DialogProvider>['actions'] = [
-    {
-      variant: 'outlined',
-      label: t('Abbrechen'),
-      onClick: () => setModalOpen(false),
-      disabled: isLoading,
-    },
-    {
-      variant: 'contained',
-      label: t('Stornieren'),
-      onClick: handleStornieren,
-      disabled: !isStornierbar || isLoading,
-    },
-  ];
-
-  return (
-    <>
-      <Button
-        variant="outlined"
-        color="primary"
-        color="primary"
-        onClick={() => {
-          if (!isStornierbar) {
-            setSnackbarOpen(true);
-            return;
-          }
-          setModalOpen(true);
-        }}
-      >
-        {t('Stornieren')}
-      </Button>
-      <DialogProvider
-        isOpen={isModalOpen}
-        onClose={() => setModalOpen(false)}
-        width="lg"
-        actions={dialogActions}
-        title={t('WirklichStornierenTitel')}
-      >
-        <Typography variant="multiline01">
-          {isStornierbar ? t('WirklichStornierenBeschreibung') : t('StornierteAntragStornieren')}
-        </Typography>
-      </DialogProvider>
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={5000}
-        onClose={() => setSnackbarOpen(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        sx={{ mt: '80px' }}
-      >
-        <Alert severity="warning" onClose={() => setSnackbarOpen(false)}>
-          {t('StornierteAntragStornieren')}
-        </Alert>
-      </Snackbar>
-    </>
-  );
-}
-
-=======================================
-import { useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
-import { Alert, Button, Snackbar, Typography } from '@mui/material';
-import { t } from 'i18next';
-import { useState } from 'react';
-import { AntragAbwesenheitStatus } from '../../../apl/pzw/antragUiModule/AntragAbwesenheitRead';
-import {
-  AntragAbwesenheitConstants,
-  AntragAbwesenheitStatusUpdateConstants,
-} from '../../../constants/AntragAbwesenheitConstants';
-import { IdTimestamp } from '../../../constants/IDTimestampConstants';
-import { useAntragAbwesenheitStatusUpdate } from '../../../tanstack/antrag/useAntragAbwesenheitStatusUpdate';
-import { useCreateAntragAbwesenheit } from '../../../tanstack/antrag/useCreateAntragAbwesenheit';
-import { navigateToKalender } from '../../../utils/bookmarkUtil';
-import { AntragAbwesenheitStatusConstants } from '../../zeitEreignisse/ZeitereignisseConstants';
-import { DialogProvider } from '@personalsysteme/dialog-provider';
-
-type StornierenButtonProps = {
-  antragSchluessel: string;
-  anfangTs: IdTimestamp;
-  endeTs: IdTimestamp;
-  isGanztaegig: boolean;
-  absPrzId: string;
-  antragStatus: AntragAbwesenheitStatus;
-  einfuegungTimestamp: IdTimestamp;
-  anzahlTage?: number;
+================================================
+export const callReadAntraegeAbwesenheit = async (
+  uuiService: UuiServiceClient,
+  beginn: string,
+  ende: string
+): Promise<UuiServiceResponse<AntragAbwesenheitRead[]>> => {
+  return uuiService.execute<AntragAbwesenheitRead[]>({
+    method: HttpMethod.Get,
+    app: App.PZW,
+    module: Services.AntragUiModule.module,
+    service: Services.AntragUiModule.services.readAntraegeAbwesenheit,
+    params: { beginn, ende },
+  });
 };
+=========================================================
 
-export function AntragAbwesenheitStornierenModal({
-  anfangTs,
-  endeTs,
-  antragStatus,
-  antragSchluessel,
-  isGanztaegig,
-  einfuegungTimestamp,
-  absPrzId,
-  anzahlTage,
-}: StornierenButtonProps) {
-  const [isModalOpen, setModalOpen] = useState(false);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const isStornierbar =
-    antragStatus !== AntragAbwesenheitStatusConstants.ABGELEHNT &&
-    antragStatus !== AntragAbwesenheitStatusConstants.STORNIERT;
-
-  const workflowService = useWorkflowService();
-  const { mutateAsync: createAntrag, isPending: isCreatePending } = useCreateAntragAbwesenheit();
-  const { mutateAsync: updateAntrag, isPending: isUpdatePending } = useAntragAbwesenheitStatusUpdate();
-  const isLoading = isCreatePending || isUpdatePending;
-
-  function handleStornieren() {
-    if (antragStatus === AntragAbwesenheitStatusConstants.FREIGEGEBEN_SAP) {
-      createAntrag({
-        anfangTimestamp: anfangTs,
-        endeTimestamp: endeTs,
-        abwesenheitsgrundId: antragSchluessel,
-        abwesenheitszyklus: isGanztaegig
-          ? AntragAbwesenheitConstants.Abwesenheitszyklus.GANZTAEGIG
-          : AntragAbwesenheitConstants.Abwesenheitszyklus.HALBTAGS,
-        stornierungskennzeichen: 'J',
-        dokumente: [],
-      }).then(() => {
-        navigateToKalender(workflowService);
-      });
-    }
-    if (
-      antragStatus === AntragAbwesenheitStatusConstants.FREIGEGEBEN ||
-      antragStatus === AntragAbwesenheitStatusConstants.IN_GENEHMIGUNG
+   @UiService(value = AntragUiModuleConstants.UI_SERVICE_READ_ANTRAEGE_ABWESENHEIT, method = MethodType.GET, internalOnly = true)
+    @UiServiceReturnType(value = {
+            @ServiceReturnType(statusCode = 200, value = AntragAbwesenheitRead.class, containerType = List.class),
+            @ServiceReturnType(statusCode = 400),
+            @ServiceReturnType(statusCode = 502)
+    })
+    @KursPermission(KursRechtConstants.PE_ZW_MA)
+    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
+    public ServiceResponse<List<AntragAbwesenheitRead>> readAntraegeAbwesenheit(
+            @ServiceParam(value = AntragUiModuleConstants.PARAM_BEGINN) LocalDate beginn,
+            @ServiceParam(value = AntragUiModuleConstants.PARAM_ENDE) LocalDate ende
     ) {
-      updateAntrag({
-        antragArt: AntragAbwesenheitStatusUpdateConstants.Antragsarten.ABWESENHEITEN,
-        antragEinfuegungTimestamp: einfuegungTimestamp,
-        antragStatus: AntragAbwesenheitStatusUpdateConstants.AntragStatus.Storniert.WERT,
-        nutzerIstFuehrungskraft: false,
-      }).then(() => {
-        setModalOpen(false);
-      });
+        try {
+            var res = antragService.readAntraegeAbwesenheit(beginn, ende);
+            messageService.addMessage(MessageType.SUCCESS, MessageCode.OK,
+                    i18nService.getMessage("Antraege.Read.HttpStatus.200"),
+                    MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
+            System.out.println("res --> "+ res);
+            return new ServiceResponse<>(HttpStatus.OK.value(), res);
+        } catch (UiServiceException uiServiceException) {
+            handleException(uiServiceException);
+            return new ServiceResponse<>(Integer.parseInt(uiServiceException.getMessageCode()));
+        }
     }
-  }
-
-  const dialogActions: React.ComponentProps<typeof DialogProvider>['actions'] = [
-    {
-      variant: 'outlined',
-      label: t('Abbrechen'),
-      onClick: () => setModalOpen(false),
-      disabled: isLoading,
-    },
-    {
-      variant: 'contained',
-      label: t('Stornieren'),
-      onClick: handleStornieren,
-      disabled: !isStornierbar || isLoading,
-    },
-  ];
-
-  return (
-    <>
-      <Button
-        variant="outlined"
-        color="primary"
-        color="primary"
-        onClick={() => {
-          if (!isStornierbar) {
-            setSnackbarOpen(true);
-            return;
-          }
-          setModalOpen(true);
-        }}
-      >
-        {t('Stornieren')}
-      </Button>
-      <DialogProvider
-        isOpen={isModalOpen}
-        onClose={() => setModalOpen(false)}
-        width="lg"
-        actions={dialogActions}
-        title={t('WirklichStornierenTitel')}
-      >
-        <Typography variant="multiline01">
-          {isStornierbar ? t('WirklichStornierenBeschreibung') : t('StornierteAntragStornieren')}
-        </Typography>
-      </DialogProvider>
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={5000}
-        onClose={() => setSnackbarOpen(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        sx={{ mt: '80px' }}
-      >
-        <Alert severity="warning" onClose={() => setSnackbarOpen(false)}>
-          {t('StornierteAntragStornieren')}
-        </Alert>
-      </Snackbar>
-    </>
-  );
 }
-============================
-export const CenteredDialogActions = styled(DialogActions)({
-  justifyContent: 'center',
-});
+===================================================================
+import osplus.josp.types.IdTimestamp;
+import osplus.psk.core.model.dokument.DokumentRead;
 
-interface DialogProps {
-  isOpen: boolean;
-  onClose?: OnCloseFunctionType;
-  title?: string;
-  width: DialogWidthType;
-  children: ReactNode;
-  actions: DialogAction[];
-  showCloseButton?: boolean;
-  contentSx?: SxProps<Theme>; // Überschreiben von default Styles
-  actionsSx?: SxProps<Theme>; // Überschreiben von default Styles
-  fullWidth?: boolean;
-  centerActions?: boolean;
-  fullWidthActions?: boolean;
+import java.util.List;
+
+public record AntragAbwesenheitRead(
+        IdTimestamp timestampVon,
+        IdTimestamp timestampBis,
+        Boolean isStorniert,
+        String antragsSchluessel,
+        Integer anzahlTage,
+        Boolean isGanztaegig,
+        String mitarbeiterKommentar,
+        String fuehrungskraftKommentar,
+        IdTimestamp einfuegungDatum,
+        AntragAbwesenheitStatus antragStatus,
+        IdTimestamp absVgngPrzId,
+        IdTimestamp massVgngId,
+        List<DokumentRead> dokumente
+) {
 }
+=================================================================
+  @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
+    public List<AntragAbwesenheitRead> readAntraegeAbwesenheit(
+            LocalDate beginn,
+            LocalDate ende
+    ) throws UiServiceException {
+        try {
+            LocalDateTime localDateTimeAnfang = beginn.atTime(0, 0, 0);
+            LocalDateTime localDateTimeEnde = ende.atTime(23, 59, 59);
+            DateTimeFormatter tsFormatter = DateTimeFormatter.ofPattern((DateFormatConstants.TIMESTAMP_FORMAT), Locale.GERMANY);
 
-export function DialogProvider({
-  isOpen,
-  onClose,
-  title,
-  width,
-  children,
-  actions,
-  showCloseButton = true,
-  contentSx,
-  actionsSx,
-  centerActions = false,
-  fullWidthActions = false,
-}: DialogProps) {
-  const ActionsComponent = centerActions ? CenteredDialogActions : DialogActions,
-    finalActionsSx = centerActions && !actionsSx ? { p: 2 } : actionsSx || { p: 2 };
+            LiesPmgtPzwAntragUeberUserEingabe eingabe = new LiesPmgtPzwAntragUeberUserEingabe();
 
-  return (
-    <Dialog open={isOpen} fullWidth={true} maxWidth={width}>
-      {title && (
-        <DialogTitle
-          sx={{
-            fontSize: 24,
-            marginTop: 20,
-            mt: 2.5,
-            textAlign: 'center',
-          }}
-        >
-          {title}
-        </DialogTitle>
-      )}
-      {showCloseButton && (
-        <IconButton
-          sx={{
-            position: 'absolute',
-            right: 8,
-            top: 8,
-          }}
-          onClick={onClose}
-          aria-label="close"
-        >
-          <IcCancelS />
-        </IconButton>
-      )}
-      <DialogContent sx={contentSx}>{children}</DialogContent>
-      {actions.length > 0 && (
-        <ActionsComponent sx={finalActionsSx}>
-          {actions.map((action, index) => {
-            return (
-              <Button
-                variant={action.variant ?? 'contained'}
-                onClick={action.onClick}
-                disabled={action.disabled}
-                type={action.type ?? 'button'}
-                form={action.form}
-                key={index.toString()}
-                startIcon={action.startIcon}
-                endIcon={action.endIcon}
-                fullWidth={fullWidthActions}
-                loading={action.loading}
-                loadingPosition={'start'}
-              >
-                {action.label}
-              </Button>
-            );
-          })}
-        </ActionsComponent>
-      )}
-    </Dialog>
-  );
+            eingabe.setPctlPersSchl(userService.getPersonalnummer());
+            eingabe.setTsGueltigAb(new IdTimestamp(localDateTimeAnfang.format(tsFormatter)));
+            eingabe.setTsGueltigBis(new IdTimestamp(localDateTimeEnde.format(tsFormatter)));
+            eingabe.setPzwAntrArt(PzwAntraegeConstants.ANTRAGSART_ABWESENHEITEN);
+
+            Optional<PmgtPzwAntragLesenAusgabe> antragLesenAusgabe = antragLesenRepository
+                    .liesPmgtPzwAntragUeberUser(eingabe);
+
+            Optional<PmgtPzwAntragAbwht> antrag = antragLesenAusgabe.flatMap(x -> x.getPmgtPzwAntragMitarbeiter().getPmgtPzwAntragAbwht().stream().findFirst());
+
+            IdTimestamp massVgngId = null;
+            if (antrag.isPresent()) {
+                massVgngId = antrag.get().getMassVgngId();
+            }
+
+            List<DokumentRead> dokumenteListe = new ArrayList<>();
+
+            if (!Objects.equals(massVgngId, null) && !Objects.equals(massVgngId, new IdTimestamp(PzwAntraegeConstants.LOW_TIMESTAMP))) {
+                PmgtPskDkmtDatenLesenAusgabe dokumente = dokumentService.readPmgtDokumentUeberMassVgngId(massVgngId);
+
+                if (dokumente != null && dokumente.getPmgtPskDkmtDaten() != null) {
+                    for (var dkmtDaten : dokumente.getPmgtPskDkmtDaten()) {
+                        var detail = dokumentService.readPmgtDokument(dkmtDaten.getPmgtElekDkmtId());
+
+                        if (detail != null) {
+                            dokumenteListe.add(new DokumentRead(
+                                    detail.dokumentName(),
+                                    detail.undDownloadToken()
+                            ));
+                        }
+                    }
+                }
+            }
+
+            return antragLesenAusgabe
+                    .map(ausgabe -> AntraegeMapper.ospeToantragAbwesenheitRead(ausgabe, dokumenteListe))
+                    .orElse(null);
+
+        } catch (OspeException e) {
+            throw new UiServiceException(MessageType.ERROR, MessageCode.ERROR,
+                    "Antraege.Read.HttpStatus.502",
+                    MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
+        }
+    }
+
+====================================================================
+   @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
+    public Optional<PmgtPzwAntragLesenAusgabe> liesPmgtPzwAntragUeberUser(
+            final LiesPmgtPzwAntragUeberUserEingabe eingabe
+    ) throws OspeException {
+        return readWrapper(eingabe, getService()::liesPmgtPzwAntragUeberUser);
+    }
+===============================================================
+
+@FachobjektServiceDescription(
+    prozessName = "PMGT_PZW_ANTRAG_LESEN"
+)
+public interface IPmgtPzwAntragLesenService extends IFachobjektOoService {
+    FachobjektParameterContainer<LiesPmgtPzwAntragUeberUserEingabe> getNewParameterLiesPmgtPzwAntragUeberUser(LiesPmgtPzwAntragUeberUserEingabe var1);
+
+    FachobjektParameterContainer<LiesPmgtPzwAntragUeberAbsVgngPrzIdEingabe> getNewParameterLiesPmgtPzwAntragUeberAbsVgngPrzId(LiesPmgtPzwAntragUeberAbsVgngPrzIdEingabe var1);
+
+    PmgtPzwAntragLesenAusgabe liesPmgtPzwAntragUeberUser(FachobjektParameterContainer<LiesPmgtPzwAntragUeberUserEingabe> var1) throws FachobjektException;
+
+    PmgtPzwAntragLesenAusgabe liesPmgtPzwAntragUeberAbsVgngPrzId(FachobjektParameterContainer<LiesPmgtPzwAntragUeberAbsVgngPrzIdEingabe> var1) throws FachobjektException;
 }
 
+=================================================================
+Eingabe-Schnittstelle
+LiesPmgtPzwAntragUeberUserEingabe
+Eingabe-Fachobjekt
+
+PCTL_PERS_SCHL		
+TS_GUELTIG_AB
+IdTimestamp	
+TS_GUELTIG_BIS		
+IdTimestamp	
+[PZW_ANTR_ART]
+
+Ausgabe-Schnittstelle
+PmgtPzwAntragAbwht	100	Fachobjekt	
+PZW_ANTR_ZRM_ATS	
+PZW_ANTR_ZRM_ETS
+PZW_ANTR_STRN_KZ
+PZW_ABWT_SCHL
+PZW_ANTR_TAGE_ANZ
+PZW_ANTR_ZYKL_SCHL
+PZW_ANTR_MA_HNWS
+PZW_ANTR_FRGB_HNWS
+PZW_ANTR_STAT		
+ABS_VGNG_PRZ_ID	
+MASS_VGNG_ID
+TS_EINFUEGUNG
+
+=================================
+PmgtPzwAntragZeitKorr	100	Fachobjekt
+PZW_BUCH_TS
+PZW_BUCH_ART
+PZW_ANTR_MA_HNWS
+PZW_ANTR_FRGB_HNWS	
+PZW_BUCH_STAT	
+ABS_VGNG_PRZ_ID
+TS_EINFUEGUNG
