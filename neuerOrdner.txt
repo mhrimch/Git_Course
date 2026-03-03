@@ -229,3 +229,576 @@ PZW_ANTR_FRGB_HNWS
 PZW_BUCH_STAT	
 ABS_VGNG_PRZ_ID
 TS_EINFUEGUNG
+
+
+================================================
+
+
+
+
+PS C:\Projekte\pzw-mkp>
+                        mvn clean install -U
+[INFO] Scanning for projects...
+Downloading from nexus: https://nexus.intern/repository/public/org/apache/maven/wagon/wagon-ssh/maven-metadata.xml
+Downloaded from nexus: https://nexus.intern/repository/public/org/apache/maven/wagon/wagon-ssh/maven-metadata.xml (1.7 kB at 1.6 kB/s)
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO]
+[INFO] pzw-parent                                                         [pom]
+[INFO] pzw-common                                                         [jar]
+[INFO] pzw-apl-api                                                        [jar]
+[INFO] pzw-apl                                                            [jar]
+[INFO] pzw-cpl-api                                                        [jar]
+[INFO] pzw-cpl                                                            [jar]
+[INFO] pzw-cpl-web-zeitwirtschaft                                         [pom]
+[INFO] pzw-cpl-web                                                        [jar]
+[INFO] pzw-cpl-web-components                                             [jar]
+[INFO] pzw-cpl-web-components-zeitwirtschaft-buchen                       [pom]
+[INFO] pzw-runner                                                         [jar]
+[INFO] pzw-local                                                          [jar]
+[INFO]
+[INFO] -----------------------< osplus.pzw:pzw-parent >------------------------
+[INFO] Building pzw-parent 260.0.0-SNAPSHOT                              [1/12]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO]
+[INFO] --- clean:3.4.1:clean (default-clean) @ pzw-parent ---
+[INFO]
+[INFO] --- enforcer:3.5.0:enforce (enforce-no-apl-snapshots-in-release-build) @ pzw-parent ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.dependency.RequireReleaseDeps passed
+[INFO]
+[INFO] --- dependency:3.8.1:properties (default) @ pzw-parent ---
+[INFO]
+[INFO] --- jacoco:0.8.12:prepare-agent (prepare-agent) @ pzw-parent ---
+[INFO] Skipping JaCoCo execution because property jacoco.skip is set.
+[INFO] surefireArgLine set to empty
+[INFO]
+[INFO] --- apl:260.0.0-M4:set-build-properties (set-build-properties) @ pzw-parent ---
+[WARNING] Error injecting: osplus.apl.mojo.AplSetBuildPropertiesMojo
+java.lang.TypeNotPresentException: Type osplus.apl.mojo.AplSetBuildPropertiesMojo not present
+    at org.eclipse.sisu.space.URLClassSpace.loadClass (URLClassSpace.java:149)
+    at org.eclipse.sisu.space.NamedClass.load (NamedClass.java:48)
+    at org.eclipse.sisu.space.AbstractDeferredClass.get (AbstractDeferredClass.java:50)
+    at com.google.inject.internal.ProviderInternalFactory.provision (ProviderInternalFactory.java:86)
+    at com.google.inject.internal.InternalFactoryToInitializableAdapter.provision (InternalFactoryToInitializableAdapter.java:57)
+    at com.google.inject.internal.ProviderInternalFactory$1.call (ProviderInternalFactory.java:67)
+    at com.google.inject.internal.ProvisionListenerStackCallback$Provision.provision (ProvisionListenerStackCallback.java:109)
+    at com.google.inject.internal.ProvisionListenerStackCallback$Provision.provision (ProvisionListenerStackCallback.java:124)
+    at com.google.inject.internal.ProvisionListenerStackCallback.provision (ProvisionListenerStackCallback.java:66)
+    at com.google.inject.internal.ProviderInternalFactory.circularGet (ProviderInternalFactory.java:62)
+    at com.google.inject.internal.InternalFactoryToInitializableAdapter.get (InternalFactoryToInitializableAdapter.java:47)
+    at com.google.inject.internal.InjectorImpl$1.get (InjectorImpl.java:1101)
+    at org.eclipse.sisu.inject.Guice4$2.get (Guice4.java:235)
+    at org.eclipse.sisu.inject.LazyBeanEntry.getValue (LazyBeanEntry.java:83)
+    at org.eclipse.sisu.plexus.LazyPlexusBean.getValue (LazyPlexusBean.java:53)
+    at org.codehaus.plexus.DefaultPlexusContainer.lookup (DefaultPlexusContainer.java:265)
+    at org.codehaus.plexus.DefaultPlexusContainer.lookup (DefaultPlexusContainer.java:257)
+    at org.apache.maven.plugin.internal.DefaultMavenPluginManager.getConfiguredMojo (DefaultMavenPluginManager.java:491)
+    at org.apache.maven.plugin.DefaultBuildPluginManager.executeMojo (DefaultBuildPluginManager.java:114)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2 (MojoExecutor.java:328)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute (MojoExecutor.java:316)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:212)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:174)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.access$000 (MojoExecutor.java:75)
+    at org.apache.maven.lifecycle.internal.MojoExecutor$1.run (MojoExecutor.java:162)
+    at org.apache.maven.plugin.DefaultMojosExecutionStrategy.execute (DefaultMojosExecutionStrategy.java:39)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:159)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:105)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:73)
+    at org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build (SingleThreadedBuilder.java:53)
+    at org.apache.maven.lifecycle.internal.LifecycleStarter.execute (LifecycleStarter.java:118)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:261)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:173)
+    at org.apache.maven.DefaultMaven.execute (DefaultMaven.java:101)
+    at org.apache.maven.cli.MavenCli.execute (MavenCli.java:906)
+    at org.apache.maven.cli.MavenCli.doMain (MavenCli.java:283)
+    at org.apache.maven.cli.MavenCli.main (MavenCli.java:206)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0 (Native Method)
+    at sun.reflect.NativeMethodAccessorImpl.invoke (NativeMethodAccessorImpl.java:62)
+    at sun.reflect.DelegatingMethodAccessorImpl.invoke (DelegatingMethodAccessorImpl.java:43)
+    at java.lang.reflect.Method.invoke (Method.java:498)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced (Launcher.java:255)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launch (Launcher.java:201)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode (Launcher.java:361)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.main (Launcher.java:314)
+Caused by: java.lang.UnsupportedClassVersionError: osplus/apl/mojo/AplSetBuildPropertiesMojo has been compiled by a more recent version of the Java Runtime (class file version 65.0), this version of the Java Runtime only recognizes class file versions up to 52.0
+    at java.lang.ClassLoader.defineClass1 (Native Method)
+    at java.lang.ClassLoader.defineClass (ClassLoader.java:756)
+    at java.security.SecureClassLoader.defineClass (SecureClassLoader.java:142)
+    at java.net.URLClassLoader.defineClass (URLClassLoader.java:473)
+    at java.net.URLClassLoader.access$100 (URLClassLoader.java:74)
+    at java.net.URLClassLoader$1.run (URLClassLoader.java:369)
+    at java.net.URLClassLoader$1.run (URLClassLoader.java:363)
+    at java.security.AccessController.doPrivileged (Native Method)
+    at java.net.URLClassLoader.findClass (URLClassLoader.java:362)
+    at org.codehaus.plexus.classworlds.realm.ClassRealm.findClassInternal (ClassRealm.java:256)
+    at org.codehaus.plexus.classworlds.realm.ClassRealm.loadClassFromSelf (ClassRealm.java:351)
+    at org.codehaus.plexus.classworlds.strategy.SelfFirstStrategy.loadClass (SelfFirstStrategy.java:36)
+    at org.codehaus.plexus.classworlds.realm.ClassRealm.unsynchronizedLoadClass (ClassRealm.java:225)
+    at org.codehaus.plexus.classworlds.realm.ClassRealm.loadClass (ClassRealm.java:210)
+    at org.codehaus.plexus.classworlds.realm.ClassRealm.loadClass (ClassRealm.java:205)
+    at org.eclipse.sisu.space.URLClassSpace.loadClass (URLClassSpace.java:141)
+    at org.eclipse.sisu.space.NamedClass.load (NamedClass.java:48)
+    at org.eclipse.sisu.space.AbstractDeferredClass.get (AbstractDeferredClass.java:50)
+    at com.google.inject.internal.ProviderInternalFactory.provision (ProviderInternalFactory.java:86)
+    at com.google.inject.internal.InternalFactoryToInitializableAdapter.provision (InternalFactoryToInitializableAdapter.java:57)
+    at com.google.inject.internal.ProviderInternalFactory$1.call (ProviderInternalFactory.java:67)
+    at com.google.inject.internal.ProvisionListenerStackCallback$Provision.provision (ProvisionListenerStackCallback.java:109)
+    at com.google.inject.internal.ProvisionListenerStackCallback$Provision.provision (ProvisionListenerStackCallback.java:124)
+    at com.google.inject.internal.ProvisionListenerStackCallback.provision (ProvisionListenerStackCallback.java:66)
+    at com.google.inject.internal.ProviderInternalFactory.circularGet (ProviderInternalFactory.java:62)
+    at com.google.inject.internal.InternalFactoryToInitializableAdapter.get (InternalFactoryToInitializableAdapter.java:47)
+    at com.google.inject.internal.InjectorImpl$1.get (InjectorImpl.java:1101)
+    at org.eclipse.sisu.inject.Guice4$2.get (Guice4.java:235)
+    at org.eclipse.sisu.inject.LazyBeanEntry.getValue (LazyBeanEntry.java:83)
+    at org.eclipse.sisu.plexus.LazyPlexusBean.getValue (LazyPlexusBean.java:53)
+    at org.codehaus.plexus.DefaultPlexusContainer.lookup (DefaultPlexusContainer.java:265)
+    at org.codehaus.plexus.DefaultPlexusContainer.lookup (DefaultPlexusContainer.java:257)
+    at org.apache.maven.plugin.internal.DefaultMavenPluginManager.getConfiguredMojo (DefaultMavenPluginManager.java:491)
+    at org.apache.maven.plugin.DefaultBuildPluginManager.executeMojo (DefaultBuildPluginManager.java:114)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2 (MojoExecutor.java:328)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute (MojoExecutor.java:316)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:212)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:174)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.access$000 (MojoExecutor.java:75)
+    at org.apache.maven.lifecycle.internal.MojoExecutor$1.run (MojoExecutor.java:162)
+    at org.apache.maven.plugin.DefaultMojosExecutionStrategy.execute (DefaultMojosExecutionStrategy.java:39)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:159)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:105)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:73)
+    at org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build (SingleThreadedBuilder.java:53)
+    at org.apache.maven.lifecycle.internal.LifecycleStarter.execute (LifecycleStarter.java:118)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:261)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:173)
+    at org.apache.maven.DefaultMaven.execute (DefaultMaven.java:101)
+    at org.apache.maven.cli.MavenCli.execute (MavenCli.java:906)
+    at org.apache.maven.cli.MavenCli.doMain (MavenCli.java:283)
+    at org.apache.maven.cli.MavenCli.main (MavenCli.java:206)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0 (Native Method)
+    at sun.reflect.NativeMethodAccessorImpl.invoke (NativeMethodAccessorImpl.java:62)
+    at sun.reflect.DelegatingMethodAccessorImpl.invoke (DelegatingMethodAccessorImpl.java:43)
+    at java.lang.reflect.Method.invoke (Method.java:498)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced (Launcher.java:255)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launch (Launcher.java:201)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode (Launcher.java:361)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.main (Launcher.java:314)
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for pzw-parent 260.0.0-SNAPSHOT:
+[INFO]
+[INFO] pzw-parent ......................................... FAILURE [  3.812 s]
+[INFO] pzw-common ......................................... SKIPPED
+[INFO] pzw-apl-api ........................................ SKIPPED
+[INFO] pzw-apl ............................................ SKIPPED
+[INFO] pzw-cpl-api ........................................ SKIPPED
+[INFO] pzw-cpl ............................................ SKIPPED
+[INFO] pzw-cpl-web-zeitwirtschaft ......................... SKIPPED
+[INFO] pzw-cpl-web ........................................ SKIPPED
+[INFO] pzw-cpl-web-components ............................. SKIPPED
+[INFO] pzw-cpl-web-components-zeitwirtschaft-buchen ....... SKIPPED
+[INFO] pzw-runner ......................................... SKIPPED
+[INFO] pzw-local .......................................... SKIPPED
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  6.638 s
+[INFO] Finished at: 2026-03-03T22:04:09+01:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal osplus.apl:apl-maven-plugin:260.0.0-M4:set-build-properties (set-build-properties) on project pzw-parent: Execution set-build-properties of goal osplus.apl:apl-maven-plugin:260.0.0-M4:set-build-properties failed: Unable to load the mojo 'set-build-properties' in the plugin 'osplus.apl:apl-maven-plugin:260.0.0-M4' due to an API incompatibility: org.codehaus.plexus.component.repository.exception.ComponentLookupException: osplus/apl/mojo/AplSetBuildPropertiesMojo has been compiled by a more recent version of the Java Runtime (class file version 65.0), this version of the Java Runtime only recognizes class file versions up to 52.0
+[ERROR] -----------------------------------------------------
+[ERROR] realm =    plugin>osplus.apl:apl-maven-plugin:260.0.0-M4
+[ERROR] strategy = org.codehaus.plexus.classworlds.strategy.SelfFirstStrategy
+[ERROR] urls[0] = file:/C:/Projekte/.m2/repository/osplus/apl/apl-maven-plugin/260.0.0-M4/apl-maven-plugin-260.0.0-M4.jar
+[ERROR] urls[1] = file:/C:/Projekte/.m2/repository/org/openapitools/openapi-generator-maven-plugin/7.2.0/openapi-generator-maven-plugin-7.2.0.jar
+[ERROR] urls[2] = file:/C:/Projekte/.m2/repository/org/sonatype/plexus/plexus-build-api/0.0.7/plexus-build-api-0.0.7.jar
+[ERROR] urls[3] = file:/C:/Projekte/.m2/repository/org/apache/maven/plugin-tools/maven-plugin-annotations/3.13.1/maven-plugin-annotations-3.13.1.jar
+[ERROR] urls[4] = file:/C:/Projekte/.m2/repository/org/openapitools/openapi-generator/7.2.0/openapi-generator-7.2.0.jar
+[ERROR] urls[5] = file:/C:/Projekte/.m2/repository/io/swagger/parser/v3/swagger-parser/2.1.22/swagger-parser-2.1.22.jar
+[ERROR] urls[6] = file:/C:/Projekte/.m2/repository/io/swagger/parser/v3/swagger-parser-v2-converter/2.1.22/swagger-parser-v2-converter-2.1.22.jar
+[ERROR] urls[7] = file:/C:/Projekte/.m2/repository/io/swagger/swagger-core/1.6.14/swagger-core-1.6.14.jar
+[ERROR] urls[8] = file:/C:/Projekte/.m2/repository/jakarta/xml/bind/jakarta.xml.bind-api/4.0.4/jakarta.xml.bind-api-4.0.4.jar
+[ERROR] urls[9] = file:/C:/Projekte/.m2/repository/jakarta/activation/jakarta.activation-api/2.1.0/jakarta.activation-api-2.1.0.jar
+[ERROR] urls[10] = file:/C:/Projekte/.m2/repository/io/swagger/swagger-models/1.6.14/swagger-models-1.6.14.jar
+[ERROR] urls[11] = file:/C:/Projekte/.m2/repository/io/swagger/swagger-annotations/1.6.14/swagger-annotations-1.6.14.jar
+[ERROR] urls[12] = file:/C:/Projekte/.m2/repository/io/swagger/swagger-parser/1.0.70/swagger-parser-1.0.70.jar
+[ERROR] urls[13] = file:/C:/Projekte/.m2/repository/io/swagger/swagger-parser-safe-url-resolver/1.0.70/swagger-parser-safe-url-resolver-1.0.70.jar
+[ERROR] urls[14] = file:/C:/Projekte/.m2/repository/io/swagger/swagger-compat-spec-parser/1.0.70/swagger-compat-spec-parser-1.0.70.jar
+[ERROR] urls[15] = file:/C:/Projekte/.m2/repository/com/github/java-json-tools/json-schema-validator/2.2.14/json-schema-validator-2.2.14.jar
+[ERROR] urls[16] = file:/C:/Projekte/.m2/repository/com/github/java-json-tools/jackson-coreutils-equivalence/1.0/jackson-coreutils-equivalence-1.0.jar
+[ERROR] urls[17] = file:/C:/Projekte/.m2/repository/com/github/java-json-tools/json-schema-core/1.2.14/json-schema-core-1.2.14.jar
+[ERROR] urls[18] = file:/C:/Projekte/.m2/repository/com/github/java-json-tools/uri-template/0.10/uri-template-0.10.jar
+[ERROR] urls[19] = file:/C:/Projekte/.m2/repository/org/mozilla/rhino/1.7.7.2/rhino-1.7.7.2.jar
+[ERROR] urls[20] = file:/C:/Projekte/.m2/repository/com/googlecode/libphonenumber/libphonenumber/8.12.20/libphonenumber-8.12.20.jar
+[ERROR] urls[21] = file:/C:/Projekte/.m2/repository/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar
+[ERROR] urls[22] = file:/C:/Projekte/.m2/repository/com/github/java-json-tools/json-patch/1.13/json-patch-1.13.jar
+[ERROR] urls[23] = file:/C:/Projekte/.m2/repository/com/github/java-json-tools/msg-simple/1.2/msg-simple-1.2.jar
+[ERROR] urls[24] = file:/C:/Projekte/.m2/repository/com/github/java-json-tools/btf/1.3/btf-1.3.jar
+[ERROR] urls[25] = file:/C:/Projekte/.m2/repository/com/github/java-json-tools/jackson-coreutils/2.0/jackson-coreutils-2.0.jar
+[ERROR] urls[26] = file:/C:/Projekte/.m2/repository/org/apache/httpcomponents/httpclient/4.5.14/httpclient-4.5.14.jar
+[ERROR] urls[27] = file:/C:/Projekte/.m2/repository/org/apache/httpcomponents/httpcore/4.4.16/httpcore-4.4.16.jar
+[ERROR] urls[28] = file:/C:/Projekte/.m2/repository/io/swagger/core/v3/swagger-models/2.2.21/swagger-models-2.2.21.jar
+[ERROR] urls[29] = file:/C:/Projekte/.m2/repository/io/swagger/parser/v3/swagger-parser-core/2.1.22/swagger-parser-core-2.1.22.jar
+[ERROR] urls[30] = file:/C:/Projekte/.m2/repository/io/swagger/parser/v3/swagger-parser-v3/2.1.22/swagger-parser-v3-2.1.22.jar
+[ERROR] urls[31] = file:/C:/Projekte/.m2/repository/io/swagger/core/v3/swagger-core/2.2.22/swagger-core-2.2.22.jar
+[ERROR] urls[32] = file:/C:/Projekte/.m2/repository/io/swagger/core/v3/swagger-annotations/2.2.22/swagger-annotations-2.2.22.jar
+[ERROR] urls[33] = file:/C:/Projekte/.m2/repository/jakarta/validation/jakarta.validation-api/3.0.2/jakarta.validation-api-3.0.2.jar
+[ERROR] urls[34] = file:/C:/Projekte/.m2/repository/io/swagger/parser/v3/swagger-parser-safe-url-resolver/2.1.22/swagger-parser-safe-url-resolver-2.1.22.jar
+[ERROR] urls[35] = file:/C:/Projekte/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.19.4/jackson-dataformat-yaml-2.19.4.jar
+[ERROR] urls[36] = file:/C:/Projekte/.m2/repository/org/yaml/snakeyaml/2.4/snakeyaml-2.4.jar
+[ERROR] urls[37] = file:/C:/Projekte/.m2/repository/com/samskivert/jmustache/1.16/jmustache-1.16.jar
+[ERROR] urls[38] = file:/C:/Projekte/.m2/repository/com/github/jknack/handlebars/4.3.1/handlebars-4.3.1.jar
+[ERROR] urls[39] = file:/C:/Projekte/.m2/repository/com/github/jknack/handlebars-jackson2/4.3.1/handlebars-jackson2-4.3.1.jar
+[ERROR] urls[40] = file:/C:/Projekte/.m2/repository/commons-io/commons-io/2.21.0/commons-io-2.21.0.jar
+[ERROR] urls[41] = file:/C:/Projekte/.m2/repository/org/slf4j/slf4j-ext/2.0.17/slf4j-ext-2.0.17.jar
+[ERROR] urls[42] = file:/C:/Projekte/.m2/repository/org/slf4j/slf4j-simple/2.0.17/slf4j-simple-2.0.17.jar
+[ERROR] urls[43] = file:/C:/Projekte/.m2/repository/org/apache/commons/commons-text/1.15.0/commons-text-1.15.0.jar
+[ERROR] urls[44] = file:/C:/Projekte/.m2/repository/commons-cli/commons-cli/1.5.0/commons-cli-1.5.0.jar
+[ERROR] urls[45] = file:/C:/Projekte/.m2/repository/com/google/guava/guava/32.1.3-jre/guava-32.1.3-jre.jar
+[ERROR] urls[46] = file:/C:/Projekte/.m2/repository/com/google/guava/failureaccess/1.0.1/failureaccess-1.0.1.jar
+[ERROR] urls[47] = file:/C:/Projekte/.m2/repository/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar
+[ERROR] urls[48] = file:/C:/Projekte/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar
+[ERROR] urls[49] = file:/C:/Projekte/.m2/repository/org/checkerframework/checker-qual/3.37.0/checker-qual-3.37.0.jar
+[ERROR] urls[50] = file:/C:/Projekte/.m2/repository/com/google/errorprone/error_prone_annotations/2.21.1/error_prone_annotations-2.21.1.jar
+[ERROR] urls[51] = file:/C:/Projekte/.m2/repository/com/google/j2objc/j2objc-annotations/2.8/j2objc-annotations-2.8.jar
+[ERROR] urls[52] = file:/C:/Projekte/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-guava/2.19.4/jackson-datatype-guava-2.19.4.jar
+[ERROR] urls[53] = file:/C:/Projekte/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.19.4/jackson-annotations-2.19.4.jar
+[ERROR] urls[54] = file:/C:/Projekte/.m2/repository/org/commonmark/commonmark/0.21.0/commonmark-0.21.0.jar
+[ERROR] urls[55] = file:/C:/Projekte/.m2/repository/com/github/mifmif/generex/1.0.2/generex-1.0.2.jar
+[ERROR] urls[56] = file:/C:/Projekte/.m2/repository/dk/brics/automaton/automaton/1.11-8/automaton-1.11-8.jar
+[ERROR] urls[57] = file:/C:/Projekte/.m2/repository/com/github/curious-odd-man/rgxgen/1.4/rgxgen-1.4.jar
+[ERROR] urls[58] = file:/C:/Projekte/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.19.4/jackson-databind-2.19.4.jar
+[ERROR] urls[59] = file:/C:/Projekte/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-joda/2.19.4/jackson-datatype-joda-2.19.4.jar
+[ERROR] urls[60] = file:/C:/Projekte/.m2/repository/joda-time/joda-time/2.12.7/joda-time-2.12.7.jar
+[ERROR] urls[61] = file:/C:/Projekte/.m2/repository/com/github/joschi/jackson/jackson-datatype-threetenbp/2.15.2/jackson-datatype-threetenbp-2.15.2.jar
+[ERROR] urls[62] = file:/C:/Projekte/.m2/repository/org/threeten/threetenbp/1.6.8/threetenbp-1.6.8.jar
+[ERROR] urls[63] = file:/C:/Projekte/.m2/repository/org/openapitools/openapi-generator-core/7.2.0/openapi-generator-core-7.2.0.jar
+[ERROR] urls[64] = file:/C:/Projekte/.m2/repository/net/java/dev/jna/jna/5.12.1/jna-5.12.1.jar
+[ERROR] urls[65] = file:/C:/Projekte/.m2/repository/com/github/ben-manes/caffeine/caffeine/3.2.3/caffeine-3.2.3.jar
+[ERROR] urls[66] = file:/C:/Projekte/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar
+[ERROR] urls[67] = file:/C:/Projekte/.m2/repository/org/apache/maven/plugins/maven-release-plugin/3.1.1/maven-release-plugin-3.1.1.jar
+[ERROR] urls[68] = file:/C:/Projekte/.m2/repository/org/apache/maven/release/maven-release-api/3.1.1/maven-release-api-3.1.1.jar
+[ERROR] urls[69] = file:/C:/Projekte/.m2/repository/org/apache/maven/release/maven-release-manager/3.1.1/maven-release-manager-3.1.1.jar
+[ERROR] urls[70] = file:/C:/Projekte/.m2/repository/org/codehaus/plexus/plexus-xml/3.0.0/plexus-xml-3.0.0.jar
+[ERROR] urls[71] = file:/C:/Projekte/.m2/repository/org/codehaus/plexus/plexus-interpolation/1.27/plexus-interpolation-1.27.jar
+[ERROR] urls[72] = file:/C:/Projekte/.m2/repository/org/codehaus/plexus/plexus-sec-dispatcher/2.0/plexus-sec-dispatcher-2.0.jar
+[ERROR] urls[73] = file:/C:/Projekte/.m2/repository/org/codehaus/plexus/plexus-cipher/2.0/plexus-cipher-2.0.jar
+[ERROR] urls[74] = file:/C:/Projekte/.m2/repository/org/apache/maven/shared/maven-invoker/3.3.0/maven-invoker-3.3.0.jar
+[ERROR] urls[75] = file:/C:/Projekte/.m2/repository/org/apache/maven/scm/maven-scm-providers-standard/2.1.0/maven-scm-providers-standard-2.1.0.pom
+[ERROR] urls[76] = file:/C:/Projekte/.m2/repository/org/apache/maven/scm/maven-scm-provider-gitexe/2.1.0/maven-scm-provider-gitexe-2.1.0.jar
+[ERROR] urls[77] = file:/C:/Projekte/.m2/repository/org/apache/maven/scm/maven-scm-provider-git-commons/2.1.0/maven-scm-provider-git-commons-2.1.0.jar
+[ERROR] urls[78] = file:/C:/Projekte/.m2/repository/org/apache/maven/scm/maven-scm-provider-jgit/2.1.0/maven-scm-provider-jgit-2.1.0.jar
+[ERROR] urls[79] = file:/C:/Projekte/.m2/repository/org/apache/maven/scm/maven-scm-provider-hg/2.1.0/maven-scm-provider-hg-2.1.0.jar
+[ERROR] urls[80] = file:/C:/Projekte/.m2/repository/org/apache/maven/scm/maven-scm-provider-svnexe/2.1.0/maven-scm-provider-svnexe-2.1.0.jar
+[ERROR] urls[81] = file:/C:/Projekte/.m2/repository/org/apache/maven/scm/maven-scm-manager-plexus/2.1.0/maven-scm-manager-plexus-2.1.0.jar
+[ERROR] urls[82] = file:/C:/Projekte/.m2/repository/org/apache/maven/scm/maven-scm-provider-svn-commons/2.1.0/maven-scm-provider-svn-commons-2.1.0.jar
+[ERROR] urls[83] = file:/C:/Projekte/.m2/repository/org/apache/maven/shared/maven-shared-utils/3.4.2/maven-shared-utils-3.4.2.jar
+[ERROR] urls[84] = file:/C:/Projekte/.m2/repository/org/jdom/jdom2/2.0.6.1/jdom2-2.0.6.1.jar
+[ERROR] urls[85] = file:/C:/Projekte/.m2/repository/org/apache/maven/scm/maven-scm-api/2.1.0/maven-scm-api-2.1.0.jar
+[ERROR] urls[86] = file:/C:/Projekte/.m2/repository/org/codehaus/plexus/plexus-utils/4.0.1/plexus-utils-4.0.1.jar
+[ERROR] urls[87] = file:/C:/Projekte/.m2/repository/org/codehaus/mojo/versions-maven-plugin/2.18.0/versions-maven-plugin-2.18.0.jar
+[ERROR] urls[88] = file:/C:/Projekte/.m2/repository/org/codehaus/mojo/versions/versions-api/2.18.0/versions-api-2.18.0.jar
+[ERROR] urls[89] = file:/C:/Projekte/.m2/repository/org/codehaus/mojo/versions/versions-model/2.18.0/versions-model-2.18.0.jar
+[ERROR] urls[90] = file:/C:/Projekte/.m2/repository/org/codehaus/mojo/versions/versions-model-report/2.18.0/versions-model-report-2.18.0.jar
+[ERROR] urls[91] = file:/C:/Projekte/.m2/repository/org/codehaus/mojo/versions/versions-common/2.18.0/versions-common-2.18.0.jar
+[ERROR] urls[92] = file:/C:/Projekte/.m2/repository/org/apache/commons/commons-collections4/4.4/commons-collections4-4.4.jar
+[ERROR] urls[93] = file:/C:/Projekte/.m2/repository/org/apache/maven/shared/maven-common-artifact-filters/3.4.0/maven-common-artifact-filters-3.4.0.jar
+[ERROR] urls[94] = file:/C:/Projekte/.m2/repository/org/apache/maven/reporting/maven-reporting-api/4.0.0/maven-reporting-api-4.0.0.jar
+[ERROR] urls[95] = file:/C:/Projekte/.m2/repository/org/apache/maven/reporting/maven-reporting-impl/4.0.0/maven-reporting-impl-4.0.0.jar
+[ERROR] urls[96] = file:/C:/Projekte/.m2/repository/org/apache/maven/doxia/doxia-site-model/2.0.0/doxia-site-model-2.0.0.jar
+[ERROR] urls[97] = file:/C:/Projekte/.m2/repository/org/apache/maven/doxia/doxia-integration-tools/2.0.0/doxia-integration-tools-2.0.0.jar
+[ERROR] urls[98] = file:/C:/Projekte/.m2/repository/org/apache/maven/doxia/doxia-site-renderer/2.0.0/doxia-site-renderer-2.0.0.jar
+[ERROR] urls[99] = file:/C:/Projekte/.m2/repository/org/apache/maven/doxia/doxia-skin-model/2.0.0/doxia-skin-model-2.0.0.jar
+[ERROR] urls[100] = file:/C:/Projekte/.m2/repository/org/apache/maven/doxia/doxia-module-xhtml5/2.0.0/doxia-module-xhtml5-2.0.0.jar
+[ERROR] urls[101] = file:/C:/Projekte/.m2/repository/org/codehaus/plexus/plexus-velocity/2.2.0/plexus-velocity-2.2.0.jar
+[ERROR] urls[102] = file:/C:/Projekte/.m2/repository/org/apache/velocity/velocity-engine-core/2.4/velocity-engine-core-2.4.jar
+[ERROR] urls[103] = file:/C:/Projekte/.m2/repository/org/apache/velocity/tools/velocity-tools-generic/3.1/velocity-tools-generic-3.1.jar
+[ERROR] urls[104] = file:/C:/Projekte/.m2/repository/commons-beanutils/commons-beanutils/1.9.4/commons-beanutils-1.9.4.jar
+[ERROR] urls[105] = file:/C:/Projekte/.m2/repository/commons-logging/commons-logging/1.3.4/commons-logging-1.3.4.jar
+[ERROR] urls[106] = file:/C:/Projekte/.m2/repository/commons-collections/commons-collections/3.2.2/commons-collections-3.2.2.jar
+[ERROR] urls[107] = file:/C:/Projekte/.m2/repository/org/apache/commons/commons-digester3/3.2/commons-digester3-3.2.jar
+[ERROR] urls[108] = file:/C:/Projekte/.m2/repository/com/github/cliftonlabs/json-simple/3.0.2/json-simple-3.0.2.jar
+[ERROR] urls[109] = file:/C:/Projekte/.m2/repository/org/apache/maven/doxia/doxia-module-apt/2.0.0/doxia-module-apt-2.0.0.jar
+[ERROR] urls[110] = file:/C:/Projekte/.m2/repository/org/apache/maven/doxia/doxia-module-xdoc/2.0.0/doxia-module-xdoc-2.0.0.jar
+[ERROR] urls[111] = file:/C:/Projekte/.m2/repository/org/apache/maven/maven-archiver/3.6.2/maven-archiver-3.6.2.jar
+[ERROR] urls[112] = file:/C:/Projekte/.m2/repository/org/codehaus/plexus/plexus-archiver/4.9.2/plexus-archiver-4.9.2.jar
+[ERROR] urls[113] = file:/C:/Projekte/.m2/repository/org/codehaus/plexus/plexus-io/3.4.2/plexus-io-3.4.2.jar
+[ERROR] urls[114] = file:/C:/Projekte/.m2/repository/org/apache/commons/commons-compress/1.26.1/commons-compress-1.26.1.jar
+[ERROR] urls[115] = file:/C:/Projekte/.m2/repository/org/iq80/snappy/snappy/0.4/snappy-0.4.jar
+[ERROR] urls[116] = file:/C:/Projekte/.m2/repository/org/tukaani/xz/1.9/xz-1.9.jar
+[ERROR] urls[117] = file:/C:/Projekte/.m2/repository/com/github/luben/zstd-jni/1.5.5-11/zstd-jni-1.5.5-11.jar
+[ERROR] urls[118] = file:/C:/Projekte/.m2/repository/org/eclipse/sisu/org.eclipse.sisu.inject/0.9.0.M3/org.eclipse.sisu.inject-0.9.0.M3.jar
+[ERROR] urls[119] = file:/C:/Projekte/.m2/repository/org/codehaus/plexus/plexus-component-annotations/2.1.0/plexus-component-annotations-2.1.0.jar
+[ERROR] urls[120] = file:/C:/Projekte/.m2/repository/org/apache/maven/doxia/doxia-core/2.0.0/doxia-core-2.0.0.jar
+[ERROR] urls[121] = file:/C:/Projekte/.m2/repository/org/apache/maven/doxia/doxia-sink-api/2.0.0/doxia-sink-api-2.0.0.jar
+[ERROR] urls[122] = file:/C:/Projekte/.m2/repository/org/codehaus/plexus/plexus-i18n/1.0-beta-10/plexus-i18n-1.0-beta-10.jar
+[ERROR] urls[123] = file:/C:/Projekte/.m2/repository/org/codehaus/plexus/plexus-interactivity-api/1.3/plexus-interactivity-api-1.3.jar
+[ERROR] urls[124] = file:/C:/Projekte/.m2/repository/com/fasterxml/woodstox/woodstox-core/6.5.1/woodstox-core-6.5.1.jar
+[ERROR] urls[125] = file:/C:/Projekte/.m2/repository/org/codehaus/woodstox/stax2-api/4.2.1/stax2-api-4.2.1.jar
+[ERROR] urls[126] = file:/C:/Projekte/.m2/repository/org/apache/commons/commons-lang3/3.18.0/commons-lang3-3.18.0.jar
+[ERROR] urls[127] = file:/C:/Projekte/.m2/repository/org/eclipse/jgit/org.eclipse.jgit/7.5.0.202512021534-r/org.eclipse.jgit-7.5.0.202512021534-r.jar
+[ERROR] urls[128] = file:/C:/Projekte/.m2/repository/com/googlecode/javaewah/JavaEWAH/1.2.3/JavaEWAH-1.2.3.jar
+[ERROR] urls[129] = file:/C:/Projekte/.m2/repository/commons-codec/commons-codec/1.18.0/commons-codec-1.18.0.jar
+[ERROR] urls[130] = file:/C:/Projekte/.m2/repository/org/eclipse/jgit/org.eclipse.jgit.ssh.apache/7.5.0.202512021534-r/org.eclipse.jgit.ssh.apache-7.5.0.202512021534-r.jar
+[ERROR] urls[131] = file:/C:/Projekte/.m2/repository/org/apache/sshd/sshd-osgi/2.16.0/sshd-osgi-2.16.0.jar
+[ERROR] urls[132] = file:/C:/Projekte/.m2/repository/org/slf4j/jcl-over-slf4j/2.0.17/jcl-over-slf4j-2.0.17.jar
+[ERROR] urls[133] = file:/C:/Projekte/.m2/repository/org/apache/sshd/sshd-sftp/2.16.0/sshd-sftp-2.16.0.jar
+[ERROR] urls[134] = file:/C:/Projekte/.m2/repository/org/twdata/maven/mojo-executor/2.4.1/mojo-executor-2.4.1.jar
+[ERROR] urls[135] = file:/C:/Projekte/.m2/repository/org/springframework/boot/spring-boot-autoconfigure/3.5.8/spring-boot-autoconfigure-3.5.8.jar
+[ERROR] urls[136] = file:/C:/Projekte/.m2/repository/org/springframework/boot/spring-boot/3.5.8/spring-boot-3.5.8.jar
+[ERROR] urls[137] = file:/C:/Projekte/.m2/repository/org/springframework/spring-core/6.2.14/spring-core-6.2.14.jar
+[ERROR] urls[138] = file:/C:/Projekte/.m2/repository/org/springframework/spring-jcl/6.2.14/spring-jcl-6.2.14.jar
+[ERROR] urls[139] = file:/C:/Projekte/.m2/repository/org/springframework/spring-context/6.2.14/spring-context-6.2.14.jar
+[ERROR] urls[140] = file:/C:/Projekte/.m2/repository/org/springframework/spring-aop/6.2.14/spring-aop-6.2.14.jar
+[ERROR] urls[141] = file:/C:/Projekte/.m2/repository/org/springframework/spring-beans/6.2.14/spring-beans-6.2.14.jar
+[ERROR] urls[142] = file:/C:/Projekte/.m2/repository/org/springframework/spring-expression/6.2.14/spring-expression-6.2.14.jar
+[ERROR] urls[143] = file:/C:/Projekte/.m2/repository/io/micrometer/micrometer-observation/1.15.6/micrometer-observation-1.15.6.jar
+[ERROR] urls[144] = file:/C:/Projekte/.m2/repository/io/micrometer/micrometer-commons/1.15.6/micrometer-commons-1.15.6.jar
+[ERROR] urls[145] = file:/C:/Projekte/.m2/repository/jakarta/annotation/jakarta.annotation-api/2.1.1/jakarta.annotation-api-2.1.1.jar
+[ERROR] urls[146] = file:/C:/Projekte/.m2/repository/osplus/apl/apl-dev-proxy-local/260.0.0-M4/apl-dev-proxy-local-260.0.0-M4.jar
+[ERROR] urls[147] = file:/C:/Projekte/.m2/repository/osplus/apl/apl-dev-proxy-api/260.0.0-M4/apl-dev-proxy-api-260.0.0-M4.jar
+[ERROR] urls[148] = file:/C:/Projekte/.m2/repository/org/springframework/boot/spring-boot-starter/3.5.8/spring-boot-starter-3.5.8.jar
+[ERROR] urls[149] = file:/C:/Projekte/.m2/repository/org/springframework/boot/spring-boot-starter-logging/3.5.8/spring-boot-starter-logging-3.5.8.jar
+[ERROR] urls[150] = file:/C:/Projekte/.m2/repository/org/apache/logging/log4j/log4j-to-slf4j/2.24.3/log4j-to-slf4j-2.24.3.jar
+[ERROR] urls[151] = file:/C:/Projekte/.m2/repository/org/apache/logging/log4j/log4j-api/2.24.3/log4j-api-2.24.3.jar
+[ERROR] urls[152] = file:/C:/Projekte/.m2/repository/org/slf4j/jul-to-slf4j/2.0.17/jul-to-slf4j-2.0.17.jar
+[ERROR] urls[153] = file:/C:/Projekte/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.19.4/jackson-core-2.19.4.jar
+[ERROR] urls[154] = file:/C:/Projekte/.m2/repository/osplus/mkp/core/fi-core-logging/260.0.0-M6/fi-core-logging-260.0.0-M6.jar
+[ERROR] urls[155] = file:/C:/Projekte/.m2/repository/osplus/mkp/core/fi-core-logging-api/260.0.0-M6/fi-core-logging-api-260.0.0-M6.jar
+[ERROR] urls[156] = file:/C:/Projekte/.m2/repository/net/logstash/logback/logstash-logback-encoder/7.3/logstash-logback-encoder-7.3.jar
+[ERROR] urls[157] = file:/C:/Projekte/.m2/repository/commons-validator/commons-validator/1.9.0/commons-validator-1.9.0.jar
+[ERROR] urls[158] = file:/C:/Projekte/.m2/repository/osplus/mkp/core/fi-core-cache-api/260.0.0-M6/fi-core-cache-api-260.0.0-M6.jar
+[ERROR] urls[159] = file:/C:/Projekte/.m2/repository/osplus/mkp/core/fi-core-cache-hazelcast/260.0.0-M6/fi-core-cache-hazelcast-260.0.0-M6.jar
+[ERROR] urls[160] = file:/C:/Projekte/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jdk8/2.19.4/jackson-datatype-jdk8-2.19.4.jar
+[ERROR] urls[161] = file:/C:/Projekte/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.19.4/jackson-datatype-jsr310-2.19.4.jar
+[ERROR] urls[162] = file:/C:/Projekte/.m2/repository/org/apache/httpcomponents/client5/httpclient5/5.5.1/httpclient5-5.5.1.jar
+[ERROR] urls[163] = file:/C:/Projekte/.m2/repository/org/apache/httpcomponents/core5/httpcore5/5.3.6/httpcore5-5.3.6.jar
+[ERROR] urls[164] = file:/C:/Projekte/.m2/repository/org/apache/httpcomponents/core5/httpcore5-h2/5.3.6/httpcore5-h2-5.3.6.jar
+[ERROR] urls[165] = file:/C:/Projekte/.m2/repository/org/springframework/cloud/spring-cloud-starter-gateway-server-webflux/4.3.0/spring-cloud-starter-gateway-server-webflux-4.3.0.jar
+[ERROR] urls[166] = file:/C:/Projekte/.m2/repository/org/springframework/cloud/spring-cloud-starter/4.3.0/spring-cloud-starter-4.3.0.jar
+[ERROR] urls[167] = file:/C:/Projekte/.m2/repository/org/springframework/cloud/spring-cloud-context/4.3.0/spring-cloud-context-4.3.0.jar
+[ERROR] urls[168] = file:/C:/Projekte/.m2/repository/org/springframework/security/spring-security-crypto/6.5.7/spring-security-crypto-6.5.7.jar
+[ERROR] urls[169] = file:/C:/Projekte/.m2/repository/org/springframework/cloud/spring-cloud-commons/4.3.0/spring-cloud-commons-4.3.0.jar
+[ERROR] urls[170] = file:/C:/Projekte/.m2/repository/org/bouncycastle/bcprov-jdk18on/1.81/bcprov-jdk18on-1.81.jar
+[ERROR] urls[171] = file:/C:/Projekte/.m2/repository/org/springframework/cloud/spring-cloud-gateway-server-webflux/4.3.0/spring-cloud-gateway-server-webflux-4.3.0.jar
+[ERROR] urls[172] = file:/C:/Projekte/.m2/repository/org/springframework/cloud/spring-cloud-gateway-server/4.3.0/spring-cloud-gateway-server-4.3.0.jar
+[ERROR] urls[173] = file:/C:/Projekte/.m2/repository/org/springframework/boot/spring-boot-starter-validation/3.5.8/spring-boot-starter-validation-3.5.8.jar
+[ERROR] urls[174] = file:/C:/Projekte/.m2/repository/org/apache/tomcat/embed/tomcat-embed-el/10.1.49/tomcat-embed-el-10.1.49.jar
+[ERROR] urls[175] = file:/C:/Projekte/.m2/repository/org/hibernate/validator/hibernate-validator/8.0.3.Final/hibernate-validator-8.0.3.Final.jar
+[ERROR] urls[176] = file:/C:/Projekte/.m2/repository/org/jboss/logging/jboss-logging/3.6.1.Final/jboss-logging-3.6.1.Final.jar
+[ERROR] urls[177] = file:/C:/Projekte/.m2/repository/com/fasterxml/classmate/1.7.1/classmate-1.7.1.jar
+[ERROR] urls[178] = file:/C:/Projekte/.m2/repository/org/springframework/boot/spring-boot-starter-webflux/3.5.8/spring-boot-starter-webflux-3.5.8.jar
+[ERROR] urls[179] = file:/C:/Projekte/.m2/repository/org/springframework/boot/spring-boot-starter-json/3.5.8/spring-boot-starter-json-3.5.8.jar
+[ERROR] urls[180] = file:/C:/Projekte/.m2/repository/com/fasterxml/jackson/module/jackson-module-parameter-names/2.19.4/jackson-module-parameter-names-2.19.4.jar
+[ERROR] urls[181] = file:/C:/Projekte/.m2/repository/org/springframework/boot/spring-boot-starter-reactor-netty/3.5.8/spring-boot-starter-reactor-netty-3.5.8.jar
+[ERROR] urls[182] = file:/C:/Projekte/.m2/repository/io/projectreactor/netty/reactor-netty-http/1.2.12/reactor-netty-http-1.2.12.jar
+[ERROR] urls[183] = file:/C:/Projekte/.m2/repository/io/netty/netty-codec-http/4.1.128.Final/netty-codec-http-4.1.128.Final.jar
+[ERROR] urls[184] = file:/C:/Projekte/.m2/repository/io/netty/netty-common/4.1.128.Final/netty-common-4.1.128.Final.jar
+[ERROR] urls[185] = file:/C:/Projekte/.m2/repository/io/netty/netty-buffer/4.1.128.Final/netty-buffer-4.1.128.Final.jar
+[ERROR] urls[186] = file:/C:/Projekte/.m2/repository/io/netty/netty-transport/4.1.128.Final/netty-transport-4.1.128.Final.jar
+[ERROR] urls[187] = file:/C:/Projekte/.m2/repository/io/netty/netty-codec/4.1.128.Final/netty-codec-4.1.128.Final.jar
+[ERROR] urls[188] = file:/C:/Projekte/.m2/repository/io/netty/netty-handler/4.1.128.Final/netty-handler-4.1.128.Final.jar
+[ERROR] urls[189] = file:/C:/Projekte/.m2/repository/io/netty/netty-codec-http2/4.1.128.Final/netty-codec-http2-4.1.128.Final.jar
+[ERROR] urls[190] = file:/C:/Projekte/.m2/repository/io/netty/netty-resolver-dns/4.1.128.Final/netty-resolver-dns-4.1.128.Final.jar
+[ERROR] urls[191] = file:/C:/Projekte/.m2/repository/io/netty/netty-resolver/4.1.128.Final/netty-resolver-4.1.128.Final.jar
+[ERROR] urls[192] = file:/C:/Projekte/.m2/repository/io/netty/netty-codec-dns/4.1.128.Final/netty-codec-dns-4.1.128.Final.jar
+[ERROR] urls[193] = file:/C:/Projekte/.m2/repository/io/netty/netty-resolver-dns-native-macos/4.1.128.Final/netty-resolver-dns-native-macos-4.1.128.Final-osx-x86_64.jar
+[ERROR] urls[194] = file:/C:/Projekte/.m2/repository/io/netty/netty-resolver-dns-classes-macos/4.1.128.Final/netty-resolver-dns-classes-macos-4.1.128.Final.jar
+[ERROR] urls[195] = file:/C:/Projekte/.m2/repository/io/netty/netty-transport-native-epoll/4.1.128.Final/netty-transport-native-epoll-4.1.128.Final-linux-x86_64.jar
+[ERROR] urls[196] = file:/C:/Projekte/.m2/repository/io/netty/netty-transport-native-unix-common/4.1.128.Final/netty-transport-native-unix-common-4.1.128.Final.jar
+[ERROR] urls[197] = file:/C:/Projekte/.m2/repository/io/netty/netty-transport-classes-epoll/4.1.128.Final/netty-transport-classes-epoll-4.1.128.Final.jar
+[ERROR] urls[198] = file:/C:/Projekte/.m2/repository/io/projectreactor/netty/reactor-netty-core/1.2.12/reactor-netty-core-1.2.12.jar
+[ERROR] urls[199] = file:/C:/Projekte/.m2/repository/io/netty/netty-handler-proxy/4.1.128.Final/netty-handler-proxy-4.1.128.Final.jar
+[ERROR] urls[200] = file:/C:/Projekte/.m2/repository/io/netty/netty-codec-socks/4.1.128.Final/netty-codec-socks-4.1.128.Final.jar
+[ERROR] urls[201] = file:/C:/Projekte/.m2/repository/org/springframework/spring-web/6.2.14/spring-web-6.2.14.jar
+[ERROR] urls[202] = file:/C:/Projekte/.m2/repository/org/springframework/spring-webflux/6.2.14/spring-webflux-6.2.14.jar
+[ERROR] urls[203] = file:/C:/Projekte/.m2/repository/org/springframework/boot/spring-boot-properties-migrator/3.5.8/spring-boot-properties-migrator-3.5.8.jar
+[ERROR] urls[204] = file:/C:/Projekte/.m2/repository/org/springframework/boot/spring-boot-configuration-metadata/3.5.8/spring-boot-configuration-metadata-3.5.8.jar
+[ERROR] urls[205] = file:/C:/Projekte/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar
+[ERROR] urls[206] = file:/C:/Projekte/.m2/repository/org/springframework/cloud/spring-cloud-starter-loadbalancer/4.3.0/spring-cloud-starter-loadbalancer-4.3.0.jar
+[ERROR] urls[207] = file:/C:/Projekte/.m2/repository/org/springframework/cloud/spring-cloud-loadbalancer/4.3.0/spring-cloud-loadbalancer-4.3.0.jar
+[ERROR] urls[208] = file:/C:/Projekte/.m2/repository/io/projectreactor/reactor-core/3.7.13/reactor-core-3.7.13.jar
+[ERROR] urls[209] = file:/C:/Projekte/.m2/repository/org/reactivestreams/reactive-streams/1.0.4/reactive-streams-1.0.4.jar
+[ERROR] urls[210] = file:/C:/Projekte/.m2/repository/io/projectreactor/addons/reactor-extra/3.5.4/reactor-extra-3.5.4.jar
+[ERROR] urls[211] = file:/C:/Projekte/.m2/repository/org/springframework/boot/spring-boot-starter-cache/3.5.8/spring-boot-starter-cache-3.5.8.jar
+[ERROR] urls[212] = file:/C:/Projekte/.m2/repository/org/springframework/spring-context-support/6.2.14/spring-context-support-6.2.14.jar
+[ERROR] urls[213] = file:/C:/Projekte/.m2/repository/com/stoyanr/evictor/1.0.0/evictor-1.0.0.jar
+[ERROR] urls[214] = file:/C:/Projekte/.m2/repository/com/hazelcast/hazelcast/5.5.5/hazelcast-5.5.5.jar
+[ERROR] urls[215] = file:/C:/Projekte/.m2/repository/io/projectreactor/tools/blockhound/1.0.8.RELEASE/blockhound-1.0.8.RELEASE.jar
+[ERROR] Number of foreign imports: 1
+[ERROR] import: Entry[import  from realm ClassRealm[project>osplus.pzw:pzw-parent:260.0.0-SNAPSHOT, parent: ClassRealm[maven.api, parent: null]]]
+[ERROR]
+[ERROR] -----------------------------------------------------
+[ERROR]
+[ERROR] -> [Help 1]
+[ERROR]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR]
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/PluginContainerException
+PS C:\Projekte\pzw-mkp> mvn clean install -U
+[INFO] Scanning for projects...
+Downloading from nexus: https://nexus.intern/repository/public/org/apache/maven/wagon/wagon-ssh/maven-metadata.xml
+Downloaded from nexus: https://nexus.intern/repository/public/org/apache/maven/wagon/wagon-ssh/maven-metadata.xml (1.7 kB at 1.7 kB/s)
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO]
+[INFO] pzw-parent                                                         [pom]
+[INFO] pzw-common                                                         [jar]
+[INFO] pzw-apl-api                                                        [jar]
+[INFO] pzw-apl                                                            [jar]
+[INFO] pzw-cpl-api                                                        [jar]
+[INFO] pzw-cpl                                                            [jar]
+[INFO] pzw-cpl-web-zeitwirtschaft                                         [pom]
+[INFO] pzw-cpl-web                                                        [jar]
+[INFO] pzw-cpl-web-components                                             [jar]
+[INFO] pzw-cpl-web-components-zeitwirtschaft-buchen                       [pom]
+[INFO] pzw-runner                                                         [jar]
+[INFO] pzw-local                                                          [jar]
+[INFO]
+[INFO] -----------------------< osplus.pzw:pzw-parent >------------------------
+[INFO] Building pzw-parent 260.0.0-SNAPSHOT                              [1/12]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO]
+[INFO] --- clean:3.4.1:clean (default-clean) @ pzw-parent ---
+[INFO]
+[INFO] --- enforcer:3.5.0:enforce (enforce-no-apl-snapshots-in-release-build) @ pzw-parent ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.dependency.RequireReleaseDeps passed
+[INFO]
+[INFO] --- dependency:3.8.1:properties (default) @ pzw-parent ---
+[INFO]
+[INFO] --- jacoco:0.8.12:prepare-agent (prepare-agent) @ pzw-parent ---
+[INFO] Skipping JaCoCo execution because property jacoco.skip is set.
+[INFO] surefireArgLine set to empty
+[INFO]
+[INFO] --- apl:260.0.0-M4:set-build-properties (set-build-properties) @ pzw-parent ---
+[WARNING] Error injecting: osplus.apl.mojo.AplSetBuildPropertiesMojo
+java.lang.TypeNotPresentException: Type osplus.apl.mojo.AplSetBuildPropertiesMojo not present
+    at org.eclipse.sisu.space.URLClassSpace.loadClass (URLClassSpace.java:149)
+    at org.eclipse.sisu.space.NamedClass.load (NamedClass.java:48)
+    at org.eclipse.sisu.space.AbstractDeferredClass.get (AbstractDeferredClass.java:50)
+    at com.google.inject.internal.ProviderInternalFactory.provision (ProviderInternalFactory.java:86)
+    at com.google.inject.internal.InternalFactoryToInitializableAdapter.provision (InternalFactoryToInitializableAdapter.java:57)
+    at com.google.inject.internal.ProviderInternalFactory$1.call (ProviderInternalFactory.java:67)
+    at com.google.inject.internal.ProvisionListenerStackCallback$Provision.provision (ProvisionListenerStackCallback.java:109)
+    at com.google.inject.internal.ProvisionListenerStackCallback$Provision.provision (ProvisionListenerStackCallback.java:124)
+    at com.google.inject.internal.ProvisionListenerStackCallback.provision (ProvisionListenerStackCallback.java:66)
+    at com.google.inject.internal.ProviderInternalFactory.circularGet (ProviderInternalFactory.java:62)
+    at com.google.inject.internal.InternalFactoryToInitializableAdapter.get (InternalFactoryToInitializableAdapter.java:47)
+    at com.google.inject.internal.InjectorImpl$1.get (InjectorImpl.java:1101)
+    at org.eclipse.sisu.inject.Guice4$2.get (Guice4.java:235)
+    at org.eclipse.sisu.inject.LazyBeanEntry.getValue (LazyBeanEntry.java:83)
+    at org.eclipse.sisu.plexus.LazyPlexusBean.getValue (LazyPlexusBean.java:53)
+    at org.codehaus.plexus.DefaultPlexusContainer.lookup (DefaultPlexusContainer.java:265)
+    at org.codehaus.plexus.DefaultPlexusContainer.lookup (DefaultPlexusContainer.java:257)
+    at org.apache.maven.plugin.internal.DefaultMavenPluginManager.getConfiguredMojo (DefaultMavenPluginManager.java:491)
+    at org.apache.maven.plugin.DefaultBuildPluginManager.executeMojo (DefaultBuildPluginManager.java:114)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2 (MojoExecutor.java:328)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute (MojoExecutor.java:316)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:212)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:174)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.access$000 (MojoExecutor.java:75)
+    at org.apache.maven.lifecycle.internal.MojoExecutor$1.run (MojoExecutor.java:162)
+    at org.apache.maven.plugin.DefaultMojosExecutionStrategy.execute (DefaultMojosExecutionStrategy.java:39)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:159)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:105)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:73)
+    at org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build (SingleThreadedBuilder.java:53)
+    at org.apache.maven.lifecycle.internal.LifecycleStarter.execute (LifecycleStarter.java:118)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:261)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:173)
+    at org.apache.maven.DefaultMaven.execute (DefaultMaven.java:101)
+    at org.apache.maven.cli.MavenCli.execute (MavenCli.java:906)
+    at org.apache.maven.cli.MavenCli.doMain (MavenCli.java:283)
+    at org.apache.maven.cli.MavenCli.main (MavenCli.java:206)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0 (Native Method)
+    at sun.reflect.NativeMethodAccessorImpl.invoke (NativeMethodAccessorImpl.java:62)
+    at sun.reflect.DelegatingMethodAccessorImpl.invoke (DelegatingMethodAccessorImpl.java:43)
+    at java.lang.reflect.Method.invoke (Method.java:498)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced (Launcher.java:255)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launch (Launcher.java:201)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode (Launcher.java:361)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.main (Launcher.java:314)
+Caused by: java.lang.UnsupportedClassVersionError: osplus/apl/mojo/AplSetBuildPropertiesMojo has been compiled by a more recent version of the Java Runtime (class file version 65.0), this version of the Java Runtime only recognizes class file versions up to 52.0
+    at java.lang.ClassLoader.defineClass1 (Native Method)
+    at java.lang.ClassLoader.defineClass (ClassLoader.java:756)
+    at java.security.SecureClassLoader.defineClass (SecureClassLoader.java:142)
+    at java.net.URLClassLoader.defineClass (URLClassLoader.java:473)
+    at java.net.URLClassLoader.access$100 (URLClassLoader.java:74)
+    at java.net.URLClassLoader$1.run (URLClassLoader.java:369)
+    at java.net.URLClassLoader$1.run (URLClassLoader.java:363)
+    at java.security.AccessController.doPrivileged (Native Method)
+    at java.net.URLClassLoader.findClass (URLClassLoader.java:362)
+    at org.codehaus.plexus.classworlds.realm.ClassRealm.findClassInternal (ClassRealm.java:256)
+    at org.codehaus.plexus.classworlds.realm.ClassRealm.loadClassFromSelf (ClassRealm.java:351)
+    at org.codehaus.plexus.classworlds.strategy.SelfFirstStrategy.loadClass (SelfFirstStrategy.java:36)
+    at org.codehaus.plexus.classworlds.realm.ClassRealm.unsynchronizedLoadClass (ClassRealm.java:225)
+    at org.codehaus.plexus.classworlds.realm.ClassRealm.loadClass (ClassRealm.java:210)
+    at org.codehaus.plexus.classworlds.realm.ClassRealm.loadClass (ClassRealm.java:205)
+    at org.eclipse.sisu.space.URLClassSpace.loadClass (URLClassSpace.java:141)
+    at org.eclipse.sisu.space.NamedClass.load (NamedClass.java:48)
+    at org.eclipse.sisu.space.AbstractDeferredClass.get (AbstractDeferredClass.java:50)
+    at com.google.inject.internal.ProviderInternalFactory.provision (ProviderInternalFactory.java:86)
+    at com.google.inject.internal.InternalFactoryToInitializableAdapter.provision (InternalFactoryToInitializableAdapter.java:57)
+    at com.google.inject.internal.ProviderInternalFactory$1.call (ProviderInternalFactory.java:67)
+    at com.google.inject.internal.ProvisionListenerStackCallback$Provision.provision (ProvisionListenerStackCallback.java:109)
+    at com.google.inject.internal.ProvisionListenerStackCallback$Provision.provision (ProvisionListenerStackCallback.java:124)
+    at com.google.inject.internal.ProvisionListenerStackCallback.provision (ProvisionListenerStackCallback.java:66)
+    at com.google.inject.internal.ProviderInternalFactory.circularGet (ProviderInternalFactory.java:62)
+    at com.google.inject.internal.InternalFactoryToInitializableAdapter.get (InternalFactoryToInitializableAdapter.java:47)
+    at com.google.inject.internal.InjectorImpl$1.get (InjectorImpl.java:1101)
+    at org.eclipse.sisu.inject.Guice4$2.get (Guice4.java:235)
+    at org.eclipse.sisu.inject.LazyBeanEntry.getValue (LazyBeanEntry.java:83)
+    at org.eclipse.sisu.plexus.LazyPlexusBean.getValue (LazyPlexusBean.java:53)
+    at org.codehaus.plexus.DefaultPlexusContainer.lookup (DefaultPlexusContainer.java:265)
+    at org.codehaus.plexus.DefaultPlexusContainer.lookup (DefaultPlexusContainer.java:257)
+    at org.apache.maven.plugin.internal.DefaultMavenPluginManager.getConfiguredMojo (DefaultMavenPluginManager.java:491)
+    at org.apache.maven.plugin.DefaultBuildPluginManager.executeMojo (DefaultBuildPluginManager.java:114)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2 (MojoExecutor.java:328)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute (MojoExecutor.java:316)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:212)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:174)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.access$000 (MojoExecutor.java:75)
+    at org.apache.maven.lifecycle.internal.MojoExecutor$1.run (MojoExecutor.java:162)
+    at org.apache.maven.plugin.DefaultMojosExecutionStrategy.execute (DefaultMojosExecutionStrategy.java:39)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:159)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:105)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:73)
+    at org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build (SingleThreadedBuilder.java:53)
+    at org.apache.maven.lifecycle.internal.LifecycleStarter.execute (LifecycleStarter.java:118)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:261)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:173)
+    at org.apache.maven.DefaultMaven.execute (DefaultMaven.java:101)
+    at org.apache.maven.cli.MavenCli.execute (MavenCli.java:906)
+    at org.apache.maven.cli.MavenCli.doMain (MavenCli.java:283)
+    at org.apache.maven.cli.MavenCli.main (MavenCli.java:206)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0 (Native Method)
+    at sun.reflect.NativeMethodAccessorImpl.invoke (NativeMethodAccessorImpl.java:62)
+    at sun.reflect.DelegatingMethodAccessorImpl.invoke (DelegatingMethodAccessorImpl.java:43)
+    at java.lang.reflect.Method.invoke (Method.java:498)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced (Launcher.java:255)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launch (Launcher.java:201)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode (Launcher.java:361)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.main (Launcher.java:314)
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for pzw-parent 260.0.0-SNAPSHOT:
+[INFO]
+[INFO] pzw-parent ......................................... FAILURE [  4.365 s]
+[INFO] pzw-common ......................................... SKIPPED
+[INFO] pzw-apl-api ........................................ SKIPPED
+[INFO] pzw-apl ............................................ SKIPPED
+[INFO] pzw-cpl-api ........................................ SKIPPED
+[INFO] pzw-cpl ............................................ SKIPPED
+[INFO] pzw-cpl-web-zeitwirtschaft ......................... SKIPPED
+[INFO] pzw-cpl-web ........................................ SKIPPED
+[INFO] pzw-cpl-web-components ............................. SKIPPED
+[INFO] pzw-cpl-web-components-zeitwirtschaft-buchen ....... SKIPPED
+[INFO] pzw-runner ......................................... SKIPPED
+[INFO] pzw-local .......................................... SKIPPED
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  7.214 s
+[INFO] Finished at: 2026-03-03T22:11:41+01:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal osplus.apl:apl-maven-plugin:260.0.0-M4:set-build-properties (set-build-properties) on project pzw-parent: Execution set-build-properties of goal osplus.apl:apl-maven-plugin:260.0.0-M4:set-build-properties failed: Unable to load the mojo 'set-build-properties' in the plugin 'osplus.apl:apl-maven-plugin:260.0.0-M4' due to an API incompatibility: org.codehaus.plexus.component.repository.exception.ComponentLookupException: osplus/apl/mojo/AplSetBuildPropertiesMojo has been compiled by a more recent version of the Java Runtime (class file version 65.0), this version of the Java Runtime only recognizes class file versions up to 52.0
