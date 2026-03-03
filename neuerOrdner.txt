@@ -802,3 +802,212 @@ Caused by: java.lang.UnsupportedClassVersionError: osplus/apl/mojo/AplSetBuildPr
 [INFO] Finished at: 2026-03-03T22:11:41+01:00
 [INFO] ------------------------------------------------------------------------
 [ERROR] Failed to execute goal osplus.apl:apl-maven-plugin:260.0.0-M4:set-build-properties (set-build-properties) on project pzw-parent: Execution set-build-properties of goal osplus.apl:apl-maven-plugin:260.0.0-M4:set-build-properties failed: Unable to load the mojo 'set-build-properties' in the plugin 'osplus.apl:apl-maven-plugin:260.0.0-M4' due to an API incompatibility: org.codehaus.plexus.component.repository.exception.ComponentLookupException: osplus/apl/mojo/AplSetBuildPropertiesMojo has been compiled by a more recent version of the Java Runtime (class file version 65.0), this version of the Java Runtime only recognizes class file versions up to 52.0
+================================================================================
+[INFO] Rendering content with org.apache.maven.skins:maven-fluido-skin:jar:2.0.0-M9 skin
+[INFO]
+[INFO] <<< pmd:3.28.0:check (default) < :pmd @ pzw-apl-api <<<
+[INFO]
+[INFO]
+[INFO] --- pmd:3.28.0:check (default) @ pzw-apl-api ---
+[INFO]
+[INFO] --- install:3.1.4:install (default-install) @ pzw-apl-api ---
+[INFO] Installing C:\Projekte\pzw-mkp\pzw-apl-api\pom.xml to C:\Projekte\.m2\repository\osplus\pzw\pzw-apl-api\260.0.0-SNAPSHOT\pzw-apl-api-260.0.0-SNAPSHOT.pom
+[INFO] Installing C:\Projekte\pzw-mkp\pzw-apl-api\target\pzw-apl-api-260.0.0-SNAPSHOT.jar to C:\Projekte\.m2\repository\osplus\pzw\pzw-apl-api\260.0.0-SNAPSHOT\pzw-apl-api-260.0.0-SNAPSHOT.jar
+[INFO] Installing C:\Projekte\pzw-mkp\pzw-apl-api\target\pzw-apl-api-260.0.0-SNAPSHOT-sources.jar to C:\Projekte\.m2\repository\osplus\pzw\pzw-apl-api\260.0.0-SNAPSHOT\pzw-apl-api-260.0.0-SNAPSHOT-sources.jar
+[INFO]
+[INFO] -------------------------< osplus.pzw:pzw-apl >-------------------------
+[INFO] Building pzw-apl 260.0.0-SNAPSHOT                                 [4/12]
+[INFO]   from pzw-apl\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+Downloading from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/prz/client/260-SNAPSHOT/maven-metadata.xml
+Downloading from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/pzw/client/260-SNAPSHOT/maven-metadata.xml
+Downloading from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/abs/client/260-SNAPSHOT/maven-metadata.xml
+Downloaded from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/abs/client/260-SNAPSHOT/maven-metadata.xml (599 B at 1.4 kB/s)
+Downloaded from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/pzw/client/260-SNAPSHOT/maven-metadata.xml (601 B at 1.2 kB/s)
+Downloaded from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/prz/client/260-SNAPSHOT/maven-metadata.xml (599 B at 1.1 kB/s)
+Downloading from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/prz/osplus.prz.service.cs/260-SNAPSHOT/maven-metadata.xml
+Downloading from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/pzw/osplus.pzw.service.fs/260-SNAPSHOT/maven-metadata.xml
+Downloading from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/prz/osplus.prz.service.fs/260-SNAPSHOT/maven-metadata.xml
+Downloading from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/pzw/osplus.pzw.service.cs/260-SNAPSHOT/maven-metadata.xml
+Downloading from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/prz/osplus.prz.service.fo/260-SNAPSHOT/maven-metadata.xml
+Downloaded from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/prz/osplus.prz.service.cs/260-SNAPSHOT/maven-metadata.xml (999 B at 2.4 kB/s)
+Downloading from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/pzw/osplus.pzw.service.fo/260-SNAPSHOT/maven-metadata.xml
+Downloaded from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/pzw/osplus.pzw.service.fs/260-SNAPSHOT/maven-metadata.xml (1.0 kB at 2.2 kB/s)
+Downloaded from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/pzw/osplus.pzw.service.cs/260-SNAPSHOT/maven-metadata.xml (1.0 kB at 2.2 kB/s)
+Downloading from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/abs/osplus.abs.service.fs/260-SNAPSHOT/maven-metadata.xml
+Downloading from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/abs/osplus.abs.service.cs/260-SNAPSHOT/maven-metadata.xml
+Downloaded from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/prz/osplus.prz.service.fs/260-SNAPSHOT/maven-metadata.xml (999 B at 2.1 kB/s)
+Downloading from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/abs/osplus.abs.service.fo/260-SNAPSHOT/maven-metadata.xml
+Downloaded from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/prz/osplus.prz.service.fo/260-SNAPSHOT/maven-metadata.xml (999 B at 2.0 kB/s)
+Downloaded from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/pzw/osplus.pzw.service.fo/260-SNAPSHOT/maven-metadata.xml (1.0 kB at 2.3 kB/s)
+Downloaded from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/abs/osplus.abs.service.fs/260-SNAPSHOT/maven-metadata.xml (999 B at 2.2 kB/s)
+Downloaded from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/abs/osplus.abs.service.cs/260-SNAPSHOT/maven-metadata.xml (999 B at 2.2 kB/s)
+Downloaded from nexus: https://nexus.intern/repository/public/osplus/dyns/ie/abs/osplus.abs.service.fo/260-SNAPSHOT/maven-metadata.xml (999 B at 1.9 kB/s)
+[INFO]
+[INFO] --- clean:3.4.1:clean (default-clean) @ pzw-apl ---
+[INFO] Deleting C:\Projekte\pzw-mkp\pzw-apl\target
+[INFO]
+[INFO] --- enforcer:3.5.0:enforce (enforce-no-apl-snapshots-in-release-build) @ pzw-apl ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.dependency.RequireReleaseDeps passed
+[INFO]
+[INFO] --- dependency:3.8.1:properties (default) @ pzw-apl ---
+[INFO]
+[INFO] --- jacoco:0.8.12:prepare-agent (prepare-agent) @ pzw-apl ---
+[INFO] Skipping JaCoCo execution because property jacoco.skip is set.
+[INFO] surefireArgLine set to empty
+[INFO]
+[INFO] --- apl:260.0.0-M4:set-build-properties (set-build-properties) @ pzw-apl ---
+[INFO] Build is Snapshot-Build. Maven-Variable apl.isSnapshotBuild is true
+[INFO]
+[INFO] --- resources:3.3.1:resources (default-resources) @ pzw-apl ---
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] Copying 2 resources from src\main\resources to target\classes
+[INFO]
+[INFO] --- compiler:3.14.1:compile (default-compile) @ pzw-apl ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 43 source files with javac [debug parameters release 21] to target\classes
+[INFO] -------------------------------------------------------------
+[WARNING] COMPILATION WARNING :
+[INFO] -------------------------------------------------------------
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+  Grund: Klassendatei f³r javax.xml.bind.annotation.XmlAccessType nicht gefunden
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+  Grund: Klassendatei f³r javax.xml.bind.annotation.XmlAccessType nicht gefunden
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+  Grund: Klassendatei f³r javax.xml.bind.annotation.XmlAccessType nicht gefunden
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] /C:/Projekte/pzw-mkp/pzw-apl/src/main/java/osplus/pzw/mapper/BuchungMapper.java: Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] /C:/Projekte/pzw-mkp/pzw-apl/src/main/java/osplus/pzw/mapper/KonfAntraegeMapper.java: Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[WARNING] /C:/Projekte/pzw-mkp/pzw-apl/src/main/java/osplus/pzw/repository/pzw/PmgtPzwAntragAnlegenRepository.java: Unbekannte Enum-Konstante javax.xml.bind.annotation.XmlAccessType.FIELD
+[INFO] 103 warnings
+[INFO] -------------------------------------------------------------
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR :
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Projekte/pzw-mkp/pzw-apl/src/main/java/osplus/pzw/service/AntragService.java:[178,73] Symbol nicht gefunden
+  Symbol: Methode readPmgtDokumentUeberMassVgngId(osplus.josp.types.IdTimestamp)
+  Ort: Variable dokumentService von Typ osplus.psk.core.apl.services.DokumentService
+[INFO] 1 error
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for pzw-parent 260.0.0-SNAPSHOT:
+[INFO]
+[INFO] pzw-parent ......................................... SUCCESS [  3.858 s]
+[INFO] pzw-common ......................................... SUCCESS [  7.152 s]
+[INFO] pzw-apl-api ........................................ SUCCESS [ 12.041 s]
+[INFO] pzw-apl ............................................ FAILURE [  3.750 s]
+[INFO] pzw-cpl-api ........................................ SKIPPED
+[INFO] pzw-cpl ............................................ SKIPPED
+[INFO] pzw-cpl-web-zeitwirtschaft ......................... SKIPPED
+[INFO] pzw-cpl-web ........................................ SKIPPED
+[INFO] pzw-cpl-web-components ............................. SKIPPED
+[INFO] pzw-cpl-web-components-zeitwirtschaft-buchen ....... SKIPPED
+[INFO] pzw-runner ......................................... SKIPPED
+[INFO] pzw-local .......................................... SKIPPED
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  29.257 s
+[INFO] Finished at: 2026-03-03T22:22:56+01:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.14.1:compile (default-compile) on project pzw-apl: Compilation failure
+[ERROR] /C:/Projekte/pzw-mkp/pzw-apl/src/main/java/osplus/pzw/service/AntragService.java:[178,73] Symbol nicht gefunden
+[ERROR]   Symbol: Methode readPmgtDokumentUeberMassVgngId(osplus.josp.types.IdTimestamp)
+[ERROR]   Ort: Variable dokumentService von Typ osplus.psk.core.apl.services.DokumentService
+[ERROR]
