@@ -171,6 +171,28 @@ public interface IPmgtPzwAntragLesenService extends IFachobjektOoService {
     PmgtPzwAntragLesenAusgabe liesPmgtPzwAntragUeberAbsVgngPrzId(FachobjektParameterContainer<LiesPmgtPzwAntragUeberAbsVgngPrzIdEingabe> var1) throws FachobjektException;
 }
 
+===============================================================
+    public static List<AntragAbwesenheitRead> ospeToantragAbwesenheitRead(PmgtPzwAntragLesenAusgabe ausgabe, List<DokumentRead> dokumente) {
+        return Optional.ofNullable(ausgabe.getPmgtPzwAntragMitarbeiter())
+                .stream()
+                .flatMap(antragMitarbeiter -> antragMitarbeiter.getPmgtPzwAntragAbwht().stream())
+                .map(antrag -> new AntragAbwesenheitRead(
+                        antrag.getPzwAntrZrmAts(),
+                        antrag.getPzwAntrZrmEts(),
+                        PskConstants.JA.equals(antrag.getPzwAntrStrnKz()),
+                        antrag.getPzwAbwtSchl(),
+                        antrag.getPzwAntrTageAnz().toBigInteger().intValue(),
+                        Abwesenheitszyklus.GANZTAGS.getZyklusSchluessel().equals(antrag.getPzwAntrZyklSchl()),
+                        antrag.getPzwAntrMaHnws(),
+                        antrag.getPzwAntrFrgbHnws(),
+                        antrag.getTsEinfuegung(),
+                        AntragAbwesenheitStatus.getAntragStatus(antrag.getPzwAntrStat()),
+                        antrag.getAbsVgngPrzId(),
+                        antrag.getMassVgngId(),
+                        dokumente
+                )).toList();
+    }
+
 =================================================================
 Eingabe-Schnittstelle
 LiesPmgtPzwAntragUeberUserEingabe
