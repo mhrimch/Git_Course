@@ -1,1 +1,446 @@
 
+import { useUuiService, UuiServiceClientDef, UuiServiceResponse } from '@finanzinformatik/cpl-module-reactlib';
+import {
+  ExtendedUuiServiceMessage,
+  NotificationStoreActions,
+  useNotificationStoreActions,
+} from '@personalsysteme/notification-handler';
+import { queryOptions, useQuery, UseQueryResult } from '@tanstack/react-query';
+import { KalenderRead } from '../../apl/pzw/kalenderUiModule/KalenderRead';
+import { callReadKalender } from '../../apl/pzw/kalenderUiModule/KalenderUiModule.api';
+import { TanstackConstants } from '../../constants/TanstackConstants';
+import isRolloutVerfuegbar from '../../utils/rolloutUtils';
+import { KalenderKeys } from './Kalender.keys';
+
+export function readKalenderOptions(
+  uuiService: Readonly<UuiServiceClientDef>,
+  notificationStoreActions: NotificationStoreActions,
+  beginn: string,
+  ende: string
+) {
+  return queryOptions({
+    queryKey: KalenderKeys.zeitraum(beginn, ende),
+    queryFn: async (): Promise<KalenderRead & { isRollout: boolean }> =>
+      callReadKalender(uuiService, beginn, ende).then((response: UuiServiceResponse<KalenderRead>) => {
+        notificationStoreActions.handleMessages(response.messages as ExtendedUuiServiceMessage[], true);
+        //TODO Entfernen wenn Rollout abgeschlossen ist
+        return {
+          ...(response.payload as KalenderRead),
+          isRollout: isRolloutVerfuegbar(response.messages),
+        };
+      }),
+    staleTime: TanstackConstants.LONG_STALE_TIME,
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useReadKalender(
+  beginn: string,
+  ende: string
+): UseQueryResult<(KalenderRead & { isRollout: boolean }) | undefined> {
+  const uuiService = useUuiService(),
+    notificationStoreActions = useNotificationStoreActions();
+  return useQuery(readKalenderOptions(uuiService, notificationStoreActions, beginn, ende));
+}
+
+==========================
+import { HttpMethod, UuiServiceClient, UuiServiceResponse } from '@finanzinformatik/cpl-module-reactlib';
+import { App, Services } from '../../../constants/ServiceConstants';
+import { KalenderRead } from './KalenderRead';
+
+/**
+ * Die Funktion callReadKalender liest den Kalender zum angemeldeten Benutzer und im Falle einer Führungskraft auc zu den Mitarbeitenden.
+ * @param uuiService
+ */
+export const callReadKalender = async (
+  uuiService: UuiServiceClient,
+  beginn: string,
+  ende: string
+): Promise<UuiServiceResponse<KalenderRead>> => {
+  return uuiService.execute<KalenderRead>({
+    method: HttpMethod.Get,
+    app: App.PZW,
+    module: Services.KalenderUiModule.module,
+    service: Services.KalenderUiModule.services.readKalender,
+    params: { beginn: beginn, ende: ende },
+  });
+};
+
+======================================
+package osplus.pzw.service;
+
+import osplus.apl.core.api.AplComponent;
+import osplus.apl.core.api.AplLogging;
+import osplus.dynssee.zeitwirtschaft.fo.LiesPmgtPzwKalenderUeberUserEingabe;
+import osplus.fi.core.uui.api.message.MessageType;
+import osplus.josp.types.IdTimestamp;
+import osplus.psk.DateFormatConstants;
+import osplus.psk.core.apl.exception.OspeException;
+import osplus.psk.core.apl.exception.UiServiceException;
+import osplus.psk.core.apl.messages.MessageCallType;
+import osplus.psk.core.apl.messages.MessageCode;
+import osplus.psk.core.apl.messages.MessageMetadata;
+import osplus.psk.core.apl.messages.MessageScope;
+import osplus.psk.core.apl.services.UserService;
+import osplus.pzw.mapper.KalenderMapper;
+import osplus.pzw.model.kalender.KalenderRead;
+import osplus.pzw.repository.pzw.PmgtPzwKalenderLesenRepository;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+
+
+/**
+ * Service für Funktionen zum Kalender
+ */
+@AplComponent
+public class KalenderService implements IKalenderService {
+
+    private final transient PmgtPzwKalenderLesenRepository pmgtPzwKalenderLesenRepository;
+    private final transient UserService userService;
+
+    public KalenderService(
+            final PmgtPzwKalenderLesenRepository pmgtPzwKalenderLesenRepository,
+            final UserService userService
+    ) {
+        this.pmgtPzwKalenderLesenRepository = pmgtPzwKalenderLesenRepository;
+        this.userService = userService;
+    }
+
+    /**
+     * Die Funktion readKalender liest den Kalender für den angemeldeten Nutzer.
+     *
+     * @param beginn LocalDate
+     * @param ende   LocalDate
+     * @return kalenderRead KalenderRead
+     * @throws UiServiceException UiServiceException
+     */
+    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
+    public KalenderRead readKalender(
+            LocalDate beginn,
+            LocalDate ende
+    ) throws UiServiceException {
+        try {
+            LiesPmgtPzwKalenderUeberUserEingabe eingabe = new LiesPmgtPzwKalenderUeberUserEingabe();
+            LocalDateTime localDateTimeAnfang = beginn.atTime(0, 0, 0);
+            LocalDateTime localDateTimeEnde = ende.atTime(23, 59, 59);
+            eingabe.setTsGueltigAb(new IdTimestamp(localDateTimeAnfang.format(DateTimeFormatter.ofPattern(DateFormatConstants.TIMESTAMP_FORMAT, Locale.GERMANY))));
+            eingabe.setTsGueltigBis(new IdTimestamp(localDateTimeEnde.format(DateTimeFormatter.ofPattern(DateFormatConstants.TIMESTAMP_FORMAT, Locale.GERMANY))));
+            eingabe.setPctlPersSchl(userService.getPersonalnummer());
+            return pmgtPzwKalenderLesenRepository.liesPmgtPzwKalenderUeberUser(eingabe).stream().findFirst().map(KalenderMapper::ospeToKalenderRead).orElse(null);
+        } catch (OspeException e) {
+            throw new UiServiceException(MessageType.ERROR, MessageCode.ERROR,
+                    "Kalender.Read.HttpStatus.502",
+                    MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
+        }
+    }
+}
+===============================
+package osplus.pzw.repository.pzw;
+
+import osplus.apl.core.api.AplComponent;
+import osplus.apl.core.api.AplLogging;
+import osplus.dynssee.zeitwirtschaft.fo.LiesPmgtPzwKalenderUeberUserEingabe;
+import osplus.dynssee.zeitwirtschaft.fo.PmgtPzwKalenderLesenAusgabe;
+import osplus.fo.dyns.schnittstelle.IPmgtPzwKalenderLesenService;
+import osplus.psk.core.apl.AbstractOspeAusgabeServiceRepository;
+import osplus.psk.core.apl.exception.OspeException;
+import osplus.psk.core.apl.messages.PmgtDynSMessageUtil;
+
+import java.util.Optional;
+
+/**
+ * Repository für
+ * <a href="https://wiki.intern/spaces/pem/pages/628752392/OSPE-Service+PMGT_PZW_KALENDER_LESEN">PMGT_PZW_KALENDER_LESEN</a>
+ */
+@AplComponent
+public class PmgtPzwKalenderLesenRepository extends AbstractOspeAusgabeServiceRepository<IPmgtPzwKalenderLesenService, PmgtPzwKalenderLesenAusgabe> {
+
+    public PmgtPzwKalenderLesenRepository(
+            final IPmgtPzwKalenderLesenService pmgtPzwKalenderLesenService,
+            final PmgtDynSMessageUtil pmgtDynSMessageUtil
+    ) {
+        super(pmgtPzwKalenderLesenService, pmgtDynSMessageUtil);
+    }
+
+    /**
+     * Funktion liesPmgtPzwKalenderUeberUser liest den Kalender des angemeldeten Benutzers.
+     *
+     * @param eingabe LiesPmgtPzwKalenderUeberUserEingabe
+     * @return Optional<PmgtPzwKalenderLesenAusgabe>
+     * @throws OspeException OspeException
+     */
+    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
+    public Optional<PmgtPzwKalenderLesenAusgabe> liesPmgtPzwKalenderUeberUser(
+            final LiesPmgtPzwKalenderUeberUserEingabe eingabe
+    ) throws OspeException {
+        return readWrapper(eingabe, getService()::liesPmgtPzwKalenderUeberUser);
+    }
+}
+====================================
+/*
+ * Copyright Finanz Informatik GmbH & Co. KG
+ */
+package osplus.fo.dyns.schnittstelle;
+
+import javax.annotation.Generated;
+
+import osplus.fo.impl.FachobjektParameterContainer;
+import osplus.fo.impl.FachobjektServiceDescription;
+import osplus.fo.schnittstelle.FachobjektException;
+import osplus.fo.schnittstelle.IFachobjektOoService;
+import osplus.dynssee.zeitwirtschaft.fo.LiesPmgtPzwKalenderUeberUserEingabe;
+import osplus.dynssee.zeitwirtschaft.fo.PmgtPzwKalenderLesenAusgabe;
+
+/**
+ * Fachobjekt-Serviceinterface für Service PMGT_PZW_KALENDER_LESEN.
+ */
+@Generated(date = "2026-03-05T13:47:36.708+0100", comments = "DynS-Java-Generator 260_dyns-java_20260225-085020_077ce9cd49_main", value = { "osplus.dyns.generator.Generator" })
+@FachobjektServiceDescription(prozessName = "PMGT_PZW_KALENDER_LESEN")
+public interface IPmgtPzwKalenderLesenService extends IFachobjektOoService {
+
+	/**
+	 * Liefert ein Parameterobjekt zum Aufruf der Operation liesPmgtPzwKalenderUeberUser.
+	 * Nach Aufruf der Operation sind die Ausgabemeldungen im Parameterobjekt
+	 * enthalten.
+	 * 
+	 * @param eingabe fachliche Eingabe
+	 * @return Parameterobjekt mit fachlicher Eingabe 
+	 */
+	FachobjektParameterContainer<LiesPmgtPzwKalenderUeberUserEingabe> getNewParameterLiesPmgtPzwKalenderUeberUser(LiesPmgtPzwKalenderUeberUserEingabe eingabe);
+
+
+	/**
+	 * Entspricht der Funktion des DynS-Service.
+	 *
+	 * @param parameter Parameter (enthält die Serviceeingabe und nach Ausführung die Ausgabemeldungen)
+	 */
+	PmgtPzwKalenderLesenAusgabe liesPmgtPzwKalenderUeberUser(FachobjektParameterContainer<LiesPmgtPzwKalenderUeberUserEingabe> parameter)
+	throws FachobjektException;
+
+}
+
+=======================
+package osplus.pzw.mapper;
+
+import org.apache.commons.lang3.StringUtils;
+import osplus.dynssee.zeitwirtschaft.fo.PmgtPzwKalenderLesenAusgabe;
+import osplus.dynssee.zeitwirtschaft.fo.PmgtPzwKalenderTag;
+import osplus.dynssee.zeitwirtschaft.fo.PmgtPzwKalenderTagAntrag;
+import osplus.dynssee.zeitwirtschaft.fo.PmgtPzwKalenderTagAntragOffen;
+import osplus.dynssee.zeitwirtschaft.fo.PmgtPzwKalenderTagBuchung;
+import osplus.dynssee.zeitwirtschaft.fo.PmgtPzwKalenderTagBuchungOffen;
+import osplus.dynssee.zeitwirtschaft.fo.PmgtPzwKalenderTagMeldung;
+import osplus.dynssee.zeitwirtschaft.fo.PmgtPzwKalenderWoche;
+import osplus.psk.PskConstants;
+import osplus.psk.utils.DateUtils;
+import osplus.pzw.PzwAntraegeConstants;
+import osplus.pzw.PzwConstants;
+import osplus.pzw.model.buchung.BuchungRead;
+import osplus.pzw.model.kalender.KalenderAnOderAbwesenheitRead;
+import osplus.pzw.model.kalender.BuchungspaarRead;
+import osplus.pzw.model.kalender.KalenderAntragOffenRead;
+import osplus.pzw.model.kalender.KalenderAntragRead;
+import osplus.pzw.model.kalender.KalenderRead;
+import osplus.pzw.model.kalender.KalendertagRead;
+import osplus.pzw.model.meldung.MeldungRead;
+
+import java.util.List;
+
+public class KalenderMapper {
+    /**
+     * Die Funktion ospeToKalenderRead konvertiert ein List<PmgtPzwKalenderWoche> in ein KalenderRead
+     *
+     * @param pmgtPzwKalenderLesenAusgabe PmgtPzwKalenderLesenAusgabe
+     * @return KalenderRead
+     */
+    public static KalenderRead ospeToKalenderRead(PmgtPzwKalenderLesenAusgabe pmgtPzwKalenderLesenAusgabe) {
+        return new KalenderRead(pmgtPzwKalenderLesenAusgabe.getPmgtPzwKalenderMitarbeiter().getPctlPersSchl(),
+                pmgtPzwKalenderLesenAusgabe.getPmgtPzwKalenderMitarbeiter().getPzwMaAfbrName(),
+                pmgtPzwKalenderLesenAusgabe.getPmgtPzwKalenderMitarbeiter().getPmgtPzwKalenderWoche().stream().flatMap(kalenderwoche -> ospePmgtPzwKalenderWocheToKalenderTage(kalenderwoche).stream()).toList());
+    }
+
+    public static List<KalendertagRead> ospePmgtPzwKalenderWocheToKalenderTage(PmgtPzwKalenderWoche pmgtPzwKalenderWoche) {
+        return pmgtPzwKalenderWoche.getPmgtPzwKalenderTag().stream().map(tag -> ospeToKalenderTag(tag, pmgtPzwKalenderWoche.getPzwKw())).toList();
+    }
+
+    public static KalendertagRead ospeToKalenderTag(PmgtPzwKalenderTag pmgtPzwKalenderTag, String pzwKw) {
+        return new KalendertagRead(DateUtils.convertToLocalDate(pmgtPzwKalenderTag.getPzwKtag()),
+                pzwKw,
+                PskConstants.JA.equals(pmgtPzwKalenderTag.getPzwKtagFtagKz()),
+                PzwConstants.ANWESENHEITSSTATUS_OHNE_MELDUNG.equals(pmgtPzwKalenderTag.getPzwAnwhStat()),
+                pmgtPzwKalenderTag.getPzwSdoWert(),
+                ospeToKalenderAnOderAbwesenheit(pmgtPzwKalenderTag),
+                pmgtPzwKalenderTag.getPmgtPzwKalenderTagBuchung().stream().map(KalenderMapper::ospeToBuchungspaar).toList(),
+                pmgtPzwKalenderTag.getPmgtPzwKalenderTagBuchungOffen().stream().map(KalenderMapper::ospeToBuchungRead).toList(),
+                pmgtPzwKalenderTag.getPmgtPzwKalenderTagAntrag().stream().map(KalenderMapper::ospeToKalenderAntragRead).toList(),
+                pmgtPzwKalenderTag.getPmgtPzwKalenderTagAntragOffen().stream().map(KalenderMapper::ospeToKalenderAntragOffenRead).toList(),
+                pmgtPzwKalenderTag.getPmgtPzwKalenderTagMeldung().stream().map(KalenderMapper::ospeToMeldung).toList()
+
+        );
+    }
+
+    public static KalenderAnOderAbwesenheitRead ospeToKalenderAnOderAbwesenheit(PmgtPzwKalenderTag pmgtPzwKalenderTag) {
+        return new KalenderAnOderAbwesenheitRead(pmgtPzwKalenderTag.getPzwAnwhArtText(),
+                DateUtils.convertToLocalDateTime(pmgtPzwKalenderTag.getPzwAnwhAts()),
+                DateUtils.convertToLocalDateTime(pmgtPzwKalenderTag.getPzwAnwhEts()),
+                pmgtPzwKalenderTag.getPzwKaldIconNr());
+    }
+
+    public static KalenderAntragRead ospeToKalenderAntragRead(PmgtPzwKalenderTagAntrag pmgtPzwKalenderTagAntrag) {
+        return new KalenderAntragRead(pmgtPzwKalenderTagAntrag.getPzwAnwhArtText(),
+                DateUtils.convertToLocalDateTime(pmgtPzwKalenderTagAntrag.getPzwAnwhAts()),
+                DateUtils.convertToLocalDateTime(pmgtPzwKalenderTagAntrag.getPzwAnwhEts()),
+                pmgtPzwKalenderTagAntrag.getPzwKaldIconNr());
+    }
+
+    public static KalenderAntragOffenRead ospeToKalenderAntragOffenRead(PmgtPzwKalenderTagAntragOffen pmgtPzwKalenderTagAntragOffen) {
+        return new KalenderAntragOffenRead(StringUtils.defaultString(
+                pmgtPzwKalenderTagAntragOffen.getPzwAnwhArtText()).concat(
+                        PskConstants.JA.equals(pmgtPzwKalenderTagAntragOffen.getPzwAntrStrnKz()) ? PzwAntraegeConstants.STORNIERUNGSANTRAG_BEZEICHNUNG : ""
+                        ),
+                DateUtils.convertToLocalDateTime(pmgtPzwKalenderTagAntragOffen.getPzwAnwhAts()),
+                DateUtils.convertToLocalDateTime(pmgtPzwKalenderTagAntragOffen.getPzwAnwhEts()),
+                pmgtPzwKalenderTagAntragOffen.getTsEinfuegung(),
+                pmgtPzwKalenderTagAntragOffen.getPzwKaldIconNr(),
+                pmgtPzwKalenderTagAntragOffen.getPzwAntrStat());
+    }
+
+    public static MeldungRead ospeToMeldung(PmgtPzwKalenderTagMeldung pmgtPzwKalenderTagMeldung) {
+        return new MeldungRead(pmgtPzwKalenderTagMeldung.getPzwMldgTyp(),
+                pmgtPzwKalenderTagMeldung.getPzwMldgArt(),
+                pmgtPzwKalenderTagMeldung.getPzwMldgText(),
+                null);
+    }
+
+    public static BuchungspaarRead ospeToBuchungspaar(PmgtPzwKalenderTagBuchung pmgtPzwKalenderTagBuchung) {
+        return new BuchungspaarRead(pmgtPzwKalenderTagBuchung.getPzwKaldTypText(), pmgtPzwKalenderTagBuchung.getPzwKaldBuchStart(),
+                pmgtPzwKalenderTagBuchung.getPzwKaldBuchEnde(),
+                pmgtPzwKalenderTagBuchung.getPzwKaldBuchEigsNr());
+    }
+
+    public static BuchungRead ospeToBuchungRead(PmgtPzwKalenderTagBuchungOffen pmgtPzwKalenderTagBuchungOffen) {
+        return new BuchungRead(pmgtPzwKalenderTagBuchungOffen.getPzwKaldTypText(),
+                DateUtils.convertToLocalDateTime(pmgtPzwKalenderTagBuchungOffen.getPzwBuchTs()),
+                pmgtPzwKalenderTagBuchungOffen.getPzwKaldBuchEigsNr(), pmgtPzwKalenderTagBuchungOffen.getPzwBuchStat());
+    }
+
+}
+====================
+//
+// Diese Datei wurde mit der Eclipse Implementation of JAXB, v2.3.3 generiert 
+// Siehe https://eclipse-ee4j.github.io/jaxb-ri 
+// Änderungen an dieser Datei gehen bei einer Neukompilierung des Quellschemas verloren. 
+// Generiert: 2026.03.05 um 01:47:26 PM CET 
+//
+
+
+package osplus.dynssee.zeitwirtschaft.fo;
+
+import osplus.dyns.dsm.jaxb.DynsFachobjektTyp;
+import osplus.fo.impl.FachobjektOoBase;
+
+
+/**
+ * Ausgabefachobjekt zum DynS-Service PMGT_PZW_KALENDER_LESEN
+ * 
+ * Diese Klasse enthält javax- und jakarta-Annotationen für den Betrieb im OSPlus-Release 25.0
+ * 
+ */
+@javax.xml.bind.annotation.XmlAccessorType(javax.xml.bind.annotation.XmlAccessType.FIELD)
+@javax.xml.bind.annotation.XmlType(name = "PmgtPzwKalenderLesenAusgabe", namespace = "http://fo.zeitwirtschaft.dynssee.osplus/", propOrder = {
+    "pmgtPzwKalenderMitarbeiter"
+})
+@jakarta.xml.bind.annotation.XmlAccessorType(jakarta.xml.bind.annotation.XmlAccessType.FIELD)
+@jakarta.xml.bind.annotation.XmlType(name = "PmgtPzwKalenderLesenAusgabe", namespace = "http://fo.zeitwirtschaft.dynssee.osplus/", propOrder = {
+    "pmgtPzwKalenderMitarbeiter"
+})
+public class PmgtPzwKalenderLesenAusgabe
+    extends FachobjektOoBase
+{
+
+    @javax.xml.bind.annotation.XmlElement(name = "PmgtPzwKalenderMitarbeiter")
+    @DynsFachobjektTyp(maximaleKardinalitaet = 1)
+    @jakarta.xml.bind.annotation.XmlElement(name = "PmgtPzwKalenderMitarbeiter")
+    protected PmgtPzwKalenderMitarbeiter pmgtPzwKalenderMitarbeiter;
+    /**
+     * Seriennummer für Serializable
+     * 
+     */
+    private final static long serialVersionUID = (20260305134651L);
+
+    /**
+     * Ruft den Wert der pmgtPzwKalenderMitarbeiter-Eigenschaft ab.
+     * 
+     * @return
+     *     possible object is
+     *     {@link PmgtPzwKalenderMitarbeiter }
+     *     
+     */
+    public PmgtPzwKalenderMitarbeiter getPmgtPzwKalenderMitarbeiter() {
+        return pmgtPzwKalenderMitarbeiter;
+    }
+
+    /**
+     * Legt den Wert der pmgtPzwKalenderMitarbeiter-Eigenschaft fest.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link PmgtPzwKalenderMitarbeiter }
+     *     
+     */
+    public void setPmgtPzwKalenderMitarbeiter(PmgtPzwKalenderMitarbeiter value) {
+        this.pmgtPzwKalenderMitarbeiter = value;
+    }
+
+}
+==================================
+/*
+ * Copyright Finanz Informatik GmbH & Co. KG
+ */
+package osplus.fo.dyns.schnittstelle;
+
+import javax.annotation.Generated;
+
+import osplus.fo.impl.FachobjektParameterContainer;
+import osplus.fo.impl.FachobjektServiceDescription;
+import osplus.fo.schnittstelle.FachobjektException;
+import osplus.fo.schnittstelle.IFachobjektOoService;
+import osplus.dynssee.zeitwirtschaft.fo.LiesPmgtPzwKalenderUeberUserEingabe;
+import osplus.dynssee.zeitwirtschaft.fo.PmgtPzwKalenderLesenAusgabe;
+
+/**
+ * Fachobjekt-Serviceinterface für Service PMGT_PZW_KALENDER_LESEN.
+ */
+@Generated(date = "2026-03-05T13:47:36.708+0100", comments = "DynS-Java-Generator 260_dyns-java_20260225-085020_077ce9cd49_main", value = { "osplus.dyns.generator.Generator" })
+@FachobjektServiceDescription(prozessName = "PMGT_PZW_KALENDER_LESEN")
+public interface IPmgtPzwKalenderLesenService extends IFachobjektOoService {
+
+	/**
+	 * Liefert ein Parameterobjekt zum Aufruf der Operation liesPmgtPzwKalenderUeberUser.
+	 * Nach Aufruf der Operation sind die Ausgabemeldungen im Parameterobjekt
+	 * enthalten.
+	 * 
+	 * @param eingabe fachliche Eingabe
+	 * @return Parameterobjekt mit fachlicher Eingabe 
+	 */
+	FachobjektParameterContainer<LiesPmgtPzwKalenderUeberUserEingabe> getNewParameterLiesPmgtPzwKalenderUeberUser(LiesPmgtPzwKalenderUeberUserEingabe eingabe);
+
+
+	/**
+	 * Entspricht der Funktion des DynS-Service.
+	 *
+	 * @param parameter Parameter (enthält die Serviceeingabe und nach Ausführung die Ausgabemeldungen)
+	 */
+	PmgtPzwKalenderLesenAusgabe liesPmgtPzwKalenderUeberUser(FachobjektParameterContainer<LiesPmgtPzwKalenderUeberUserEingabe> parameter)
+	throws FachobjektException;
+
+}
+
+
+
+
+
+
