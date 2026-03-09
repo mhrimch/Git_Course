@@ -354,6 +354,295 @@ export const callReadAntraegeAbwesenheit = async (
     params: { beginn, ende },
   });
 };
+======================================================================
+import { useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import { IcClockS, IcNextS } from '@finanzinformatik/mcd-module-icons';
+import { Chip, IconButton, Stack, Typography } from '@mui/material';
+import dayjs, { Dayjs } from 'dayjs';
+import { t } from 'i18next';
+import { KalendertagRead } from '../../apl/pzw/kalenderUiModule/KalendertagRead';
+import { KalenderConstants } from '../../constants/KalenderConstants';
+import { useReadKalender } from '../../tanstack/kalender/useReadKalender';
+import { navigateToAntragAbwesenheitAnzeigen, navigateToZeitkorrekturOhneMeldung } from '../../utils/bookmarkUtil';
+import { convertDecimalToHHmm, convertISOTimestampToDate, dayjsToIdTimestamp } from '../../utils/DateUtils';
+import { ZeitKontoStatusConstants } from './ZeitereignisseConstants';
+import { FITabelle, FITabelleProps } from '@finanzinformatik/cpl-module-reactui';
+import { AnwesendIcon, IconConstants } from './EreignisIcons';
+import { ValueGetterParams } from '@finanzinformatik/cpl-module-reactui/build/esm/components/FITabelle';
+import { Grid } from '@mui/system';
+import { ThemeConstants } from '../../constants/ThemeConstants';
+import { GetRowIdParams } from 'ag-grid-community';
+import { ZeitereignisseTabelleProps } from '../../views/ZeitereignisseView';
+import { AntragIcon } from '../antraege/abwesenheit/AntragAbwesenheitItem';
+import { AnOderAbwesenheitsarten } from '../../constants/PzwConstants';
+
+type ZeitkontoRow = {
+  datum: Dayjs;
+  typ: string;
+  zeitraum?: string;
+  anfangTs?: string;
+  endeTs?: string;
+  iconId?: number;
+  status: ZeitkontoStatusProps['label'];
+};
+
+export type ZeitkontoTabelleProps = {
+  items: ZeitkontoRow[];
+};
+
+function mapKalenderReadToZeitkontoRow(kalendertage: KalendertagRead[]) {
+  const rows: ZeitkontoRow[] = [];
+  for (const tag of kalendertage) {
+    const { datum, buchungspaare, tagesSaldo } = tag;
+    const dayjsDatum = dayjs(datum);
+    for (const abwesenheit of tag.antraege) {
+      if (abwesenheit.beginn && abwesenheit.ende && abwesenheit.art !== AnOderAbwesenheitsarten.anwesend) {
+        rows.push({
+          datum: dayjsDatum,
+          zeitraum: `${convertISOTimestampToDate(abwesenheit.beginn)} - ${convertISOTimestampToDate(abwesenheit.ende)}`,
+          anfangTs: dayjsToIdTimestamp(dayjs(abwesenheit.beginn)),
+          endeTs: dayjsToIdTimestamp(dayjs(abwesenheit.ende)),
+          iconId: abwesenheit.iconNr,
+          status: 'Ganztägig',
+          typ: abwesenheit.art,
+        });
+      }
+    }
+    if (tag.buchungspaare.length > 0) {
+      const convertedSaldo = convertDecimalToHHmm(tagesSaldo.toString());
+      let status: ZeitkontoStatusProps['label'] =
+        tagesSaldo < 0 ? (convertedSaldo as `-${string}`) : `+${convertedSaldo}`;
+      if (tagesSaldo === 0) {
+        status = 'Ganztägig';
+      }
+      rows.push({
+        datum: dayjsDatum,
+        zeitraum: `${buchungspaare[0].beginn} - ${buchungspaare[buchungspaare.length - 1].ende}`,
+        typ: AnOderAbwesenheitsarten.anwesend,
+        status: status,
+      });
+    }
+  }
+  return rows;
+}
+
+export default function ZeitkontoTabelle({ hidden, anfangDatum, endeDatum }: ZeitereignisseTabelleProps) {
+  const data = useReadKalender(anfangDatum, endeDatum).data?.kalendertage;
+  const rows = data ? mapKalenderReadToZeitkontoRow(data) : [];
+
+  return (
+    <Grid
+      container
+      spacing={ThemeConstants.GRID_CONTAINER_SPACING}
+      direction="column"
+      display={hidden ? 'none' : 'flex'}
+    >
+      <ZeitkontoFITabelle rows={rows} />
+    </Grid>
+  );
+}
+type ZeitkontoStatusProps = {
+  label: 'Ganztägig' | `+${string}` | `-${string}` | `aktiv seit${string}`;
+};
+
+function ZeitkontoStatus({ label }: ZeitkontoStatusProps) {
+  if (label.startsWith(ZeitKontoStatusConstants.MINUS)) {
+    return <Chip icon={<IcClockS />} label={label} color="error" />;
+  }
+  if (label.startsWith(ZeitKontoStatusConstants.PLUS)) {
+    return <Chip icon={<IcClockS />} label={label} color="success" />;
+  }
+  if (label.toLocaleLowerCase() === ZeitKontoStatusConstants.GANZTAEGIG) {
+    return <Chip label={label} variant="outlined" color="secondary" />;
+  }
+  return <Chip icon={<IcClockS />} label={label} />;
+}
+
+function ZeitkontoFITabelle({ rows }: { rows: ZeitkontoRow[] }) {
+  const workflowService = useWorkflowService();
+  const coldefs: FITabelleProps['colDefs'] = [
+    {
+      comparator: (valueA: Dayjs, valueB: Dayjs) => {
+        if (valueA.isBefore(valueB)) {
+          return -1;
+        }
+        if (valueA.isAfter(valueB)) {
+          return 1;
+        }
+        return 0;
+      },
+      sort: 'desc',
+      autoHeight: true,
+      headerName: t('datum'),
+      field: 'datum',
+      cellRenderer: (params: ValueGetterParams<ZeitkontoRow>) =>
+        params.data && (
+          <Typography width="100%">{params.data.datum.format(KalenderConstants.DATUM_FORMAT_STRING)}</Typography>
+        ),
+    },
+    {
+      autoHeight: true,
+      headerName: t('typ'),
+      field: 'typ',
+      cellStyle: () => ({ height: 'auto', justifyContent: 'center' }),
+      cellRenderer: ({ data }: ValueGetterParams<ZeitkontoRow>) =>
+        data && (
+          <Stack gap={2} alignItems="center" direction="row">
+            {data.iconId ? <AntragIcon iconId={data.iconId} size={IconConstants.ICON_36} /> : <AnwesendIcon />}
+            {data.typ}
+          </Stack>
+        ),
+    },
+    {
+      autoHeight: true,
+      headerName: t('zeitenZeitraum'),
+      field: 'zeitraum',
+    },
+    {
+      autoHeight: true,
+      headerName: t('statusZeitSaldo'),
+      field: 'status',
+      wrapText: true,
+      cellRenderer: ({ data }: ValueGetterParams<ZeitkontoRow>) => {
+        if (!data) {
+          return;
+        }
+        const { anfangTs, endeTs, datum } = data;
+        if (data.typ === AnOderAbwesenheitsarten.anwesend) {
+          return (
+            <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
+              <ZeitkontoStatus label={data.status} />
+              <IconButton
+                aria-label="next"
+                onClick={() =>
+                  navigateToZeitkorrekturOhneMeldung(
+                    workflowService,
+                    dayjs(datum).format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
+                  )
+                }
+              >
+                <IcNextS />
+              </IconButton>
+            </Stack>
+          );
+        }
+        if (!anfangTs || !endeTs) {
+          return <ZeitkontoStatus label={data.status} />;
+        }
+        return (
+          <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
+            <ZeitkontoStatus label={data.status} />
+            <IconButton
+              aria-label="next"
+              onClick={() => navigateToAntragAbwesenheitAnzeigen(workflowService, { beginn: anfangTs, ende: endeTs })}
+            >
+              <IcNextS />
+            </IconButton>
+          </Stack>
+        );
+      },
+    },
+  ];
+  return (
+    <FITabelle
+      selektionsVariante="NONE"
+      colDefs={coldefs}
+      rows={rows}
+      sideBar={false}
+      getRowId={(params: GetRowIdParams<ZeitkontoRow>) => `${params.data.datum} ${params.data.zeitraum}`}
+      disableSettingsSection={true}
+      statusBar={undefined}
+      minHeight={ThemeConstants.TABLE_MIN_HEIGHT}
+    ></FITabelle>
+  );
+}
+
+=====================================================
+import type { DefaultMenuItem, FilterChangedEvent } from 'ag-grid-community';
+import type { ColumnState, GetContextMenuItemsParams, GridApi, GridOptions, IServerSideDatasource, MenuItemDef } from 'ag-grid-enterprise';
+import React from 'react';
+import { SettingsSectionProps, UserSettingsIdentifier } from '../SettingsSection/index.js';
+import { ProcessCellForExportParams } from './AgGridTypes.js';
+import { CustomColDef, CustomColGroup, GridModel, Row, SelektionsVariantenType } from './FITabelle.types.js';
+export type FITabelleProps = GridOptions & {
+    /**
+     * Mindesthöhe der Tabelle, z.B. `"300px"`
+     */
+    minHeight?: string;
+    /**
+     * Anzahl der Zeilen, die bei der erweiterten Ansicht angezeigt werden
+     */
+    expandedRowCount?: number;
+    /**
+     * Wenn 'fillParent' gesetzt ist muss das umschließende Element eine explizite Höhe setzen oder über 'height:100%' / flex / grid eine Höhe bereitstellen
+     */
+    fillParent?: boolean;
+    /**
+     * Gibt die Definierung der Tabellen-Kopfzeile an bestehend aus einem Array mit Objekten. Zudem können dort
+     *  Zusatz-Funktionen von AG Grid angegeben werden wie z.B. ob die Spalte filterbar, sortierbar oder in der Größe
+     *  veränderbar ist.
+     */
+    colDefs?: (CustomColDef | CustomColGroup)[];
+    dynamicColDefs?: (CustomColDef | CustomColGroup)[];
+    loading?: boolean;
+    loadingOverlay?: boolean;
+    /**
+     * Gibt die Daten für die Tabellen-Zeilen an bestehend aus einem Array mit Objekten. Der Objekt-key ist zudem
+     *  über den 'field' Parameter in den colDefs ansprechbar.
+     */
+    rows?: Row[];
+    initialGridModel?: GridModel;
+    gridOptions?: GridOptions;
+    rowModelType?: 'serverSide';
+    serverSideDatasource?: IServerSideDatasource;
+    getApis?: (api: GridApi) => void;
+    onRowCountChange?: (count: number) => void;
+    onGridModelChange?: (model: GridModel) => void;
+    actions?: React.ReactNode;
+    /**
+     * UserSettings-Objekt für die {@link SettingsSection}
+     *
+     * @deprecated Sollte über `SettingsSectionProps` übergeben werden.
+     */
+    userSettings?: UserSettingsIdentifier;
+    editableIcons?: boolean;
+    disableSettingsSection?: boolean;
+    disableSelectbox?: boolean;
+    selectRowOnDoubleClick?: boolean;
+    customProcessCellForClipboard?(params: ProcessCellForExportParams): string;
+    selektionsVariante: SelektionsVariantenType;
+    updateResetModelOnColDefsChange?: boolean;
+    customMenuItems?: (contentMenuItemsParams: GetContextMenuItemsParams) => (DefaultMenuItem | MenuItemDef)[];
+    /** Wird vorm Anwenden von in UserSettings gespeicherten GridModels angewendet */
+    mapGridModelBeforeApply?: (apis: {
+        api: GridApi;
+    }, model: GridModel) => GridModel;
+    omitColumnStateAttributes?: (keyof ColumnState)[];
+    addMissingRowsOnPaste?: boolean;
+    /** Sorgt dafür, dass beim Einfügen von Text keine Zeilenumbrüche verloren gehen und AG-Grid diese nicht als neue Zeile einfügt. */
+    keepLinesOnPaste?: boolean;
+    onAfterFilterChanged?(event: FilterChangedEvent): void;
+    disabledOnFilterChanged?: boolean;
+    /** Darstellung der Tabelle */
+    abstand?: 'kompakt' | 'normal';
+    gridSize?: number;
+    /**
+     * Properties der {@link SettingsSection} dieser Tabelle. Wird ignoriert, falls die Settings via
+     * `disableSettingsSection` deaktiviert werden.
+     */
+    SettingsSectionProps?: SettingsSectionProps;
+};
+/**
+ * FITabelle provides a transparent wrapper for the react AgGrid component
+ *
+ */
+declare const FITabelle: React.FC<React.PropsWithChildren<FITabelleProps>>;
+export * from './AgGridTypes.js';
+export { LicenseManager } from 'ag-grid-enterprise';
+export type { SelektionsVariantenType };
+export default FITabelle;
+
+=================================================
 
 
 
