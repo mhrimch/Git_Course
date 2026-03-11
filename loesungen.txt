@@ -282,3 +282,22 @@ function ZeitkontoStatus({ label }: ZeitkontoStatusProps) {
   }
   return <Chip icon={<IcClockS />} label={label} />;
 }
+
+============================================================
+function ZeitkontoStatus({ label }: ZeitkontoStatusProps) {
+  const startsWithPlus = label.startsWith("+");
+  const startsWithMinus = label.startsWith("-");
+  // Nur bei + oder - das Uhr-Icon anzeigen
+  if (startsWithPlus) {
+    return <Chip icon={<IcClockS />} label={label} color="success" />;
+  }
+  if (startsWithMinus) {
+    return <Chip icon={<IcClockS />} label={label} color="error" />;
+  }
+  // Bei allem anderen KEIN Icon
+  if (label.toLowerCase() === ZeitKontoStatusConstants.GANZTAEGIG) {
+    return <Chip label={label} variant="outlined" color="secondary" />;
+  }
+  // Untertägige Abwesenheit ("1:26") → kein Icon
+  return <Chip label={label} />;
+}
