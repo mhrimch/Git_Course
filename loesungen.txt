@@ -354,3 +354,35 @@ function ZeitkontoStatus({ label, typ }: ZeitkontoStatusProps) {
   // 5. Untertägige Abwesenheit (Dauer wie "1:26") -> kein Icon
   return <Chip label={label} />;
 }
+
+=====================================
+function ZeitkontoStatus({ label: initialLabel, typ }: ZeitkontoStatusProps) {
+  const isAnwesenheit = typ === AnOderAbwesenheitsarten.anwesend;
+  let label = initialLabel;
+  // 0. Bei Anwesenheit IMMER + hinzufügen, außer bei Ganztägig oder -Werten
+  if (
+    isAnwesenheit &&
+    !label.startsWith("+") &&
+    !label.startsWith("-") &&
+    label.toLowerCase() !== ZeitKontoStatusConstants.GANZTAEGIG
+  ) {
+    label = `+${label}`;
+  }
+  // 1. Negative Werte -> rotes Icon
+  if (label.startsWith("-")) {
+    return <Chip icon={<IcClockS />} label={label} color="error" />;
+  }
+  // 2. Positive Werte -> grünes Icon
+  if (label.startsWith("+")) {
+    return <Chip icon={<IcClockS />} label={label} color="success" />;
+  }
+  // 3. Ganztägig
+  if (label.toLowerCase() === ZeitKontoStatusConstants.GANZTAEGIG) {
+    if (isAnwesenheit) {
+      return <Chip icon={<IcClockS />} label={label} color="success" />;
+    }
+    return <Chip label={label} variant="outlined" color="secondary" />;
+  }
+  // 4. Untertägige Abwesenheit -> kein Icon
+  return <Chip label={label} />;
+}
