@@ -301,3 +301,28 @@ function ZeitkontoStatus({ label }: ZeitkontoStatusProps) {
   // Untertägige Abwesenheit ("1:26") → kein Icon
   return <Chip label={label} />;
 }
+
+===================================
+type ZeitkontoStatusProps = {
+  label: string;
+  typ: string;
+};
+
+<ZeitkontoStatus label={data.status} typ={data.typ} />
+
+function ZeitkontoStatus({ label, typ }: ZeitkontoStatusProps) {
+  const isAnwesenheit = typ === AnOderAbwesenheitsarten.anwesend;
+  if (label.startsWith("-")) {
+    return <Chip icon={<IcClockS />} label={label} color="error" />;
+  }
+  if (label.startsWith("+")) {
+    return <Chip icon={<IcClockS />} label={label} color="success" />;
+  }
+  if (isAnwesenheit) {
+    return <Chip icon={<IcClockS />} label={label} color="success" />;
+  }
+  if (label.toLowerCase() === ZeitKontoStatusConstants.GANZTAEGIG) {
+    return <Chip label={label} variant="outlined" color="secondary" />;
+  }
+  return <Chip label={label} />;
+}
