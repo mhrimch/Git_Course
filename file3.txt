@@ -1,1 +1,86 @@
 
+import { IcBackArrowS } from '@finanzinformatik/mcd-module-icons';
+import { Box, Button, Stack } from '@mui/material';
+import { t } from 'i18next';
+import React, { useMemo } from 'react';
+import AntragAbwesenheitSapAnzeigen from '../components/antraege/abwesenheit/AntragAbwesenheitSapAnzeigen';
+import { KalenderViewGrid } from '../components/kalender/KalenderViewGrid';
+import {
+  getSchluesselToPropertiesMap,
+  parseReadAntraegeAbwesenheitToAntraegeTabelleRow,
+} from '../components/zeitEreignisse/AntraegeAbwesenheitTabelle';
+import AntragAbwesenheitAnzeigen from '../components/antraege/abwesenheit/AntragAbwesenheitAnzeigen';
+import { AntragAbwesenheitStatusConstants } from '../components/zeitEreignisse/ZeitereignisseConstants';
+import { KalenderConstants } from '../constants/KalenderConstants';
+import { WorkflowAction } from '../constants/ServiceConstants';
+import { useReadAntraegeAbwesenheit } from '../tanstack/antrag/useReadAntraegeStatus';
+import { useReadKonfAntraege } from '../tanstack/konfiguration/useReadKonfAntraege';
+import { idTimestampToDayjs } from '../utils/DateUtils';
+import { useInputModel, useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import { AntragAbwesenheitAnzeigenPagemodel } from '../models/AntragAbwesenheitAnzeigenPagemodel';
+import { Antragsschluessel } from '../components/zeitwirtschaft/ZeitwirtschaftConstants';
+
+export default function AntragAbwesenheitAnzeigenView() {
+  const inputModel = useInputModel<AntragAbwesenheitAnzeigenPagemodel>();
+  if (!inputModel) {
+    return;
+  }
+  const { beginn, ende, erstellungszeitpunkt } = inputModel;
+  const anfangDayjs = idTimestampToDayjs(beginn);
+  const endeDayjs = idTimestampToDayjs(ende);
+  const anfangIso = anfangDayjs.format(KalenderConstants.DATUM_ISO_FORMAT_STRING);
+  const endeIso = endeDayjs.format(KalenderConstants.DATUM_ISO_FORMAT_STRING);
+
+  const workflowService = useWorkflowService();
+  const { data: antraegeRead, isPending: isAntragPending } = useReadAntraegeAbwesenheit(anfangIso, endeIso);
+  console.log(' antraegeRead', antraegeRead);
+  const konfAntraege = useReadKonfAntraege().data?.antragskategorien ?? [];
+  const schluesselPropertiesMap = useMemo(() => getSchluesselToPropertiesMap(konfAntraege), [konfAntraege]);
+  const parsedData = antraegeRead
+    ? parseReadAntraegeAbwesenheitToAntraegeTabelleRow(antraegeRead, schluesselPropertiesMap)
+    : [];
+  const currentAntrag = erstellungszeitpunkt
+    ? parsedData.find(
+        (antrag) =>
+          antrag.anfangTs === beginn && antrag.endeTs === ende && antrag.einfuegungTimestamp === erstellungszeitpunkt
+      )
+    : parsedData.find(
+        (antrag) =>
+          antrag.anfangTs === beginn &&
+          antrag.endeTs === ende &&
+          antrag.status === AntragAbwesenheitStatusConstants.FREIGEGEBEN_SAP
+      );
+  const isUrlaubsantrag = currentAntrag?.antragSchluessel === Antragsschluessel.urlaubsantrag;
+  if (!isUrlaubsantrag && currentAntrag?.anzahlTage) {
+    currentAntrag.anzahlTage = endeDayjs.diff(anfangDayjs, KalenderConstants.TAG);
+  }
+
+  return (
+    <KalenderViewGrid>
+      <Stack gap={10}>
+        <Box>
+          <Button
+            startIcon={<IcBackArrowS />}
+            onClick={(): void => {
+              workflowService.executeAction(WorkflowAction.Back);
+            }}
+          >
+            {t('zurueck')}
+          </Button>
+        </Box>
+        {!isAntragPending && !currentAntrag && inputModel.bezeichnung && inputModel.iconNr !== undefined ? (
+          <AntragAbwesenheitSapAnzeigen
+            antragBezeichnung={inputModel.bezeichnung}
+            anfangTs={inputModel.beginn}
+            endeTs={inputModel.ende}
+            iconId={inputModel.iconNr}
+          />
+        ) : (
+          currentAntrag && (
+            <AntragAbwesenheitAnzeigen antragData={currentAntrag} dokumente={antraegeRead?.[0].dokumente} />
+          )
+        )}
+      </Stack>
+    </KalenderViewGrid>
+  );
+}
