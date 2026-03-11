@@ -1,1 +1,15 @@
 
+const isUrlaubsantrag = currentAntrag?.antragSchluessel === Antragsschluessel.urlaubsantrag;
+// nur anpassen, wenn anzahlTage existiert und kein Urlaubsantrag
+if (currentAntrag && !isUrlaubsantrag && currentAntrag.anzahlTage != null) {
+  // prüfen, ob Start oder Ende eine Uhrzeit hat → dann NICHT ganztägig
+  const startHatUhrzeit =
+    anfangDayjs.hour() !== 0 || anfangDayjs.minute() !== 0;
+  const endeHatUhrzeit =
+    endeDayjs.hour() !== 0 || endeDayjs.minute() !== 0;
+  const istGanztags = !startHatUhrzeit && !endeHatUhrzeit;
+  if (istGanztags) {
+    currentAntrag.anzahlTage =
+      endeDayjs.diff(anfangDayjs, KalenderConstants.TAG) + 1;
+  }
+}
