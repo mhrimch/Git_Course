@@ -215,3 +215,52 @@ function ZeitkontoFITabelle({ rows }: { rows: ZeitkontoRow[] }) {
     ></FITabelle>
   );
 }
+=====================================
+if (
+  abwesenheit.beginn &&
+  abwesenheit.ende &&
+  abwesenheit.art !== AnOderAbwesenheitsarten.anwesend
+) {
+  const start = dayjs(abwesenheit.beginn);
+  const end = dayjs(abwesenheit.ende);
+  const startDate = start.format("DD.MM.YY");
+  const endDate = end.format("DD.MM.YY");
+  const isSameDay = start.isSame(end, "day");
+  // Untertägig = gleicher Tag, aber nicht 00:00 bis 23:xx
+  const isUntertaegig =
+    isSameDay &&
+    (start.hour() !== 0 || end.hour() !== 23);
+  // Zeitraum bauen
+  let zeitraum;
+  if (!isSameDay) {
+    // Mehrtägig → immer ganztägig
+    zeitraum = `${startDate} - ${endDate}`;
+  } else if (isUntertaegig) {
+    zeitraum = `${startDate} ${start.format("HH:mm")} - ${end.format("HH:mm")}`;
+  } else {
+    zeitraum = `${startDate}`;
+  }
+  // Status bestimmen
+  let status: ZeitkontoStatusProps['label'];
+  if (isUntertaegig) {
+    // Dauer berechnen (HH:mm)
+    const diffMinutes = end.diff(start, "minute");
+    const hours = Math.floor(diffMinutes / 60)
+      .toString()
+      .padStart(2, "0");
+    const minutes = (diffMinutes % 60).toString().padStart(2, "0");
+    status = `+${hours}:${minutes}`;
+  } else {
+    // Ganztägig
+    status = "Ganztägig";
+  }
+  rows.push({
+    datum: start,
+    zeitraum,
+    anfangTs: dayjsToIdTimestamp(start),
+    endeTs: dayjsToIdTimestamp(end),
+    iconId: abwesenheit.iconNr,
+    status,
+    typ: abwesenheit.art,
+  });
+}
