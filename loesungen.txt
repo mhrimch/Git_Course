@@ -326,3 +326,31 @@ function ZeitkontoStatus({ label, typ }: ZeitkontoStatusProps) {
   }
   return <Chip label={label} />;
 }
+
+======================
+function ZeitkontoStatus({ label, typ }: ZeitkontoStatusProps) {
+  const isAnwesenheit = typ === AnOderAbwesenheitsarten.anwesend;
+  // 1. Negativer Wert -> rotes Icon
+  if (label.startsWith("-")) {
+    return <Chip icon={<IcClockS />} label={label} color="error" />;
+  }
+  // 2. Positiver Wert -> grünes Icon
+  if (label.startsWith("+")) {
+    return <Chip icon={<IcClockS />} label={label} color="success" />;
+  }
+  // 3. Ganztägig
+  if (label.toLowerCase() === ZeitKontoStatusConstants.GANZTAEGIG) {
+    if (isAnwesenheit) {
+      // Anwesenheit -> GRÜNES ICON
+      return <Chip icon={<IcClockS />} label={label} color="success" />;
+    }
+    // Abwesenheit -> OUTLINED, wie bisher
+    return <Chip label={label} variant="outlined" color="secondary" />;
+  }
+  // 4. Anwesenheit ohne + oder - -> Icon (z. B. 0:19)
+  if (isAnwesenheit) {
+    return <Chip icon={<IcClockS />} label={label} color="success" />;
+  }
+  // 5. Untertägige Abwesenheit (Dauer wie "1:26") -> kein Icon
+  return <Chip label={label} />;
+}
