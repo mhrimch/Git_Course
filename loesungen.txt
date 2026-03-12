@@ -386,3 +386,17 @@ function ZeitkontoStatus({ label: initialLabel, typ }: ZeitkontoStatusProps) {
   // 4. Untertägige Abwesenheit -> kein Icon
   return <Chip label={label} />;
 }
+=====================================================================
+function saldoToHHMM(value: number): string {
+  if (isNaN(value)) return "NaN";
+  const sign = value < 0 ? "-" : "+";
+  const abs = Math.abs(value);
+  const hours = Math.floor(abs);
+  const minutes = Math.round((abs - hours) * 60);
+  // Falls Rundung 60 ergibt
+  const adjHours = minutes === 60 ? hours + 1 : hours;
+  const adjMinutes = minutes === 60 ? 0 : minutes;
+  const hh = String(adjHours).padStart(2, "0");
+  const mm = String(adjMinutes).padStart(2, "0");
+  return sign + hh + ":" + mm;
+}
