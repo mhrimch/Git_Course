@@ -1,0 +1,220 @@
+import { useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import { IcClockS, IcNextS } from '@finanzinformatik/mcd-module-icons';
+import { Chip, IconButton, Stack, Typography } from '@mui/material';
+import dayjs, { Dayjs } from 'dayjs';
+import { t } from 'i18next';
+import { KalendertagRead } from '../../apl/pzw/kalenderUiModule/KalendertagRead';
+import { KalenderConstants } from '../../constants/KalenderConstants';
+import { useReadKalender } from '../../tanstack/kalender/useReadKalender';
+import { navigateToAntragAbwesenheitAnzeigen, navigateToZeitkorrekturOhneMeldung } from '../../utils/bookmarkUtil';
+import { convertDecimalToHHmm, convertISOTimestampToDate, dayjsToIdTimestamp } from '../../utils/DateUtils';
+import { ZeitKontoStatusConstants } from './ZeitereignisseConstants';
+import { FITabelle, FITabelleProps } from '@finanzinformatik/cpl-module-reactui';
+import { AnwesendIcon, IconConstants } from './EreignisIcons';
+import { ValueGetterParams } from '@finanzinformatik/cpl-module-reactui/build/esm/components/FITabelle';
+import { Grid } from '@mui/system';
+import { ThemeConstants } from '../../constants/ThemeConstants';
+import { GetRowIdParams } from 'ag-grid-community';
+import { ZeitereignisseTabelleProps } from '../../views/ZeitereignisseView';
+import { AntragIcon } from '../antraege/abwesenheit/AntragAbwesenheitItem';
+import { AnOderAbwesenheitsarten } from '../../constants/PzwConstants';
+
+type ZeitkontoRow = {
+  datum: Dayjs;
+  typ: string;
+  zeitraum?: string;
+  anfangTs?: string;
+  endeTs?: string;
+  iconId?: number;
+  status: string;
+};
+
+export type ZeitkontoTabelleProps = {
+  items: ZeitkontoRow[];
+};
+
+function mapKalenderReadToZeitkontoRow(kalendertage: KalendertagRead[]) {
+  const rows: ZeitkontoRow[] = [];
+  for (const tag of kalendertage) {
+    const { datum, buchungspaare, tagesSaldo } = tag;
+    const dayjsDatum = dayjs(datum);
+    for (const abwesenheit of tag.antraege) {
+      if (abwesenheit.beginn && abwesenheit.ende && abwesenheit.art !== AnOderAbwesenheitsarten.anwesend) {
+        const start = dayjs(abwesenheit.beginn);
+        const ende = dayjs(abwesenheit.ende);
+        const startDate = start.format(KalenderConstants.DATUM_FORMAT_STRING);
+        const endDate = ende.format(KalenderConstants.DATUM_FORMAT_STRING);
+        const isSameDay = start.isSame(ende, 'day');
+        const isUntertaegig = isSameDay && (start.hour() !== 0 || ende.hour() !== 23);
+        let zeitraumAntrag;
+        if (isUntertaegig) {
+          zeitraumAntrag = `${startDate} ${start.format(KalenderConstants.DAY_JS_FORMAT_HH_MM)} - ${ende.format(KalenderConstants.DAY_JS_FORMAT_HH_MM)}`;
+        } else {
+          zeitraumAntrag = `${startDate} - ${endDate}`;
+        }
+        let statusAntrag: ZeitkontoStatusProps['label'];
+        if (isUntertaegig) {
+          const diffMinutes = ende.diff(start, 'minute');
+          const hours = Math.floor(diffMinutes / 60).toString();
+          const minutes = (diffMinutes % 60).toString().padStart(2, '0');
+          statusAntrag = `${hours}:${minutes}`;
+        } else {
+          statusAntrag = 'Ganztägig';
+        }
+        rows.push({
+          datum: dayjsDatum,
+          zeitraum: zeitraumAntrag,
+          anfangTs: dayjsToIdTimestamp(dayjs(abwesenheit.beginn)),
+          endeTs: dayjsToIdTimestamp(dayjs(abwesenheit.ende)),
+          iconId: abwesenheit.iconNr,
+          status: statusAntrag,
+          typ: abwesenheit.art,
+        });
+      }
+    }
+    if (tag.buchungspaare.length > 0) {
+      const convertedSaldo = convertDecimalToHHmm(tagesSaldo.toString());
+      console.log('convertedSaldo', convertedSaldo);
+      const statusBuchungen: ZeitkontoStatusProps['label'] =
+        convertedSaldo > 0 ? `+${convertedSaldo}` : `${convertedSaldo}`;
+      rows.push({
+        datum: dayjsDatum,
+        zeitraum: `${buchungspaare[0].beginn} - ${buchungspaare[buchungspaare.length - 1].ende}`,
+        typ: AnOderAbwesenheitsarten.anwesend,
+        status: statusBuchungen,
+      });
+    }
+  }
+  return rows;
+}
+
+export default function ZeitkontoTabelle({ hidden, anfangDatum, endeDatum }: ZeitereignisseTabelleProps) {
+  const data = useReadKalender(anfangDatum, endeDatum).data?.kalendertage;
+  const rows = data ? mapKalenderReadToZeitkontoRow(data) : [];
+
+  return (
+    <Grid
+      container
+      spacing={ThemeConstants.GRID_CONTAINER_SPACING}
+      direction="column"
+      display={hidden ? 'none' : 'flex'}
+    >
+      <ZeitkontoFITabelle rows={rows} />
+    </Grid>
+  );
+}
+type ZeitkontoStatusProps = {
+  label: 'Ganztägig' | `${string}:${string}` | `+${string}` | `-${string}` | `aktiv seit${string}`;
+};
+
+function ZeitkontoStatus({ label }: ZeitkontoStatusProps) {
+  if (label.startsWith(ZeitKontoStatusConstants.MINUS)) {
+    return <Chip icon={<IcClockS />} label={label} color="error" />;
+  }
+  if (label.startsWith(ZeitKontoStatusConstants.PLUS)) {
+    return <Chip icon={<IcClockS />} label={label} color="success" />;
+  }
+  if (label.toLocaleLowerCase() === ZeitKontoStatusConstants.GANZTAEGIG) {
+    return <Chip label={label} variant="outlined" color="secondary" />;
+  }
+  return <Chip icon={<IcClockS />} label={label} />;
+}
+
+function ZeitkontoFITabelle({ rows }: { rows: ZeitkontoRow[] }) {
+  const workflowService = useWorkflowService();
+  const coldefs: FITabelleProps['colDefs'] = [
+    {
+      comparator: (valueA: Dayjs, valueB: Dayjs) => {
+        if (valueA.isBefore(valueB)) {
+          return -1;
+        }
+        if (valueA.isAfter(valueB)) {
+          return 1;
+        }
+        return 0;
+      },
+      sort: 'desc',
+      autoHeight: true,
+      headerName: t('datum'),
+      field: 'datum',
+      cellRenderer: (params: ValueGetterParams<ZeitkontoRow>) =>
+        params.data && (
+          <Typography width="100%">{params.data.datum.format(KalenderConstants.DATUM_FORMAT_STRING)}</Typography>
+        ),
+    },
+    {
+      autoHeight: true,
+      headerName: t('typ'),
+      field: 'typ',
+      cellStyle: () => ({ height: 'auto', justifyContent: 'center' }),
+      cellRenderer: ({ data }: ValueGetterParams<ZeitkontoRow>) =>
+        data && (
+          <Stack gap={2} alignItems="center" direction="row">
+            {data.iconId ? <AntragIcon iconId={data.iconId} size={IconConstants.ICON_36} /> : <AnwesendIcon />}
+            {data.typ}
+          </Stack>
+        ),
+    },
+    {
+      autoHeight: true,
+      headerName: t('zeitenZeitraum'),
+      field: 'zeitraum',
+    },
+    {
+      autoHeight: true,
+      headerName: t('statusZeitSaldo'),
+      field: 'status',
+      wrapText: true,
+      cellRenderer: ({ data }: ValueGetterParams<ZeitkontoRow>) => {
+        if (!data) {
+          return;
+        }
+        const { anfangTs, endeTs, datum } = data;
+        if (data.typ === AnOderAbwesenheitsarten.anwesend) {
+          return (
+            <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
+              <ZeitkontoStatus label={data.status} />
+              <IconButton
+                aria-label="next"
+                onClick={() =>
+                  navigateToZeitkorrekturOhneMeldung(
+                    workflowService,
+                    dayjs(datum).format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
+                  )
+                }
+              >
+                <IcNextS />
+              </IconButton>
+            </Stack>
+          );
+        }
+        if (!anfangTs || !endeTs) {
+          return <ZeitkontoStatus label={data.status} />;
+        }
+        return (
+          <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
+            <ZeitkontoStatus label={data.status} />
+            <IconButton
+              aria-label="next"
+              onClick={() => navigateToAntragAbwesenheitAnzeigen(workflowService, { beginn: anfangTs, ende: endeTs })}
+            >
+              <IcNextS />
+            </IconButton>
+          </Stack>
+        );
+      },
+    },
+  ];
+  return (
+    <FITabelle
+      selektionsVariante="NONE"
+      colDefs={coldefs}
+      rows={rows}
+      sideBar={false}
+      getRowId={(params: GetRowIdParams<ZeitkontoRow>) => `${params.data.datum} ${params.data.zeitraum}`}
+      disableSettingsSection={true}
+      statusBar={undefined}
+      minHeight={ThemeConstants.TABLE_MIN_HEIGHT}
+    ></FITabelle>
+  );
+}
