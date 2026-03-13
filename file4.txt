@@ -233,3 +233,17 @@ export const convertDecimalToHHmm = (inputTime: string) => {
   }
   return `${hours}:${minutes}`;
 };
+==================================================================
+export const convertDecimalToHHmm = (value: number) => {
+  if (value === 0) {
+    return "0:00";
+  }
+  const isNegative = value < 0;
+  const absValue = Math.abs(value);
+  const hours = Math.floor(absValue);
+  const decimal = absValue - hours;
+  const minutes = Math.round(decimal * 60);
+  const mm = minutes.toString().padStart(2, "0");
+  const hh = hours.toString();
+  return `${isNegative ? "-" : ""}${hh}:${mm}`;
+};
