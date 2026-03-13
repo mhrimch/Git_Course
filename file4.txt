@@ -218,3 +218,18 @@ function ZeitkontoFITabelle({ rows }: { rows: ZeitkontoRow[] }) {
     ></FITabelle>
   );
 }
+=====================================================
+export const convertDecimalToHHmm = (inputTime: string) => {
+  const split = inputTime.split('.');
+
+  const hours = Number(split[0]);
+  let industrieminuten = 0;
+  if (split.length > 1) {
+    industrieminuten = parseFloat(split[1].padEnd(2, '0'));
+  }
+  const minutes = `${Math.round(industrieminuten * 0.6)}`;
+  if (minutes.length < 2) {
+    return `${hours}:0${minutes}`;
+  }
+  return `${hours}:${minutes}`;
+};
