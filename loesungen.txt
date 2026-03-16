@@ -1,3 +1,29 @@
+const dayjs = require("dayjs");
+
+const start = dayjs("2026-03-13T10:00:00");
+const end = dayjs("2026-03-13T12:30:00");
+
+// prüfen ob ganztägig
+const isFullDay =
+  start.hour() === 0 &&
+  start.minute() === 0 &&
+  end.hour() === 23 &&
+  end.minute() === 59;
+
+if (!isFullDay) {
+
+  const diffMinutes = end.diff(start, "minute");
+
+  const hours = Math.floor(diffMinutes / 60);
+  const minutes = diffMinutes % 60;
+
+  const duration = `${hours}:${String(minutes).padStart(2, "0")}`;
+
+  console.log("untertägige Dauer:", duration);
+}
+
+
+----------------------------------------------------------------------------
 
 const isUrlaubsantrag = currentAntrag?.antragSchluessel === Antragsschluessel.urlaubsantrag;
 // nur anpassen, wenn anzahlTage existiert und kein Urlaubsantrag
