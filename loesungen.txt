@@ -1,3 +1,216 @@
+import { useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import { IcClockS, IcNextS } from '@finanzinformatik/mcd-module-icons';
+import { Chip, IconButton, Stack, Typography } from '@mui/material';
+import dayjs, { Dayjs } from 'dayjs';
+import { t } from 'i18next';
+import { KalendertagRead } from '../../apl/pzw/kalenderUiModule/KalendertagRead';
+import { KalenderConstants } from '../../constants/KalenderConstants';
+import { useReadKalender } from '../../tanstack/kalender/useReadKalender';
+import { navigateToAntragAbwesenheitAnzeigen, navigateToZeitkorrekturOhneMeldung } from '../../utils/bookmarkUtil';
+import {
+  convertDecimalToHHmm,
+  dayjsToIdTimestamp,
+  ermittleDauerAusDayjsSpanne,
+  formatiereDayjsSpanne,
+} from '../../utils/DateUtils';
+import { ZeitKontoStatusConstants } from './ZeitereignisseConstants';
+import { FITabelle, FITabelleProps } from '@finanzinformatik/cpl-module-reactui';
+import { AnwesendIcon, IconConstants } from './EreignisIcons';
+import { ValueGetterParams } from '@finanzinformatik/cpl-module-reactui/build/esm/components/FITabelle';
+import { Grid } from '@mui/system';
+import { ThemeConstants } from '../../constants/ThemeConstants';
+import { GetRowIdParams } from 'ag-grid-community';
+import { ZeitereignisseTabelleProps } from '../../views/ZeitereignisseView';
+import { AntragIcon } from '../antraege/abwesenheit/AntragAbwesenheitItem';
+import { AnOderAbwesenheitsarten } from '../../constants/PzwConstants';
+
+type StatusChipTyp = 'dauer' | 'saldo' | 'ganztaegig';
+
+type ZeitkontoRow = {
+  datum: Dayjs;
+  typ: string;
+  zeitraum?: string;
+  anfangTs?: string;
+  endeTs?: string;
+  iconId?: number;
+  status: ZeitkontoStatusProps['label'];
+  statusChipTyp: StatusChipTyp;
+};
+function mapKalenderReadToZeitkontoRow(kalendertage: KalendertagRead[]) {
+  const rows: ZeitkontoRow[] = [];
+  for (const tag of kalendertage) {
+    const { datum, buchungspaare, tagesSaldo } = tag;
+    const dayjsDatum = dayjs(datum);
+    for (const abwesenheit of tag.antraege) {
+      if (abwesenheit.beginn && abwesenheit.ende && abwesenheit.art !== AnOderAbwesenheitsarten.anwesend) {
+        const start = dayjs(abwesenheit.beginn);
+        const ende = dayjs(abwesenheit.ende);
+        const istGanztaegig = start.hour() === 0 && start.minute() === 0 && ende.hour() === 23 && ende.minute() === 59;
+        const zeitraum = formatiereDayjsSpanne(start, ende, !istGanztaegig);
+        const status: ZeitkontoStatusProps['label'] = istGanztaegig
+          ? 'Ganztägig'
+          : ermittleDauerAusDayjsSpanne(start, ende);
+
+        rows.push({
+          datum: dayjsDatum,
+          zeitraum,
+          anfangTs: dayjsToIdTimestamp(start),
+          endeTs: dayjsToIdTimestamp(ende),
+          iconId: abwesenheit.iconNr,
+          status,
+          statusChipTyp: istGanztaegig ? 'ganztaegig' : 'dauer',
+          typ: abwesenheit.art,
+        });
+      }
+    }
+
+    if (tag.buchungspaare.length > 0) {
+      const convertedSaldo = convertDecimalToHHmm(tagesSaldo.toString());
+      const status: ZeitkontoStatusProps['label'] =
+        tagesSaldo < 0 ? (convertedSaldo as `-${string}`) : `+${convertedSaldo}`;
+      rows.push({
+        datum: dayjsDatum,
+        zeitraum: `${buchungspaare[0].beginn} - ${buchungspaare[buchungspaare.length - 1].ende}`,
+        typ: AnOderAbwesenheitsarten.anwesend,
+        status: status,
+        statusChipTyp: 'saldo',
+      });
+    }
+  }
+  return rows;
+}
+
+export default function ZeitkontoTabelle({ hidden, anfangDatum, endeDatum }: ZeitereignisseTabelleProps) {
+  const data = useReadKalender(anfangDatum, endeDatum).data?.kalendertage;
+  const rows = data ? mapKalenderReadToZeitkontoRow(data) : [];
+
+  return (
+    <Grid
+      container
+      spacing={ThemeConstants.GRID_CONTAINER_SPACING}
+      direction="column"
+      display={hidden ? 'none' : 'flex'}
+    >
+      <ZeitkontoFITabelle rows={rows} />
+    </Grid>
+  );
+}
+type ZeitkontoStatusProps = {
+  label: 'Ganztägig' | `-${string}` | `+${string}` | `aktiv seit${string}`;
+  statusChipTyp: StatusChipTyp;
+};
+
+function ZeitkontoStatus({ label, statusChipTyp }: ZeitkontoStatusProps) {
+  if (statusChipTyp === 'ganztaegig' || statusChipTyp === 'dauer') {
+    return <Chip label={label} variant="outlined" color="secondary" />;
+  }
+
+  if (label.startsWith(ZeitKontoStatusConstants.PLUS)) {
+    return <Chip icon={<IcClockS />} label={label} color="success" />;
+  }
+  return <Chip icon={<IcClockS />} label={label} color="error" />;
+}
+
+function ZeitkontoFITabelle({ rows }: { rows: ZeitkontoRow[] }) {
+  const workflowService = useWorkflowService();
+  const coldefs: FITabelleProps['colDefs'] = [
+    {
+      comparator: (valueA: Dayjs, valueB: Dayjs) => {
+        if (valueA.isBefore(valueB)) {
+          return -1;
+        }
+        if (valueA.isAfter(valueB)) {
+          return 1;
+        }
+        return 0;
+      },
+      sort: 'desc',
+      autoHeight: true,
+      headerName: t('datum'),
+      field: 'datum',
+      cellRenderer: (params: ValueGetterParams<ZeitkontoRow>) =>
+        params.data && (
+          <Typography width="100%">{params.data.datum.format(KalenderConstants.DATUM_FORMAT_STRING)}</Typography>
+        ),
+    },
+    {
+      autoHeight: true,
+      headerName: t('typ'),
+      field: 'typ',
+      cellStyle: () => ({ height: 'auto', justifyContent: 'center' }),
+      cellRenderer: ({ data }: ValueGetterParams<ZeitkontoRow>) =>
+        data && (
+          <Stack gap={2} alignItems="center" direction="row">
+            {data.iconId ? <AntragIcon iconId={data.iconId} size={IconConstants.ICON_36} /> : <AnwesendIcon />}
+            {data.typ}
+          </Stack>
+        ),
+    },
+    {
+      autoHeight: true,
+      headerName: t('zeitenZeitraum'),
+      field: 'zeitraum',
+    },
+    {
+      autoHeight: true,
+      headerName: t('statusZeitSaldo'),
+      field: 'status',
+      wrapText: true,
+      cellRenderer: ({ data }: ValueGetterParams<ZeitkontoRow>) => {
+        if (!data) {
+          return;
+        }
+        const { anfangTs, endeTs, datum } = data;
+        if (data.typ === AnOderAbwesenheitsarten.anwesend) {
+          return (
+            <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
+              <ZeitkontoStatus label={data.status} statusChipTyp={data.statusChipTyp} />
+              <IconButton
+                aria-label="next"
+                onClick={() =>
+                  navigateToZeitkorrekturOhneMeldung(
+                    workflowService,
+                    dayjs(datum).format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
+                  )
+                }
+              >
+                <IcNextS />
+              </IconButton>
+            </Stack>
+          );
+        }
+        if (!anfangTs || !endeTs) {
+          return <ZeitkontoStatus label={data.status} statusChipTyp={data.statusChipTyp} />;
+        }
+        return (
+          <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
+            <ZeitkontoStatus label={data.status} statusChipTyp={data.statusChipTyp} />
+            <IconButton
+              aria-label="next"
+              onClick={() => navigateToAntragAbwesenheitAnzeigen(workflowService, { beginn: anfangTs, ende: endeTs })}
+            >
+              <IcNextS />
+            </IconButton>
+          </Stack>
+        );
+      },
+    },
+  ];
+  return (
+    <FITabelle
+      selektionsVariante="NONE"
+      colDefs={coldefs}
+      rows={rows}
+      sideBar={false}
+      getRowId={(params: GetRowIdParams<ZeitkontoRow>) => `${params.data.datum} ${params.data.zeitraum}`}
+      disableSettingsSection={true}
+      statusBar={undefined}
+      minHeight={ThemeConstants.TABLE_MIN_HEIGHT}
+    ></FITabelle>
+  );
+}
+
+______________________________________________________
 const dayjs = require("dayjs");
 
 const start = dayjs("2026-03-13T10:00:00");
