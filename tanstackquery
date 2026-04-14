@@ -1,3 +1,5 @@
+useReadBenutzerUrlaub.ts
+
 export function readUrlaubOptions(
   uuiService: Readonly<UuiServiceClientDef>,
   notificationStoreActions: NotificationStoreActions
@@ -21,3 +23,44 @@ export function useReadBenutzerUrlaub(): UseQueryResult<(BenutzerUrlaubRead & { 
   const uuiService = useUuiService(),
     notificationStoreActions = useNotificationStoreActions();
   return useQuery(readUrlaubOptions(uuiService, notificationStoreActions));
+===============================================================================================================================
+BenutzerUiModule.api.ts
+
+export const callReadBenutzerUrlaub = async (
+  uuiService: UuiServiceClient
+): Promise<UuiServiceResponse<BenutzerUrlaubRead>> => {
+  return uuiService.execute<BenutzerUrlaubRead>({
+    method: HttpMethod.Get,
+    app: App.PZW,
+    module: Services.BenutzerUiModule.module,
+    service: Services.BenutzerUiModule.services.readBenutzerUrlaub,
+  });
+};
+
+==============================================================================================================================
+BenutzerUiModuleApi.java
+
+ public static UuiServiceResponse<BenutzerUrlaubRead> readBenutzerUrlaub(UuiServiceClient uuiServiceClient) {
+        return uuiServiceClient.forApplication(Anwendung.PZW.toString())
+                .get(BenutzerUrlaubRead.class)
+                .module(BenutzerUiModuleConstants.NAME)
+                .service(BenutzerUiModuleConstants.UI_SERVICE_READ_BENUTZER_URLAUB)
+                .send();
+    }
+=============================================================================================================================
+BenutzerService.java
+
+    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
+    public BenutzerUrlaubRead readBenutzerUrlaub() throws UiServiceException {
+        try {
+            ErmittlePmgtPzwUrlTageZuMaUeberPctlPersSchlEingabe eingabe = new ErmittlePmgtPzwUrlTageZuMaUeberPctlPersSchlEingabe();
+            eingabe.setPctlPersSchl(userService.getPersonalnummer());
+            return pmgtPzwUrlTageZuMaErmRepository.ermittlePmgtPzwUrlTageZuMaUeberPctlPersSchl(eingabe).stream().findFirst().map(PmgtPzwUrlTageZuMaErmAusgabe::getPmgtPzwUrlTageKalenderjahr).map(BenutzerUrlaubMapper::ospeToBenutzerUrlaubRead).orElse(null);
+        } catch (OspeException exception) {
+            throw new UiServiceException(MessageType.ERROR, MessageCode.ERROR,
+                    "Benutzer.Urlaub.Read.HttpStatus.502",
+                    MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
+        }
+    }
+
+
