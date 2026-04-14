@@ -1,0 +1,23 @@
+export function readUrlaubOptions(
+  uuiService: Readonly<UuiServiceClientDef>,
+  notificationStoreActions: NotificationStoreActions
+) {
+  return queryOptions({
+    queryKey: BenutzerKeys.urlaub,
+    queryFn: async (): Promise<BenutzerUrlaubRead & { isRollout: boolean }> =>
+      callReadBenutzerUrlaub(uuiService).then((response: UuiServiceResponse<BenutzerUrlaubRead>) => {
+        notificationStoreActions.handleMessages(response.messages as ExtendedUuiServiceMessage[], true);
+        return {
+          ...(response.payload as BenutzerUrlaubRead),
+          //TODO Entfernen wenn Rollout abgeschlossen ist
+          isRollout: isRolloutVerfuegbar(response.messages),
+        };
+      }),
+    staleTime: TanstackConstants.LONG_STALE_TIME,
+  });
+}
+
+export function useReadBenutzerUrlaub(): UseQueryResult<(BenutzerUrlaubRead & { isRollout: boolean }) | undefined> {
+  const uuiService = useUuiService(),
+    notificationStoreActions = useNotificationStoreActions();
+  return useQuery(readUrlaubOptions(uuiService, notificationStoreActions));
