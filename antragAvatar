@@ -1,0 +1,216 @@
+import { useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import {
+  IcBachelorCapS,
+  IcClockS,
+  IcHeartDiagramS,
+  IcPlaneS,
+  IcRoomS,
+  IcUserS,
+} from '@finanzinformatik/mcd-module-icons';
+import { Avatar, SvgIconProps } from '@mui/material';
+import { ReactElement } from 'react';
+import { ThemeConstants } from '../../../constants/ThemeConstants';
+import { navigateToAntragAbwesenheitAnlegen } from '../../../utils/bookmarkUtil';
+import InfoCard from '../../common/InfoCard';
+import { useMcdPalette } from '@finanzinformatik/mcd-module-theme-provider';
+
+type AntragItemProps = {
+  iconId: number;
+  bezeichnung: string;
+  antragGruppeId: string;
+  antragSchluessel?: string;
+  isExtern?: boolean;
+};
+
+type CategoryIconConfig = {
+  Icon: (props: SvgIconProps) => ReactElement;
+  color: string;
+  backgroundColor: string;
+};
+export function getIconConfiguration(iconId: number) {
+  const colors = useMcdPalette().ColorCategoryTokens;
+  const categoryConfigs: Record<number, CategoryIconConfig> = {
+    //Zeitkorrektur
+    0: {
+      color: colors['category-garden-01'],
+      backgroundColor: colors['category-garden-02'],
+      Icon: IcClockS,
+    },
+    //Urlaub
+    1: {
+      color: colors['category-travel-01'],
+      backgroundColor: colors['category-travel-02'],
+      Icon: IcPlaneS,
+    },
+    //Sonstiges
+    2: {
+      color: colors['category-mobility-01'],
+      backgroundColor: colors['category-mobility-02'],
+      Icon: IcRoomS,
+    },
+    //Bildung
+    3: {
+      color: colors['category-education-01'],
+      backgroundColor: colors['category-education-02'],
+      Icon: IcBachelorCapS,
+    },
+    //Gesundheit
+    4: {
+      color: colors['category-health-01'],
+      backgroundColor: colors['category-health-02'],
+      Icon: IcHeartDiagramS,
+    },
+    //Persoenlich
+    5: {
+      color: colors['category-protection-01'],
+      backgroundColor: colors['category-protection-02'],
+      Icon: IcUserS,
+    },
+  };
+  return (
+    categoryConfigs[iconId] ?? {
+      color: colors['category-mobility-01'],
+      backgroundColor: colors['category-mobility-02'],
+      Icon: IcRoomS,
+    }
+  );
+}
+
+export function AntragIcon({
+  iconId,
+  size = ThemeConstants.AVATAR_SIZE_48,
+  iconSize = 'auto',
+}: {
+  iconId: number;
+  size?: number | string;
+  iconSize?: number | string;
+}) {
+  const { color, backgroundColor, Icon } = getIconConfiguration(iconId);
+  return (
+    <Avatar
+      sx={{
+        height: size,
+        width: size,
+        bgcolor: backgroundColor,
+      }}
+    >
+      <Icon sx={{ fill: color, maxHeight: iconSize, maxWidth: iconSize }} />
+    </Avatar>
+  );
+}
+
+export default function AntragAbwesenheitItem({
+  iconId,
+  bezeichnung,
+  antragGruppeId,
+  antragSchluessel,
+  isExtern,
+}: AntragItemProps) {
+  const workflowService = useWorkflowService();
+  function onClick() {
+    const host = window.location.hostname.toLowerCase(),
+      prefix = host.substring(0, 2);
+
+    let dynamicProcessId: string;
+
+    switch (prefix) {
+      case 'en':
+        dynamicProcessId = 'fi-ps-en';
+        break;
+      case 'in':
+        dynamicProcessId = 'fi-ps-in';
+        break;
+      case 'an':
+        dynamicProcessId = 'fi-ps-an';
+        break;
+      default:
+        dynamicProcessId = 'fi-ps-prod';
+    }
+
+    if (isExtern) {
+      //https://wiki.intern/spaces/pem/pages/646271824/Design+Aufruf+Personalservice
+      workflowService.startWorkflow('dynprocpl', 'interpreter', 1, {
+        input: {
+          language: 'de-DE',
+          processData: {
+            processId: dynamicProcessId,
+            processParameters: {
+              mkpParameter: antragGruppeId,
+            },
+          },
+        },
+      });
+    }
+
+    if (!isExtern) {
+      navigateToAntragAbwesenheitAnlegen(workflowService, { antragGruppeId, antragSchluessel });
+    }
+  }
+  return <InfoCard isExternal={isExtern} title={bezeichnung} onClick={onClick} iconId={iconId} />;
+}
+
+=============================================================
+
+Beschreibung
+
+Zeigt eine runde, farbige Hintergrundfläche mit einem Icon daraufgelegten Icon an. Farbe und Icon hängen von der gegebenen ID ab. Zusätzlich kann auch die Größe sowie ein Text angegeben werden.
+
+Inhalt
+ID	Antragskategorie	Design	Icon	ColorCategoryToken des Icons	ColorCategoryToken des Hintergrunds	Anmerkung
+0	Tagesbuchung	
+
+	IcRoomS	category-mobility-01	category-mobility-02	Unter Vorbehalt; die Spezifikation ist hier hinterfragt, da es ID 2 gleicht.
+1	Urlaub	
+
+	IcPlaneS	category-travel-01	category-travel-02	
+
+2	Sonstiges	
+
+	IcRoomS	category-mobility-01	category-mobility-02	
+
+3	Bildung	
+
+	IcBachelorCapS	category-education-01	category-education-02	
+
+4	Gesundheit	
+
+	IcHeartDiagramS	category-health-01	category-health-02	
+
+5	Persönlich	
+
+	IcUserS	category-protection-01	category-protection-02	
+
+?	Sonderurlaub	
+
+	IcCalendarCancelCircleS	category-travel-01	category-travel-02	ID muss noch mit BE Devs geklärt werden.
+?	Zeitguthaben &
+Zeitausgleich	
+
+	IcTwoArrowDownUpS	category-income-01	category-income-02	ID muss noch mit BE Devs geklärt werden.
+Eingabeparameter
+Name	Datenformat (GUI)	Pflicht/Optional	Anmerkung
+id	number	Pflicht	
+
+groesse	AntragAvatarGroesse	Optional	Default: "sm"
+text	string	Optional	
+
+AntragAvatarGroesse
+Wert	Avatargröße	Anmerkung
+"sm"	36px	Small
+"md"	48px	Medium
+"lg"	72px	Large
+APL-Nutzung
+
+Es besteht keine Kommunikation zur APL.
+
+Plausibilitätsprüfung
+
+Wird eine ungültige ID übergeben, wird kein Avatar angezeigt.
+
+Nutzung im FE
+Komponente "AntragAvatarZeit" (ZW)
+*Deprecated* Tagesdetails/Zeitkonto
+Komponente "Konfiguration-Anträge" (ZW)
+Komponente "Konfiguration-Antragsgruppen" (ZW)
+Komponente "Anträge" (ZW)
+Maske "Genehmigung Abwesenheit" (ZW)
