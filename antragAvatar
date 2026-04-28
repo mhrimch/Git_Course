@@ -214,3 +214,108 @@ Komponente "Konfiguration-Anträge" (ZW)
 Komponente "Konfiguration-Antragsgruppen" (ZW)
 Komponente "Anträge" (ZW)
 Maske "Genehmigung Abwesenheit" (ZW)
+
+=========================================================================================================
+import {
+  IcBachelorCapS,
+  IcHeartDiagramS,
+  IcPlaneS,
+  IcRoomS,
+  IcUserS,
+} from '@finanzinformatik/mcd-module-icons';
+import { useMcdPalette } from '@finanzinformatik/mcd-module-theme-provider';
+import { Avatar, Box, Typography } from '@mui/material';
+import { SvgIconProps } from '@mui/material/SvgIcon';
+import { ReactElement } from 'react';
+
+// ---------------------------------------------------------------------------
+// Typen
+// ---------------------------------------------------------------------------
+
+export type AntragAvatarGroesse = 'sm' | 'md' | 'lg';
+
+export type AntragAvatarProps = {
+  id: number;
+  groesse?: AntragAvatarGroesse;
+  text?: string;
+};
+
+type IconComponent = (props: SvgIconProps) => ReactElement;
+
+type TokenConfig = {
+  fg: string;
+  bg: string;
+};
+
+// ---------------------------------------------------------------------------
+// Mappings (außerhalb der Komponente → werden nicht bei jedem Render neu erzeugt)
+// ---------------------------------------------------------------------------
+
+const iconMapping: Record<number, IconComponent> = {
+  // Tagesbuchung (unter Vorbehalt – gleicht ID 2 laut Spezifikation)
+  0: IcRoomS,
+  // Urlaub
+  1: IcPlaneS,
+  // Sonstiges
+  2: IcRoomS,
+  // Bildung
+  3: IcBachelorCapS,
+  // Gesundheit
+  4: IcHeartDiagramS,
+  // Persönlich
+  5: IcUserS,
+  // TODO: Sonderurlaub         → IcCalendarCancelCircleS, category-travel  (ID noch offen)
+  // TODO: Zeitguthaben/-ausgl. → IcTwoArrowDownUpS,       category-income  (ID noch offen)
+};
+
+const colorMapping: Record<number, TokenConfig> = {
+  0: { fg: 'category-mobility-01',  bg: 'category-mobility-02'  },
+  1: { fg: 'category-travel-01',    bg: 'category-travel-02'    },
+  2: { fg: 'category-mobility-01',  bg: 'category-mobility-02'  },
+  3: { fg: 'category-education-01', bg: 'category-education-02' },
+  4: { fg: 'category-health-01',    bg: 'category-health-02'    },
+  5: { fg: 'category-protection-01',bg: 'category-protection-02'},
+};
+
+const sizeMapping: Record<AntragAvatarGroesse, number> = {
+  sm: 36,
+  md: 48,
+  lg: 72,
+};
+
+// ---------------------------------------------------------------------------
+// Komponente
+// ---------------------------------------------------------------------------
+
+export default function AntragAvatar({ id, groesse = 'sm', text }: AntragAvatarProps) {
+  const colors = useMcdPalette().ColorCategoryTokens;
+
+  const Icon = iconMapping[id];
+  const tokenConfig = colorMapping[id];
+
+  if (!Icon || !tokenConfig) {
+    return null;
+  }
+
+  const size = sizeMapping[groesse];
+
+  return (
+    <Box display="flex" flexDirection="column" alignItems="center" gap={1}>
+      <Avatar
+        sx={{
+          width: size,
+          height: size,
+          bgcolor: colors[tokenConfig.bg],
+        }}
+      >
+        <Icon sx={{ fill: colors[tokenConfig.fg] }} />
+      </Avatar>
+
+      {text && (
+        <Typography variant="caption" align="center">
+          {text}
+        </Typography>
+      )}
+    </Box>
+  );
+}
