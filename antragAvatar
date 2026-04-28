@@ -332,3 +332,41 @@ const SvgIcHeartDiagramS = (props: SvgIconProps): React.ReactElement =>
 export default SvgIcHeartDiagramS;
 
 }
+=================================================================
+import { render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
+import AntragAvatar from './AntragAvatar';
+// Mock für useMcdPalette
+vi.mock('@finanzinformatik/mcd-module-theme-provider', () => ({
+  useMcdPalette: () => ({
+    ColorCategoryTokens: {
+      'category-mobility-01': '#111111',
+      'category-mobility-02': '#222222',
+      'category-travel-01': '#333333',
+      'category-travel-02': '#444444',
+      'category-education-01': '#555555',
+      'category-education-02': '#666666',
+      'category-health-01': '#777777',
+      'category-health-02': '#888888',
+      'category-protection-01': '#999999',
+      'category-protection-02': '#AAAAAA',
+    },
+  }),
+}));
+describe('AntragAvatar', () => {
+  it('renders the text', () => {
+    render(<AntragAvatar id={1} text="Urlaub" />);
+    expect(screen.getByText('Urlaub')).toBeInTheDocument();
+  });
+  it('renders an SVG icon', () => {
+    const { container } = render(<AntragAvatar id={1} />);
+    const icon = container.querySelector('svg');
+    expect(icon).not.toBeNull();
+  });
+  it('applies background color correctly', () => {
+    const { container } = render(<AntragAvatar id={1} />);
+    const avatar = container.querySelector('.MuiAvatar-root');
+    // prüft ob der gespeicherte bg Farbwert stimmt
+    expect(avatar?.getAttribute('style')).toContain('background-color: #444444'); 
+  });
+})
