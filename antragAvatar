@@ -318,4 +318,17 @@ export default function AntragAvatar({ id, groesse = 'sm', text }: AntragAvatarP
       )}
     </Box>
   );
+
+================================================import React from 'react';
+import { SvgIcon, SvgIconProps } from '@mui/material';
+const SvgIcHeartDiagramS = (props: SvgIconProps): React.ReactElement =>
+	React.createElement(
+		SvgIcon,
+		props,
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+			<path d="M20.335 4.83a5.723 5.723 0 0 0-8.074 0L12 5.084l-.257-.256A5.709 5.709 0 0 0 3.672 12.9l7.668 7.67a.939.939 0 0 0 1.326 0l7.667-7.67a5.721 5.721 0 0 0 .002-8.07ZM7.842 11.245l2.111 2.11a.939.939 0 0 0 1.326 0l3.5-3.5 2.975 2.975L12 18.581l-5.746-5.748Zm6.271-3.375-3.5 3.5-2.108-2.113a.94.94 0 0 0-1.325 0l-2.25 2.25a3.835 3.835 0 0 1 5.491-5.353l.919.919a.96.96 0 0 0 1.326 0l.921-.921a3.844 3.844 0 0 1 5.421 0l.049.049a3.84 3.84 0 0 1 .018 5.305L15.438 7.87a.939.939 0 0 0-1.325 0Z" />
+		</svg>
+	);
+export default SvgIcHeartDiagramS;
+
 }
