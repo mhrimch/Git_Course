@@ -296,3 +296,56 @@ export function AntragStatusChip({ antragStatus }: AntragStatusChipProps) {
     />
   );
 }
+==========================================================
+tsx
+import { IcCancelCircleS, IcCheckCircleS, IcCircleEmptyDotsS } from '@finanzinformatik/mcd-module-icons';
+import { Chip } from '@mui/material';
+import { AntragStatusRead } from '../../apl/pzw/antragUiModule/AntragStatusRead';
+import { AntragStatus } from '../../constants/AntragConstants';
+interface AntragStatusChipProps {
+  antragStatus: AntragStatusRead;
+}
+type StatusConfig = {
+  icon: React.ReactNode;
+  color: 'attention' | 'error' | 'success';
+};
+const statusConfig: Record<AntragStatus, StatusConfig> = {
+  [AntragStatus.ZurGenehmigung]: {
+    icon: <IcCircleEmptyDotsS />,
+    color: 'attention'
+  },
+  [AntragStatus.Storniert]: {
+    icon: <IcCancelCircleS />,
+    color: 'error'
+  },
+  [AntragStatus.Abgelehnt]: {
+    icon: <IcCancelCircleS />,
+    color: 'error'
+  },
+  [AntragStatus.Freigegeben]: {
+    icon: <IcCheckCircleS />,
+    color: 'success'
+  },
+  [AntragStatus.FreigegebenSAP]: {
+    icon: <IcCheckCircleS />,
+    color: 'success'
+  }
+};
+// Typ-Guard: prüft, ob Wert ein gültiger Enum-Eintrag ist
+function isAntragStatus(value: number): value is AntragStatus {
+  return Object.values(AntragStatus).includes(value);
+}
+export function AntragStatusChip({ antragStatus }: AntragStatusChipProps) {
+  if (!isAntragStatus(antragStatus.status)) {
+    // ungültiger Status → kein Chip
+    return null;
+  }
+  const cfg = statusConfig[antragStatus.status]; // jetzt 100% typ-safe
+  return (
+    <Chip
+      icon={cfg.icon}
+      color={cfg.color}
+      label={antragStatus.bezeichnung}
+    />
+  );
+}
