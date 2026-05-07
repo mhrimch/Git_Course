@@ -1,1 +1,687 @@
+import { Avatar, Chip, Divider, TextField, Typography } from '@mui/material';
+import { Stack } from '@mui/system';
+import { t } from 'i18next';
+import { IdTimestamp } from '../../../constants/IDTimestampConstants';
+import { KalenderConstants } from '../../../constants/KalenderConstants';
+import { PzwConstants } from '../../../constants/PzwConstants';
+import { ThemeConstants } from '../../../constants/ThemeConstants';
+import { idTimestampToDayjs } from '../../../utils/DateUtils';
+import { AntraegeRow } from '../../zeitEreignisse/AntraegeAbwesenheitTabelle';
+import { AntragStatusChip } from '../AntragStatusChip';
+import { getIconConfiguration } from './AntragAbwesenheitItem';
+import { AntragAbwesenheitStornierenModal } from './AntragAbwesenheitStornierenModal';
+import { DokumentRead } from '../../../apl/pzw/dokumenteUiModule/DokumentRead';
+import { DokumentTabelle } from '../../dokumente/DokumentTabelle';
+
+export default function AntragAbwesenheitAnzeigen({
+  antragData: {
+    antragBezeichnung,
+    anfangTs,
+    endeTs,
+    iconId,
+    mitarbeiterKommentar,
+    fuehrungskraftKommentar,
+    antragStatus,
+    anzahlTage,
+    antragSchluessel,
+    isGanztaegig,
+    einfuegungTimestamp,
+    absVgngPrzId,
+    isStornierung,
+  },
+  dokumente,
+}: {
+  antragData: AntraegeRow;
+  dokumente?: DokumentRead[];
+}) {
+  return (
+    <>
+      <Stack gap={10}>
+        <Typography variant="headline02">
+          {isStornierung ? antragBezeichnung + ' - ' + t('Stornierung') : antragBezeichnung}
+        </Typography>
+        <Stack direction="row" justifyContent="space-around">
+          <DatumCard timestamp={anfangTs} iconId={iconId} isGanztaegig={isGanztaegig} />
+          <Stack direction="column" justifyContent="center">
+            <AntragStatusChip antragStatus={antragStatus} />
+            <Divider variant="fullWidth" style={{ margin: ThemeConstants.STACK_SPACING }} />
+            {anzahlTage === 1 && <Chip label={<Typography variant="label04">1 {t('Tag')}</Typography>} />}
+            {anzahlTage !== undefined && anzahlTage > 1 && (
+              <Chip label={<Typography variant="label04">{`${anzahlTage} ${t('Tage')}`}</Typography>} />
+            )}
+          </Stack>
+          <DatumCard timestamp={endeTs} iconId={iconId} isGanztaegig={isGanztaegig} />
+        </Stack>
+        {mitarbeiterKommentar && (
+          <TextField disabled={true} fullWidth value={mitarbeiterKommentar} multiline={true} minRows={3} />
+        )}
+        {fuehrungskraftKommentar && (
+          <>
+            <Typography variant="multiline02Bold">{t('fuehrungskraftKommentar')}</Typography>
+            <TextField disabled={true} fullWidth value={fuehrungskraftKommentar} multiline={true} minRows={3} />
+          </>
+        )}
+        {dokumente && dokumente.length > 0 && <DokumentTabelle dokumente={dokumente} readOnly={true} />}
+      </Stack>
+      {!isStornierung && (
+        <Stack direction="row" justifyContent="flex-end" sx={{ marginTop: ThemeConstants.STACK_SPACING }}>
+          <AntragAbwesenheitStornierenModal
+            antragSchluessel={antragSchluessel}
+            anfangTs={anfangTs}
+            endeTs={endeTs}
+            isGanztaegig={isGanztaegig}
+            absPrzId={absVgngPrzId}
+            antragStatus={antragStatus}
+            einfuegungTimestamp={einfuegungTimestamp}
+            anzahlTage={anzahlTage}
+          />
+        </Stack>
+      )}
+    </>
+  );
+}
+
+function DatumCard({
+  timestamp,
+  iconId,
+  isGanztaegig,
+}: {
+  timestamp: IdTimestamp;
+  iconId: number;
+  isGanztaegig: boolean;
+}) {
+  const { backgroundColor, Icon, color } = getIconConfiguration(iconId);
+  const timestampDayjs = idTimestampToDayjs(timestamp);
+  return (
+    <Stack alignItems="center" spacing={ThemeConstants.STACK_SPACING_HORIZONTAL}>
+      <Avatar
+        sx={{
+          height: ThemeConstants.AVATAR_SIZE_72,
+          width: ThemeConstants.AVATAR_SIZE_72,
+          bgcolor: backgroundColor,
+        }}
+      >
+        {<Icon sx={{ fill: color }} />}
+      </Avatar>
+      <Stack alignItems="center">
+        <Typography variant="multiline02">
+          {new Date(timestampDayjs.format(KalenderConstants.DATUM_ISO_FORMAT_STRING)).toLocaleDateString(
+            PzwConstants.LOCALES_DE_DE,
+            {
+              weekday: 'long',
+            }
+          )}
+        </Typography>
+        <Typography variant="headline02">{timestampDayjs.format(KalenderConstants.DATUM_FORMAT_STRING)}</Typography>
+        {!isGanztaegig && (
+          <Typography variant="headline04">{timestampDayjs.format(KalenderConstants.DAY_JS_FORMAT_HH_MM)}</Typography>
+        )}
+      </Stack>
+    </Stack>
+  );
+}
+==================================================================================================================================
+import { Stack } from '@mui/material';
+import { DokumentRead } from '../../apl/pzw/dokumenteUiModule/DokumentRead';
+import { DokumentItem } from './DokumentItem';
+import { DokumentUpload } from './DokumentUpload';
+import { Dispatch, SetStateAction } from 'react';
+import { useCreateDownloadLink } from '../../tanstack/dokumente/useCreateDownloadLink';
+import { downloadFile } from '../../utils/FileUtils';
+import Typography from '@mui/material/Typography';
+import { ThemeConstants } from '../../constants/ThemeConstants';
+import { useTranslation } from 'react-i18next';
+
+interface DokumentenTableProps {
+  dokumente: DokumentRead[];
+  readOnly: boolean;
+  setDokumente?: Dispatch<SetStateAction<DokumentRead[]>>;
+}
+
+export const DokumentTabelle = ({ dokumente, setDokumente, readOnly }: DokumentenTableProps) => {
+  const { t } = useTranslation();
+  const { mutateAsync: createDownloadLink } = useCreateDownloadLink();
+
+  const addDokumente = (newDokument: DokumentRead) => {
+    if (!readOnly && setDokumente) {
+      setDokumente((prev) => [...prev, newDokument]);
+    }
+  };
+
+  const deleteDokument = (dokument: DokumentRead) => {
+    if (!readOnly && setDokumente) {
+      const dokumenteArray = dokumente.filter((x) => x.undDownloadToken !== dokument.undDownloadToken);
+      setDokumente(dokumenteArray);
+    }
+  };
+
+  const downloadDokument = (dokument: DokumentRead) => {
+    createDownloadLink(dokument.undDownloadToken ?? '', {
+      onSuccess: (dowloadUrl) => {
+        if (dowloadUrl) {
+          downloadFile(dowloadUrl);
+        }
+      },
+    });
+  };
+
+  return (
+    <>
+      <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE03}>{t('Dokumente.Title')}</Typography>
+      <Stack direction="column" width="100%" gap={2}>
+        {!readOnly && <DokumentUpload addDokumente={addDokumente} />}
+        <Stack>
+          {dokumente.map((dokument, index) => (
+            <DokumentItem
+              key={index}
+              fileName={dokument.dokumentName ?? ''}
+              downloadDokument={() => downloadDokument(dokument)}
+              deleteDokument={() => deleteDokument(dokument)}
+              readOnly={readOnly}
+            />
+          ))}
+        </Stack>
+      </Stack>
+    </>
+  );
+};
+================================================================================================================================
+import { UuiServiceResponse } from '@finanzinformatik/cpl-module-clientlib';
+import { useUuiService } from '@finanzinformatik/cpl-module-reactlib';
+import { useMutation } from '@tanstack/react-query';
+import { callDownloadFileByDownloadToken } from '../../apl/pzw/dokumenteUiModule/dokumenteUiModuleApi';
+import { ExtendedUuiServiceMessage, useNotificationStoreActions } from '@personalsysteme/notification-handler';
+
+export function useCreateDownloadLink() {
+  const uuiService = useUuiService(),
+    notificationStoreActions = useNotificationStoreActions();
+
+  return useMutation({
+    mutationFn: async (downloadToken: string) =>
+      callDownloadFileByDownloadToken(uuiService, downloadToken)
+        .then((response: UuiServiceResponse<string>) => {
+          notificationStoreActions.handleMessages(response.messages as ExtendedUuiServiceMessage[], true);
+          return response.payload;
+        })
+        .catch(notificationStoreActions.handleError),
+  });
+}
+==================================================================================================================================
+import { HttpMethod, UuiServiceClient, UuiServiceResponse } from '@finanzinformatik/cpl-module-reactlib';
+import { App, Services } from '../../../constants/ServiceConstants';
+import { DokumentWrite } from './DokumentWrite';
+import { DokumentRead } from './DokumentRead';
+
+export const callDownloadFileByDownloadToken = async (
+  uuiService: UuiServiceClient,
+  downloadToken: string
+): Promise<UuiServiceResponse<string>> => {
+  return uuiService.execute<string>({
+    method: HttpMethod.Get,
+    app: App.PZW,
+    module: Services.DokumenteUiModule.module,
+    service: Services.DokumenteUiModule.services.downloadFileByDownloadToken,
+    params: { downloadToken: downloadToken },
+  });
+};
+
+export const callUploadFileByBase64 = async (
+  uuiService: UuiServiceClient,
+  dokumentWrite: DokumentWrite
+): Promise<UuiServiceResponse<DokumentRead>> => {
+  return uuiService.execute<DokumentRead>({
+    method: HttpMethod.Post,
+    app: App.PZW,
+    module: Services.DokumenteUiModule.module,
+    service: Services.DokumenteUiModule.services.uploadFileByBase64,
+    payload: dokumentWrite,
+  });
+};
+=======================================================================================================================================
+package osplus.pzw.uimodule;
+
+import org.springframework.http.HttpStatus;
+import osplus.apl.core.api.AplLogging;
+import osplus.apl.core.api.i18n.I18nService;
+import osplus.apl.core.api.validation.AplValidated;
+import osplus.apl.uui.api.MethodType;
+import osplus.apl.uui.api.ServiceParam;
+import osplus.apl.uui.api.ServiceResponse;
+import osplus.apl.uui.api.ServiceReturnType;
+import osplus.apl.uui.api.UiModule;
+import osplus.apl.uui.api.UiService;
+import osplus.apl.uui.api.UiServiceReturnType;
+import osplus.apl.uui.api.message.MessageService;
+import osplus.fi.core.uui.api.message.MessageType;
+import osplus.psk.core.apl.AbstractUiModule;
+import osplus.psk.core.apl.exception.UiServiceException;
+import osplus.psk.core.apl.messages.MessageCallType;
+import osplus.psk.core.apl.messages.MessageCode;
+import osplus.psk.core.apl.messages.MessageMetadata;
+import osplus.psk.core.apl.messages.MessageScope;
+import osplus.psk.core.apl.services.DokumentService;
+import osplus.psk.core.model.dokument.DokumentRead;
+import osplus.psk.core.model.dokument.DokumentWrite;
+import osplus.pzw.constants.DokumenteUiModuleConstants;
+
+
+/**
+ * UiModule für Service-Funktionen für Dokumente.
+ *
+ * @see UiModule
+ */
+@UiModule(DokumenteUiModuleConstants.NAME)
+@AplValidated
+public class DokumenteUiModule extends AbstractUiModule {
+
+    private final transient DokumentService dokumentService;
+
+    public DokumenteUiModule(final MessageService messageService,
+                             final I18nService i18nService,
+                             final DokumentService dokumentService) {
+        super(messageService, i18nService);
+        this.dokumentService = dokumentService;
+    }
+
+    /**
+     * Der @UiService refreshDownloadLink erneuert den Download-Link zum übergebenen UND-Token.
+     *
+     * @param dokumentWrite DokumentWrite
+     * @return ServiceResponse(DokumentRead)
+     */
+    @UiService(value = DokumenteUiModuleConstants.UI_SERVICE_UPLOAD_FILE_BY_BASE64, method = MethodType.POST, requiresAuthentication = true, internalOnly = true)
+    @UiServiceReturnType({
+            @ServiceReturnType(statusCode = 200, value = DokumentRead.class),
+            @ServiceReturnType(statusCode = 400)
+    })
+    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
+    public ServiceResponse<DokumentRead> uploadFileByBase64(
+            @AplValidated DokumentWrite dokumentWrite
+    ) {
+        try {
+            DokumentRead result = dokumentService.uploadFileByBase64(dokumentWrite);
+            messageService.addMessage(MessageType.SUCCESS, MessageCode.OK,
+                    i18nService.getMessage("Dokument.Upload.Create.HttpStatus.200"),
+                    MessageMetadata.instance(MessageCallType.CREATE, MessageScope.APL));
+            return new ServiceResponse<>(HttpStatus.OK.value(), result);
+        } catch (UiServiceException e) {
+            handleException(e);
+            return new ServiceResponse<>(Integer.parseInt(e.getMessageCode()));
+        }
+    }
+
+    /**
+     * Der @UiService downloadFileByDownloadToken lädt den Download-Link zum übergebenen UND-Download-Token.
+     *
+     * @param downloadToken DownloadToken
+     * @return ServiceResponse(String)
+     */
+    @UiService(value = DokumenteUiModuleConstants.UI_SERVICE_DOWNLOAD_FILE_BY_DOWNLOADTOKEN, method = MethodType.GET, requiresAuthentication = true, internalOnly = true)
+    @UiServiceReturnType({
+            @ServiceReturnType(statusCode = 200, value = DokumentRead.class),
+            @ServiceReturnType(statusCode = 400)
+    })
+    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
+    public ServiceResponse<String> downloadFileByDownloadToken(
+            @ServiceParam(value = DokumenteUiModuleConstants.PARAM_DOWNLOAD_TOKEN) String downloadToken
+            ) {
+        try {
+            String result = dokumentService.getUndDownloadUrl(downloadToken);
+            messageService.addMessage(MessageType.SUCCESS, MessageCode.OK,
+                    i18nService.getMessage("Dokument.Download.Get.HttpStatus.200"),
+                    MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
+            return new ServiceResponse<>(HttpStatus.OK.value(), result);
+        } catch (UiServiceException e) {
+            handleException(e);
+            return new ServiceResponse<>(Integer.parseInt(e.getMessageCode()));
+        }
+    }
+}
+================================================================================================================================
+import { useUuiService } from '@finanzinformatik/cpl-module-reactlib';
+import { DokumentUploadZone } from './DokumentUploadZone';
+import { ExtendedUuiServiceMessage, useNotificationStoreActions } from '@personalsysteme/notification-handler';
+import { DokumentWrite } from '../../apl/pzw/dokumenteUiModule/DokumentWrite';
+import { callUploadFileByBase64 } from '../../apl/pzw/dokumenteUiModule/dokumenteUiModuleApi';
+import { DokumentRead } from '../../apl/pzw/dokumenteUiModule/DokumentRead';
+import { DokumentConstants } from '../../constants/PzwConstants';
+
+interface DokumenteZuListeHochladenDialogProps {
+  addDokumente: (dokument: DokumentRead) => void;
+}
+
+export const DokumentUpload = ({ addDokumente }: DokumenteZuListeHochladenDialogProps) => {
+  const uuiService = useUuiService(),
+    { handleMessages } = useNotificationStoreActions(),
+    uploadFile = (base64Str: string, file: File): void => {
+      const dokumentWrite: DokumentWrite = {
+        dokumentName: file.name,
+        base64: base64Str,
+      };
+      callUploadFileByBase64(uuiService, dokumentWrite)
+        .then((response) => {
+          if (response.payload) {
+            const dokument: DokumentRead = {
+              dokumentName: file.name,
+              undDownloadToken: response.payload.undDownloadToken,
+            };
+            addDokumente(dokument);
+          }
+        })
+        .catch(
+          ({
+            httpResponse: {
+              payload: { messages },
+            },
+          }) => handleMessages(messages as ExtendedUuiServiceMessage[], true)
+        );
+    },
+    onHandleSubmit = (dateien: File[]): void => {
+      let index: number = 0;
+      dateien.forEach((file: File) => {
+        index = index + 1;
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (reader.result !== null && typeof reader.result === 'string') {
+            uploadFile(reader.result, file);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    };
+
+  return <DokumentUploadZone maxFiles={DokumentConstants.MAX_FILES} onSubmit={onHandleSubmit} />;
+};
+==============================================================================================================
+export interface DokumentRead {
+  dokumentName?: string;
+  undDownloadToken?: string;
+}
+=================================================================================================================
+import { IcUploadM } from '@finanzinformatik/mcd-module-icons';
+import { Card, CardContent, Typography } from '@mui/material';
+import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNotificationStoreActions } from '@personalsysteme/notification-handler';
+import { DokumentConstants } from '../../constants/PzwConstants';
+import { ErrorCode, FileRejection, useDropzone } from 'react-dropzone';
+
+interface DokumenteHochladenDialogProps {
+  maxFiles?: number;
+  onSubmit: (dateien: File[]) => void;
+}
+
+export const DokumentUploadZone = ({ maxFiles, onSubmit }: DokumenteHochladenDialogProps) => {
+  const { t } = useTranslation(),
+    { addWarningNotification } = useNotificationStoreActions(),
+    onDropAccepted = useCallback((files: File[]) => {
+      onSubmit(files);
+    }, []),
+    onDropRejected = useCallback((fileRejections: FileRejection[]) => {
+      fileRejections.forEach((fileRejection) => {
+        fileRejection.errors.forEach((fileError) => {
+          if (ErrorCode.FileInvalidType === fileError.code) {
+            addWarningNotification(t('Dokumente.Upload.InvalidFile', { filename: fileRejection.file.name }));
+          } else if (ErrorCode.FileTooLarge === fileError.code) {
+            addWarningNotification(t('Dokumente.Upload.FileToLarge', { filename: fileRejection.file.name }));
+          } else if (ErrorCode.TooManyFiles === fileError.code) {
+            addWarningNotification(t('Dokumente.Upload.MaxFiles', { filename: fileRejection.file.name }));
+            return false;
+          } else {
+            addWarningNotification(t('Dokumente.Upload.Fehler', { filename: fileRejection.file.name }));
+          }
+        });
+      });
+    }, []),
+    { getRootProps, getInputProps } = useDropzone({
+      accept: {
+        'image/jpeg': [],
+        'application/pdf': [],
+      },
+      maxFiles: maxFiles,
+      maxSize: DokumentConstants.MAX_FILE_SIZE,
+      onDropAccepted: onDropAccepted,
+      onDropRejected: onDropRejected,
+    });
+
+  return (
+    <>
+      <Card>
+        <CardContent>
+          <div
+            /*
+             * @SI:REVIEWED: (hoch 602) Nutzung des Spread-Operators in React
+             * LFNR=1 SIQAID=602
+             * Pruefer: David Mueller, 18.07.2025 11:43
+             *
+             * Nutzung des Spread-Operators in React
+             *
+             * Begründung der Einplanung: Nutzung von Spread-Operator wird bewusst genutzt und bietet keine Möglichkeit externen Code auszuführen.
+             */
+            //eslint-disable-next-line @finanzinformatik/fiqa-eslint/spread-operator-in-react_602
+            {...getRootProps()}
+            style={{
+              display: 'flex',
+              padding: '16px',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '16px',
+            }}
+          >
+            <input
+              /*
+               * @SI:REVIEWED: (hoch 602) Nutzung des Spread-Operators in React
+               * LFNR=2 SIQAID=602
+               * Pruefer: David Mueller, 18.07.2025 11:43
+               *
+               * Nutzung des Spread-Operators in React
+               *
+               * Begründung der Einplanung: Nutzung von Spread-Operator wird bewusst genutzt und bietet keine Möglichkeit externen Code auszuführen.
+               */
+              //eslint-disable-next-line @finanzinformatik/fiqa-eslint/spread-operator-in-react_602
+              {...getInputProps()}
+            />
+            <IcUploadM
+              style={{
+                height: '40px',
+                width: '40px',
+              }}
+            />
+            <Typography style={{ cursor: 'pointer' }}>{t('Dokumente.Upload.DateienAuswaehlen')}</Typography>
+            <Typography>{t('Dokumente.Upload.Hinweis')}</Typography>
+          </div>
+        </CardContent>
+      </Card>
+    </>
+  );
+};
+====================================================================================================================================================
+package osplus.psk.core.apl.services;
+
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import osplus.apl.core.api.AplComponent;
+import osplus.apl.core.api.AplLogging;
+import osplus.dynssee.personalstandardkomponenten.fo.LegPmgtPskDkmtUeberUndAnEingabe;
+import osplus.dynssee.personalstandardkomponenten.fo.LiesPmgtPskDkmtDatenUeberMassVgngIdEingabe;
+import osplus.dynssee.personalstandardkomponenten.fo.LiesPmgtPskDkmtUeberUndUeberPmgtElekDkmtIdEingabe;
+import osplus.dynssee.personalstandardkomponenten.fo.LiesPmgtPskSapDkmtUndUeberAnwdNameEingabe;
+import osplus.dynssee.personalstandardkomponenten.fo.PmgtPskDkmtDaten;
+import osplus.dynssee.personalstandardkomponenten.fo.PmgtPskDkmtUeberUndAnlAusgabe;
+import osplus.fi.core.und.client.api.entities.exceptions.ResourceManagementException;
+import osplus.fi.core.uui.api.message.MessageType;
+import osplus.josp.types.IdTimestamp;
+import osplus.psk.Anwendung;
+import osplus.psk.DokumentArt;
+import osplus.psk.core.apl.AbstractService;
+import osplus.psk.core.apl.exception.OspeException;
+import osplus.psk.core.apl.exception.UiServiceException;
+import osplus.psk.core.apl.mapper.DokumentMapper;
+import osplus.psk.core.apl.messages.MessageCallType;
+import osplus.psk.core.apl.messages.MessageMetadata;
+import osplus.psk.core.apl.messages.MessageScope;
+import osplus.psk.core.apl.repositories.psk.PmgtPskDkmtDatenLesenRepository;
+import osplus.psk.core.apl.repositories.psk.PmgtPskDkmtUeberUndAnlRepository;
+import osplus.psk.core.apl.repositories.psk.PmgtPskDkmtUeberUndLesRepository;
+import osplus.psk.core.apl.repositories.psk.PmgtPskSapDkmtUndLesenRepository;
+import osplus.psk.core.model.dokument.DokumentRead;
+import osplus.psk.core.model.dokument.DokumentWrite;
+
+@AplComponent
+public class DokumentService extends AbstractService {
+    private final transient UpAndDownloadService upAndDownloadService;
+    private final transient PmgtPskDkmtUeberUndLesRepository pmgtPskDkmtUeberUndLesRepository;
+    private final transient PmgtPskDkmtUeberUndAnlRepository pmgtPskDkmtUeberAnlRepository;
+    private final transient PmgtPskSapDkmtUndLesenRepository pmgtPskSapDkmtUndLesenRepository;
+    private final transient PmgtPskDkmtDatenLesenRepository pmgtPskDkmtDatenLesenRepository;
+
+    public DokumentService(final UpAndDownloadService upAndDownloadService, final PmgtPskDkmtUeberUndLesRepository pmgtPskDkmtUeberUndLesRepository, final PmgtPskDkmtUeberUndAnlRepository pmgtPskDkmtUeberAnlRepository, final PmgtPskSapDkmtUndLesenRepository pmgtPskSapDkmtUndLesenRepository, final PmgtPskDkmtDatenLesenRepository pmgtPskDkmtDatenLesenRepository) {
+        this.upAndDownloadService = upAndDownloadService;
+        this.pmgtPskDkmtUeberUndLesRepository = pmgtPskDkmtUeberUndLesRepository;
+        this.pmgtPskDkmtUeberAnlRepository = pmgtPskDkmtUeberAnlRepository;
+        this.pmgtPskSapDkmtUndLesenRepository = pmgtPskSapDkmtUndLesenRepository;
+        this.pmgtPskDkmtDatenLesenRepository = pmgtPskDkmtDatenLesenRepository;
+    }
+
+    @AplLogging(
+        logExecutionTime = true,
+        includeParameters = true,
+        logTrace = true
+    )
+    public DokumentRead readSapDokument(final Anwendung anwendung, final DokumentArt dokumentArt, final String personalnummer, final LocalDate stichtag) throws UiServiceException {
+        try {
+            LiesPmgtPskSapDkmtUndUeberAnwdNameEingabe eingabe = new LiesPmgtPskSapDkmtUndUeberAnwdNameEingabe();
+            eingabe.setAnwdName(anwendung.toString());
+            eingabe.setSapDkmtArt(dokumentArt.toString());
+            eingabe.setSapDkmtPrnlNr(personalnummer);
+            eingabe.setSapDkmtDtm(stichtag.format(DateTimeFormatter.ISO_DATE));
+            return (DokumentRead)this.pmgtPskSapDkmtUndLesenRepository.liesPmgtPskSapDkmtUndUeberAnwdName(eingabe).map(DokumentMapper::ospeToDokumentRead).orElseThrow(() -> {
+                return new UiServiceException(MessageType.ERROR, "404", "Dokument.Read.HttpStatus.404", MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
+            });
+        } catch (OspeException var6) {
+            throw new UiServiceException(MessageType.ERROR, "500", "Dokument.Read.HttpStatus.502", MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
+        }
+    }
+
+    @AplLogging(
+        logExecutionTime = true,
+        includeParameters = true,
+        logTrace = true
+    )
+    public DokumentRead readPmgtDokument(final IdTimestamp elekDokumentId) throws UiServiceException {
+        try {
+            LiesPmgtPskDkmtUeberUndUeberPmgtElekDkmtIdEingabe eingabe = new LiesPmgtPskDkmtUeberUndUeberPmgtElekDkmtIdEingabe();
+            eingabe.setPmgtElekDkmtId(elekDokumentId);
+            return (DokumentRead)this.pmgtPskDkmtUeberUndLesRepository.liesPmgtPskDkmtUeberUndUeberPmgtElekDkmtId(eingabe).map(DokumentMapper::ospeToDokumentRead).orElseThrow(() -> {
+                return new UiServiceException(MessageType.ERROR, "404", "Dokument.Read.HttpStatus.404", MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
+            });
+        } catch (OspeException var3) {
+            throw new UiServiceException(MessageType.ERROR, "500", "Dokument.Read.HttpStatus.502", MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
+        }
+    }
+
+    @AplLogging(
+        logExecutionTime = true,
+        includeParameters = true,
+        logTrace = true
+    )
+    public List<DokumentRead> readPmgtDokumenteUeberMassVgngId(final IdTimestamp massVgngId) throws UiServiceException {
+        try {
+            LiesPmgtPskDkmtDatenUeberMassVgngIdEingabe eingabe = new LiesPmgtPskDkmtDatenUeberMassVgngIdEingabe();
+            eingabe.setMassVgngId(massVgngId);
+            return this.pmgtPskDkmtDatenLesenRepository.liesPmgtPskDkmtUeberUndUeberPmgtMassVgngId(eingabe).stream().flatMap((ausgabe) -> {
+                return Optional.ofNullable(ausgabe.getPmgtPskDkmtDaten()).stream().flatMap(Collection::stream).map(PmgtPskDkmtDaten::getPmgtElekDkmtId);
+            }).map(this::safeReadPmgtDokument).filter(Objects::nonNull).toList();
+        } catch (OspeException var3) {
+            throw new UiServiceException(MessageType.ERROR, "500", "Dokument.Dokumente.Read.HttpStatus.502", MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
+        }
+    }
+
+    @AplLogging(
+        logExecutionTime = true,
+        includeParameters = true,
+        logTrace = true
+    )
+    public IdTimestamp createPmgtDokument(final LegPmgtPskDkmtUeberUndAnEingabe createDokument) throws UiServiceException {
+        try {
+            return (IdTimestamp)this.pmgtPskDkmtUeberAnlRepository.legPmgtPskDkmtUeberUndAn(createDokument).map(PmgtPskDkmtUeberUndAnlAusgabe::getPmgtElekDkmtId).orElse((Object)null);
+        } catch (OspeException var3) {
+            throw new UiServiceException(MessageType.ERROR, "500", "Dokument.Create.HttpStatus.502", MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
+        }
+    }
+
+    @AplLogging(
+        logExecutionTime = true,
+        includeParameters = true,
+        logTrace = true
+    )
+    public DokumentRead uploadFileByBase64(DokumentWrite dokumentWrite) throws UiServiceException {
+        try {
+            String uploadToken = this.upAndDownloadService.uploadFile(dokumentWrite.getBase64(), dokumentWrite.getDokumentName());
+            String downloadToken = this.upAndDownloadService.createDownloadTokenFromUploadToken(uploadToken);
+            return new DokumentRead(dokumentWrite.getDokumentName(), downloadToken);
+        } catch (IOException var4) {
+            throw new UiServiceException(MessageType.ERROR, "500", "Dokument.Upload.Create.HttpStatus.500", MessageMetadata.instance(MessageCallType.CREATE, MessageScope.APL));
+        }
+    }
+
+    @AplLogging(
+        logExecutionTime = true,
+        includeParameters = true,
+        logTrace = true
+    )
+    public String getUndDownloadUrl(String undDownloadToken) throws UiServiceException {
+        try {
+            return this.upAndDownloadService.createDownloadUrlFromDownloadToken(undDownloadToken);
+        } catch (ResourceManagementException var3) {
+            throw new UiServiceException(MessageType.ERROR, "500", "Dokument.Download.Get.HttpStatus.502", MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
+        }
+    }
+
+    private DokumentRead safeReadPmgtDokument(IdTimestamp elekDkmtId) {
+        try {
+            return this.readPmgtDokument(elekDkmtId);
+        } catch (UiServiceException var3) {
+            return null;
+        }
+    }
+}
+=================================================================================================================================================
+import osplus.dynssee.personalstandardkomponenten.fo.LiesPmgtPskDkmtUeberUndUeberPmgtElekDkmtIdEingabe;
+import osplus.dynssee.personalstandardkomponenten.fo.PmgtPskDkmtUeberUndLesAusgabe;
+import osplus.fo.dyns.schnittstelle.IPmgtPskDkmtUeberUndLesService;
+import osplus.psk.core.apl.AbstractOspeAusgabeServiceRepository;
+import osplus.psk.core.apl.exception.OspeException;
+import osplus.psk.core.apl.messages.PmgtDynSMessageUtil;
+
+@AplComponent
+public class PmgtPskDkmtUeberUndLesRepository extends AbstractOspeAusgabeServiceRepository<IPmgtPskDkmtUeberUndLesService, PmgtPskDkmtUeberUndLesAusgabe> {
+    public PmgtPskDkmtUeberUndLesRepository(final IPmgtPskDkmtUeberUndLesService pmgtPskDkmtUeberUndLesService, final PmgtDynSMessageUtil pmgtDynSMessageUtil) {
+        super(pmgtPskDkmtUeberUndLesService, pmgtDynSMessageUtil);
+    }
+
+    public Optional<PmgtPskDkmtUeberUndLesAusgabe> liesPmgtPskDkmtUeberUndUeberPmgtElekDkmtId(LiesPmgtPskDkmtUeberUndUeberPmgtElekDkmtIdEingabe eingabe) throws OspeException {
+        IPmgtPskDkmtUeberUndLesService var10002 = (IPmgtPskDkmtUeberUndLesService)this.getService();
+        Objects.requireNonNull(var10002);
+        return this.readWrapper(eingabe, var10002::liesPmgtPskDkmtUeberUndUeberPmgtElekDkmtId);
+    }
+}
+=================================================================================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
 
