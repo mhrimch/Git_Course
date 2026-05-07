@@ -370,3 +370,135 @@ describe('AntragAvatar', () => {
     expect(avatar?.getAttribute('style')).toContain('background-color: #444444'); 
   });
 })
+===========================================================
+S2769: No overload matches this call.
+Overload 1 of 2,
+(props: { component: ElementType<any, keyof IntrinsicElements>; } & TypographyOwnProps & CommonProps & Omit<any, "className" | ... 112 more ... | "variantMapping">): Element | null
+, gave the following error.
+Type string is not assignable to type
+OverridableStringUnion<"inherit" | TypographyVariant, TypographyPropsVariantOverrides> | undefined
+Overload 2 of 2,
+(props: DefaultComponentProps<TypographyTypeMap<{}, "span">>): Element | null
+, gave the following error.
+Type string is not assignable to type
+OverridableStringUnion<"inherit" | TypographyVariant, TypographyPropsVariantOverrides> | undefined
+Typography.d.ts(57, 3): The expected type comes from property variant which is declared here on type
+IntrinsicAttributes & {     component: ElementType<any, keyof IntrinsicElements>; } & TypographyOwnProps & CommonProps & Omit<...>
+Typography.d.ts(57, 3): The expected type comes from property variant which is declared here on type
+IntrinsicAttributes & TypographyOwnProps & CommonProps & Omit<DetailedHTMLProps<HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, "className" | ... 112 more ... | "variantMapping">
+---------------
+import {
+  IcBachelorCapS,
+  IcCalendarCancelCircleS,
+  IcClockS,
+  IcHeartDiagramS,
+  IcPlaneS,
+  IcRoomS,
+  IcTwoArrowDownUpS,
+  IcUserS,
+} from '@finanzinformatik/mcd-module-icons';
+import { useMcdPalette } from '@finanzinformatik/mcd-module-theme-provider';
+import { Avatar, Stack, SvgIconProps, Typography } from '@mui/material';
+import React from 'react';
+
+type AvatarGroesse = 'sm' | 'md' | 'lg';
+
+const avatarSizeConfig: Record<AvatarGroesse, number> = {
+  sm: 36,
+  md: 48,
+  lg: 72,
+};
+
+const textSizeConfig: Record<AvatarGroesse, string> = {
+  sm: 'multiline01',
+  md: 'h4',
+  lg: 'h2',
+};
+
+function getIconSizeConfig(groesse: AvatarGroesse): number {
+  return groesse === 'sm' ? 24 : 32;
+}
+
+type AntragAvatarProps = {
+  id: number;
+  groesse?: AvatarGroesse;
+  text?: string;
+};
+
+export interface AvatarIconConfig {
+  Icon: (props: SvgIconProps) => React.ReactNode;
+  color: keyof ReturnType<typeof useMcdPalette>['ColorCategoryTokens'];
+  bgColor: keyof ReturnType<typeof useMcdPalette>['ColorCategoryTokens'];
+}
+
+const categoryConfigs: Partial<Record<number, AvatarIconConfig>> = {
+  0: {
+    Icon: IcClockS,
+    color: 'category-mobility-01',
+    bgColor: 'category-mobility-02',
+  },
+  1: {
+    Icon: IcPlaneS,
+    color: 'category-travel-01',
+    bgColor: 'category-travel-02',
+  },
+  2: {
+    Icon: IcRoomS,
+    color: 'category-mobility-01',
+    bgColor: 'category-mobility-02',
+  },
+  3: {
+    Icon: IcBachelorCapS,
+    color: 'category-education-01',
+    bgColor: 'category-education-02',
+  },
+  4: {
+    Icon: IcHeartDiagramS,
+    color: 'category-health-01',
+    bgColor: 'category-health-02',
+  },
+  5: {
+    Icon: IcUserS,
+    color: 'category-protection-01',
+    bgColor: 'category-protection-02',
+  },
+  6: {
+    Icon: IcCalendarCancelCircleS,
+    color: 'category-travel-01',
+    bgColor: 'category-travel-02',
+  },
+  7: {
+    Icon: IcTwoArrowDownUpS,
+    color: 'category-income-01',
+    bgColor: 'category-income-02',
+  },
+};
+
+export function AntragAvatar({ id, groesse = 'sm', text }: AntragAvatarProps) {
+  const categoryColors = useMcdPalette().ColorCategoryTokens;
+  const config: AvatarIconConfig | undefined = categoryConfigs[id];
+  if (!config) {
+    return undefined;
+  }
+  const { Icon, color, bgColor } = config;
+  const avatarGroesse = avatarSizeConfig[groesse];
+  const textGroesse = textSizeConfig[groesse];
+  const iconSize = getIconSizeConfig(groesse);
+  return (
+    <>
+      <Stack spacing={2} alignItems="center" direction="row">
+        <Avatar
+          sx={{
+            height: avatarGroesse,
+            width: avatarGroesse,
+            bgcolor: categoryColors[bgColor],
+          }}
+        >
+          <Icon sx={{ fill: categoryColors[color], maxHeight: iconSize, maxWidth: iconSize }} />
+        </Avatar>
+        {text && <Typography variant={textGroesse}> {text} </Typography>}
+      </Stack>
+    </>
+  );
+}
+
