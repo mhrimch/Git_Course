@@ -502,3 +502,122 @@ export function AntragAvatar({ id, groesse = 'sm', text }: AntragAvatarProps) {
   );
 }
 
+=======================================================================================================================================
+import {
+  IcBachelorCapS,
+  IcCalendarCancelCircleS,
+  IcClockS,
+  IcHeartDiagramS,
+  IcPlaneS,
+  IcRoomS,
+  IcTwoArrowDownUpS,
+  IcUserS,
+} from '@finanzinformatik/mcd-module-icons';
+import { useMcdPalette } from '@finanzinformatik/mcd-module-theme-provider';
+import { Avatar, Stack, SvgIconProps, Typography } from '@mui/material';
+import React from 'react';
+import { ThemeConstants } from '../../constants/ThemeConstants';
+
+type AvatarGroesse = 32 | 48 | 72;
+
+const avatarSizeConfig: Record<AvatarGroesse, number> = {
+  32: ThemeConstants.AVATAR_SIZE_SM,
+  48: ThemeConstants.AVATAR_SIZE_MD,
+  72: ThemeConstants.AVATAR_SIZE_LG,
+};
+
+type TextSize =
+  | ThemeConstants.TYPOGRAPHY_MULTILINE01
+  | ThemeConstants.TYPOGRAPHY_HEADLINE02
+  | ThemeConstants.TYPOGRAPHY_HEADLINE04;
+
+const textSizeConfig: Record<AvatarGroesse, TextSize> = {
+  32: ThemeConstants.TYPOGRAPHY_MULTILINE01,
+  48: ThemeConstants.TYPOGRAPHY_HEADLINE04,
+  72: ThemeConstants.TYPOGRAPHY_HEADLINE02,
+};
+
+type AntragAvatarProps = {
+  id: number;
+  groesse?: AvatarGroesse;
+  text?: string;
+};
+
+export interface AvatarIconConfig {
+  Icon: (props: SvgIconProps) => React.ReactNode;
+  color: keyof ReturnType<typeof useMcdPalette>['ColorCategoryTokens'];
+  bgColor: keyof ReturnType<typeof useMcdPalette>['ColorCategoryTokens'];
+}
+
+const categoryConfigs: Partial<Record<number, AvatarIconConfig>> = {
+  0: {
+    Icon: IcClockS,
+    color: 'category-mobility-01',
+    bgColor: 'category-mobility-02',
+  },
+  1: {
+    Icon: IcPlaneS,
+    color: 'category-travel-01',
+    bgColor: 'category-travel-02',
+  },
+  2: {
+    Icon: IcRoomS,
+    color: 'category-mobility-01',
+    bgColor: 'category-mobility-02',
+  },
+  3: {
+    Icon: IcBachelorCapS,
+    color: 'category-education-01',
+    bgColor: 'category-education-02',
+  },
+  4: {
+    Icon: IcHeartDiagramS,
+    color: 'category-health-01',
+    bgColor: 'category-health-02',
+  },
+  5: {
+    Icon: IcUserS,
+    color: 'category-protection-01',
+    bgColor: 'category-protection-02',
+  },
+  6: {
+    Icon: IcCalendarCancelCircleS,
+    color: 'category-travel-01',
+    bgColor: 'category-travel-02',
+  },
+  7: {
+    Icon: IcTwoArrowDownUpS,
+    color: 'category-income-01',
+    bgColor: 'category-income-02',
+  },
+};
+
+export function AntragAvatar({ id, groesse = 32, text }: AntragAvatarProps) {
+  const categoryColors = useMcdPalette().ColorCategoryTokens;
+  const config: AvatarIconConfig | undefined = categoryConfigs[id];
+  if (!config) {
+    return undefined;
+  }
+  const { Icon, color, bgColor } = config;
+  const avatarGroesse = avatarSizeConfig[groesse];
+  const textGroesse = textSizeConfig[groesse];
+  const iconSize: number = groesse === 32 ? 24 : 32;
+  const abstand: number = groesse === 32 ? 2 : 4;
+  return (
+    <>
+      <Stack spacing={abstand} alignItems="center" direction="row">
+        <Avatar
+          sx={{
+            height: avatarGroesse,
+            width: avatarGroesse,
+            bgcolor: categoryColors[bgColor],
+          }}
+        >
+          <Icon sx={{ fill: categoryColors[color], maxHeight: iconSize, maxWidth: iconSize }} />
+        </Avatar>
+        {text && <Typography variant={textGroesse}> {text} </Typography>}
+      </Stack>
+    </>
+  );
+}
+
