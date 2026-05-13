@@ -1,102 +1,23 @@
-import React from "react";
-
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  Chip,
-} from "@mui/material";
-
-interface StatusCardProps {
-  title: string;
-  subtitle: string;
-  count: number;
-}
-
-function StatusCard({
-  title,
-  subtitle,
-  count,
-}: StatusCardProps) {
-  return (
-    <Card
-      variant="outlined"
-      sx={{
-        flex: 1,
-        borderRadius: 2,
-        boxShadow: 0,
-      }}
-    >
-      <CardContent
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <Box>
-          <Typography fontWeight={600}>
-            {title}
-          </Typography>
-
-          <Typography
-            variant="body2"
-            color="text.secondary"
-          >
-            {subtitle}
-          </Typography>
-        </Box>
-
-        <Chip
-          label={count}
-          color="error"
-          size="small"
-          sx={{
-            borderRadius: "50%",
-            width: 32,
-            height: 32,
-            fontWeight: "bold",
-          }}
-        />
-      </CardContent>
-    </Card>
-  );
-}
-
-export default function Ampelkonto() {
-  return (
-    <Box>
-      <Typography
-        variant="h6"
-        fontWeight={700}
-        sx={{ mb: 2 }}
-      >
-        Ampelkonto
-      </Typography>
-
-      <Box
-        sx={{
-          display: "flex",
-          gap: 2,
-          flexDirection: {
-            xs: "column",
-            md: "row",
-          },
-        }}
-      >
-        <StatusCard
-          title="Gleitzeitsaldo"
-          subtitle="Mitarbeiter im roten Bereich"
-          count={5}
-        />
-
-        <StatusCard
-          title="Resturlaub"
-          subtitle="Mitarbeiter im roten Bereich"
-          count={2}
-        />
-      </Box>
-    </Box>
-  );
+   <Grid container justifyContent="center" spacing={10} flexDirection="column" sx={{ width: '100%' }} gap={0}>
+      <Grid container justifyContent="space-between" alignItems="center" spacing={1} margin={3}>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Typography variant="headline02">{t('antragStellen')}</Typography>
+        </Grid>
+      </Grid>
+      <Grid container size={12} justifyContent="flex-start" alignItems="center" spacing={3}>
+        {dataToShow.map((antrag) => {
+          return (
+            <Grid size={{ xs: 12, md: 6 }} key={antrag.bezeichnung + antrag.gruppeId + antrag.schluessel}>
+              <AntragAbwesenheitItem
+                antragGruppeId={antrag.gruppeId}
+                iconId={antrag.iconId}
+                bezeichnung={antrag.bezeichnung}
+                antragSchluessel={antrag.schluessel}
+                isExtern={antrag.isExtern}
+              />
+            </Grid>
+          );
+        })}
+      </Grid>
+    </Grid>
 }
