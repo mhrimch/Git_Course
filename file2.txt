@@ -438,7 +438,8 @@ public interface IPmgtPzwKalenderLesenService extends IFachobjektOoService {
 	throws FachobjektException;
 
 }
-
+===================
+npm view @isaacs/cliui@8.0.2 --registry https://nexus.intern/repository/npm-group-mkp/ --json > debug.json
 
 
 
