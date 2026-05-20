@@ -24,3 +24,70 @@
 [INFO]      [echo] Running 'npx.cmd @finanzinformatik/cpl-scripts env install'
 [INFO]      [exec] npm error Invalid Version: 
 [INFO]      [exec] npm error A complete log of this run can be found in: C:\Projekte\pzw-mkp\
+================================
+[INFO] --- install:3.1.4:install (default-install) @ pzw-cpl ---
+[INFO] Installing C:\Projekte\pzw-mkp\pzw-cpl\pom.xml to C:\Projekte\.m2\repository\osplus\pzw\pzw-cpl\261.0.0-SNAPSHOT\pzw-cpl-261.0.0-SNAPSHOT.pom
+[INFO] Installing C:\Projekte\pzw-mkp\pzw-cpl\target\pzw-cpl-261.0.0-SNAPSHOT.jar to C:\Projekte\.m2\repository\osplus\pzw\pzw-cpl\261.0.0-SNAPSHOT\pzw-cpl-261.0.0-SNAPSHOT.jar
+[INFO] Installing C:\Projekte\pzw-mkp\pzw-cpl\target\ifgvbundle-maven-plugin\META-INF\osplus\pzw\pzw-cpl-cfg-261.0.0-SNAPSHOT.zip to C:\Projekte\.m2\repository\osplus\pzw\pzw-cpl\261.0.0-SNAPSHOT\pzw-cpl-261.0.0-SNAPSHOT.zip
+[INFO] Installing C:\Projekte\pzw-mkp\pzw-cpl\target\ifgvbundle-maven-plugin\pzw-cpl-cfg-261.0.0-SNAPSHOT.jar to C:\Projekte\.m2\repository\osplus\pzw\pzw-cpl-cfg\261.0.0-SNAPSHOT\pzw-cpl-cfg-261.0.0-SNAPSHOT.jar
+[INFO] Installing C:\Projekte\pzw-mkp\pzw-cpl\target\ifgvbundle-maven-plugin\pom.xml to C:\Projekte\.m2\repository\osplus\pzw\pzw-cpl-cfg\261.0.0-SNAPSHOT\pzw-cpl-cfg-261.0.0-SNAPSHOT.pom
+[INFO] Installing C:\Projekte\pzw-mkp\pzw-cpl\target\pzw-cpl-261.0.0-SNAPSHOT-sources.jar to C:\Projekte\.m2\repository\osplus\pzw\pzw-cpl\261.0.0-SNAPSHOT\pzw-cpl-261.0.0-SNAPSHOT-sources.jar
+[INFO]
+[INFO] ---------------< osplus.pzw:pzw-cpl-web-zeitwirtschaft >----------------
+[INFO] Building pzw-cpl-web-zeitwirtschaft 261.0.0-SNAPSHOT              [7/12]
+[INFO]   from pzw-cpl-web\src\main\typescript\zeitwirtschaft\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO]
+[INFO] --- clean:3.5.0:clean (default-clean) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] Deleting C:\Projekte\pzw-mkp\pzw-cpl-web\src\main\typescript\zeitwirtschaft\target
+[INFO]
+[INFO] --- enforcer:3.6.2:enforce (enforce-no-apl-snapshots-in-release-build) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.dependency.RequireReleaseDeps passed
+[INFO]
+[INFO] --- dependency:3.9.0:properties (default) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO]
+[INFO] --- jacoco:0.8.12:prepare-agent (prepare-agent) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] Skipping JaCoCo execution because property jacoco.skip is set.
+[INFO] surefireArgLine set to empty
+[INFO]
+[INFO] --- apl:261.0.0-M3:set-build-properties (set-build-properties) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] Build is Snapshot-Build. Maven-Variable apl.isSnapshotBuild is true
+[INFO]
+[INFO] --- antrun:3.1.0:run (install-node) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] Executing tasks
+[INFO]      [echo] Running 'npx.cmd @finanzinformatik/cpl-scripts env install'
+[INFO]      [exec] npm error Invalid Version:
+[INFO]      [exec] npm error A complete log of this run can be found in: C:\Projekte\pzw-mkp\.npx\_logs\2026-05-20T14_15_09_031Z-debug-0.log
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for pzw-parent 261.0.0-SNAPSHOT:
+[INFO]
+[INFO] pzw-parent ......................................... SUCCESS [  5.201 s]
+[INFO] pzw-common ......................................... SUCCESS [  5.711 s]
+[INFO] pzw-apl-api ........................................ SUCCESS [  3.583 s]
+[INFO] pzw-apl ............................................ SUCCESS [ 24.858 s]
+[INFO] pzw-cpl-api ........................................ SUCCESS [  2.524 s]
+[INFO] pzw-cpl ............................................ SUCCESS [  6.527 s]
+[INFO] pzw-cpl-web-zeitwirtschaft ......................... FAILURE [ 11.588 s]
+[INFO] pzw-cpl-web ........................................ SKIPPED
+[INFO] pzw-cpl-web-components ............................. SKIPPED
+[INFO] pzw-cpl-web-components-zeitwirtschaft-buchen ....... SKIPPED
+[INFO] pzw-runner ......................................... SKIPPED
+[INFO] pzw-local .......................................... SKIPPED
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  01:00 min
+[INFO] Finished at: 2026-05-20T16:15:19+02:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-antrun-plugin:3.1.0:run (install-node) on project pzw-cpl-web-zeitwirtschaft: An Ant BuildException has occured: exec returned: 1
+[ERROR] around Ant part ...<exec failifexecutionfails="true" failonerror="true" dir="C:\Projekte\pzw-mkp\pzw-cpl-web\src\main\typescript\zeitwirtschaft" executable="${executables.npx}" searchpath="true">... @ 8:181 in C:\Projekte\pzw-mkp\pzw-cpl-web\src\main\typescript\zeitwirtschaft\target\antrun\build-main.xml
+[ERROR] -> [Help 1]
+[ERROR]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR]
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException
+[ERROR]
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :pzw-cpl-web-zeitwirtschaft
