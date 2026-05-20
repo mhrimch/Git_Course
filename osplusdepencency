@@ -1,0 +1,123 @@
+package osplus.pzw.workflows.ui.konfiguration;
+
+import kotlin.Unit;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import osplus.apl.cpl.api.mapi.v2.annotation.CplComponent;
+import osplus.apl.cpl.api.mapi.v2.annotation.Expose;
+import osplus.apl.cpl.api.mapi.v2.context.EnterStateContext;
+import osplus.apl.cpl.api.mapi.v2.context.PlatformContext;
+import osplus.apl.cpl.api.mapi.v2.description.TypeInfo;
+import osplus.apl.cpl.api.mapi.v2.flow.Bookmark;
+import osplus.apl.cpl.api.mapi.v2.flow.FlowKey;
+import osplus.apl.cpl.api.mapi.v2.navigation.NavigationCommand;
+import osplus.apl.cpl.api.mapi.v2.restriction.AuthenticationStatus;
+import osplus.apl.cpl.api.mapi.v2.restriction.Channel;
+import osplus.apl.cpl.api.mapi.v2.restriction.RestrictAuthenticationStatus;
+import osplus.apl.cpl.api.mapi.v2.restriction.RestrictionValidator;
+import osplus.apl.cpl.api.mapi.v2.runtime.Page;
+import osplus.apl.cpl.api.mapi.v2.utils.KotlinTools;
+import osplus.psk.api.UserUiModuleCplApi;
+import osplus.psk.core.model.kurs.KursAttribut;
+import osplus.psk.kurs.KursRechtConstants;
+import osplus.pzw.PzwCplConstants;
+import osplus.pzw.PzwCplWorkflows;
+import osplus.pzw.workflows.FehlendeBerechtigungenReference;
+
+import java.util.List;
+
+@CplComponent
+public class KonfAntraegePage implements Page<KonfAntraegePage> {
+    @Expose
+    private Boolean canReadUebersicht;
+    @Expose
+    private Boolean canReadMeinBereich;
+    @Expose
+    private Boolean canReadZeitwirtschaft;
+    @Expose
+    private Boolean canReadKonfiguration;
+
+    @NotNull
+    @Override
+    public FlowKey getKey() {
+        return new FlowKey(PzwCplWorkflows.KONFIGURATION_ANTRAEGE.appId, PzwCplWorkflows.KONFIGURATION_ANTRAEGE.workflow, PzwCplWorkflows.KONFIGURATION_ANTRAEGE.workflowVersion);
+    }
+
+    @Nullable
+    @Override
+    public Bookmark getBookmark() {
+        return new Bookmark(PzwCplConstants.Bookmarks.KONFIGURATION_ANTRAEGE);
+    }
+
+    @NotNull
+    @Override
+    public String title(@NotNull PlatformContext platformContext) {
+        return platformContext.getI18n().get("zeitwirtschaft.konfiguration-antraege");
+    }
+
+    @NotNull
+    @Override
+    public List<Channel> getAllowedChannels() {
+        return List.of(
+                Channel.STATIONAER,
+                Channel.UNKNOWN
+        );
+    }
+
+    @NotNull
+    @Override
+    public List<RestrictionValidator> restrictions() {
+        return List.of(
+                new RestrictAuthenticationStatus(AuthenticationStatus.FULL_AUTHENTICATION)
+        );
+    }
+
+    @NotNull
+    @Override
+    public TypeInfo<KonfAntraegePage> getInputType() {
+        return KotlinTools.typeOf(KonfAntraegePage.class);
+    }
+
+    @NotNull
+    @Override
+    public NavigationCommand enter(@NotNull EnterStateContext<KonfAntraegePage> context) {
+        final var hasKursRechtPeMa = UserUiModuleCplApi.hasKursRecht(context.getUuiClient(), KursRechtConstants.PE_MA);
+        final var hasKursRechtPeZwMa = UserUiModuleCplApi.hasKursRecht(context.getUuiClient(), KursRechtConstants.PE_ZW_MA);
+        final var hasKursRechtPeKonfigMitAttributAendern = UserUiModuleCplApi.hasKursRechtMitAttribute(context.getUuiClient(), KursRechtConstants.PE_KONFIG, KursAttribut.AENDERN);
+
+        // Bei fehlenden Berechtigungen erfolgt eine Weiterleitung auf eine Hinweis (Fehlende Berechtigungen) Seite.
+        if (!hasKursRechtPeMa && !hasKursRechtPeZwMa && !hasKursRechtPeKonfigMitAttributAendern) {
+            return NavigationCommand.replace(
+                    new FehlendeBerechtigungenReference<>(),
+                    Empty.INSTANCE
+            );
+        }
+
+        context.withInput(zeitwirtschaftPage ->
+                {
+                    canReadUebersicht = hasKursRechtPeMa && hasKursRechtPeZwMa;
+                    canReadMeinBereich = hasKursRechtPeMa;
+                    canReadZeitwirtschaft = hasKursRechtPeMa && hasKursRechtPeZwMa;
+                    canReadKonfiguration = hasKursRechtPeKonfigMitAttributAendern;
+                    return Unit.INSTANCE;
+                }
+        );
+        return NavigationCommand.STAY;
+    }
+
+    public @NotNull Boolean getCanReadUebersicht() {
+        return canReadUebersicht;
+    }
+
+    public @NotNull Boolean getCanReadMeinBereich() {
+        return canReadMeinBereich;
+    }
+
+    public @NotNull Boolean getCanReadZeitwirtschaft() {
+        return canReadZeitwirtschaft;
+    }
+
+    public @NotNull Boolean getCanReadKonfiguration() {
+        return canReadKonfiguration;
+    }
+}
