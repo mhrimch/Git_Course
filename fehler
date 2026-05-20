@@ -91,3 +91,269 @@
 [ERROR]
 [ERROR] After correcting the problems, you can resume the build with the command
 [ERROR]   mvn <args> -rf :pzw-cpl-web-zeitwirtschaft
+===================================================
+[INFO] ---------------< osplus.pzw:pzw-cpl-web-zeitwirtschaft >----------------
+[INFO] Building pzw-cpl-web-zeitwirtschaft 261.0.0-SNAPSHOT              [7/12]
+[INFO]   from pzw-cpl-web\src\main\typescript\zeitwirtschaft\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.5.0:clean (default-clean) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] Deleting C:\Projekte\pzw-mkp\pzw-cpl-web\src\main\typescript\zeitwirtschaft\target
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-no-apl-snapshots-in-release-build) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.dependency.RequireReleaseDeps passed
+[INFO] 
+[INFO] --- dependency:3.9.0:properties (default) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] 
+[INFO] --- jacoco:0.8.12:prepare-agent (prepare-agent) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] Skipping JaCoCo execution because property jacoco.skip is set.
+[INFO] surefireArgLine set to empty
+[INFO] 
+[INFO] --- apl:261.0.0-M3:set-build-properties (set-build-properties) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] Build is Snapshot-Build. Maven-Variable apl.isSnapshotBuild is true
+[INFO] 
+[INFO] --- antrun:3.1.0:run (install-node) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] Executing tasks
+[INFO]      [echo] Running 'npx.cmd @finanzinformatik/cpl-scripts env install'
+[INFO]      [exec] npm error Invalid Version: 
+[INFO]      [exec] npm error A complete log of this run can be found in: C:\Projekte\pzw-mkp\.npx\_logs\2026-05-20T15_33_16_231Z-debug-0.log
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for pzw-parent 261.0.0-SNAPSHOT:
+[INFO] 
+[INFO] pzw-parent ......................................... SUCCESS [  5.649 s]
+[INFO] pzw-common ......................................... SUCCESS [  5.496 s]
+[INFO] pzw-apl-api ........................................ SUCCESS [  7.222 s]
+[INFO] pzw-apl ............................................ SUCCESS [ 35.940 s]
+[INFO] pzw-cpl-api ........................................ SUCCESS [  2.514 s]
+[INFO] pzw-cpl ............................................ SUCCESS [  7.609 s]
+[INFO] pzw-cpl-web-zeitwirtschaft ......................... FAILURE [  6.861 s]
+[INFO] pzw-cpl-web ........................................ SKIPPED
+[INFO] pzw-cpl-web-components ............................. SKIPPED
+[INFO] pzw-cpl-web-components-zeitwirtschaft-buchen ....... SKIPPED
+[INFO] pzw-runner ......................................... SKIPPED
+[INFO] pzw-local .......................................... SKIPPED
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  01:12 min
+[INFO] Finished at: 2026-05-20T17:33:21+02:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-antrun-plugin:3.1.0:run (install-node) on project pzw-cpl-web-zeitwirtschaft: An Ant BuildException has occured: exec returned: 1
+[ERROR] around Ant part ...<exec failifexecutionfails="true" failonerror="true" dir="C:\Projekte\pzw-mkp\pzw-cpl-web\src\main\typescript\zeitwirtschaft" executable="${executables.npx}" searchpath="true">... @ 8:181 in C:\Projekte\pzw-mkp\pzw-cpl-web\src\main\typescript\zeitwirtschaft\target\antrun\build-main.xml
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :pzw-cpl-web-zeitwirtschaft
+
+Process finished with exit code 1
+====================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <artifactId>pzw-parent</artifactId>
+        <groupId>osplus.pzw</groupId>
+        <version>261.0.0-SNAPSHOT</version>
+        <relativePath>../../../../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>pzw-cpl-web-zeitwirtschaft</artifactId>
+    <packaging>pom</packaging>
+
+    <build>
+		<plugins>
+			<plugin>
+                <!-- Das Maven Source Plugin wird durch die APL aktiviert. Für TypeScript-Module ist es aber
+                     überflüssig. Da es die Phase "initialize" aber auslöst wird, wird die NodeJS-Installation
+                     zweimal ausgeführt. Daher ist das Plugin hier deaktiviert.
+                     Leider hat das Plugin keine Property "Skip". Daher wird das Plugin an eine nicht vorhandene
+                     Phase gebunden und damit nicht mehr ausgeführt.
+                -->
+                <artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+                        <id>attach-sources</id>
+                        <phase>never-run-this-for-js-modules</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+				<executions>
+					<execution>
+                        <id>install-node</id>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <target>
+                                <condition property="executables.npx" value="npx.cmd" else="npx">
+                                    <os family="windows"/>
+                                </condition>
+
+                                <echo level="info">Running '${executables.npx} @finanzinformatik/cpl-scripts env install'</echo>
+                                <exec executable="${executables.npx}" searchpath="true" dir="${pom.basedir}"
+                                      failonerror="true" failifexecutionfails="true">
+                                    <arg value="-y"/>
+
+                                    <arg value="--cache"/>
+                                    <arg value="../../../../../.npx"/>
+
+                                    <arg value="--registry"/>
+                                    <arg value="https://nexus.intern/repository/npm-group-mkp/"/>
+
+                                    <arg value="@finanzinformatik/cpl-scripts@latest"/>
+                                    <arg value="env"/>
+                                    <arg value="install"/>
+                                    <arg value="--skip-install"/>
+                                    <arg value="--skip-vcs"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+					</execution>
+					<execution>
+                        <id>install-yarn</id>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <target>
+                            	<!-- Unter Windows wird das Working Directory innerhalb des node-Prozesses gesetzt. Es gilt
+                            	aber nicht für die Node.exe selber. Daher muss der Pfad absolut gebildet werden. -->
+                                <condition property="executables.node"
+                                           value="${pom.basedir}/../../../../../.node/node.exe"
+                                           else="../../../../../.node/bin/node">
+                                    <os family="windows"/>
+                                </condition>
+                                <condition property="script.yarn"
+                                           value="../../../../../.node/yarn"
+                                           else="../../../../../.node/bin/yarn">
+                                    <os family="windows"/>
+                                </condition>
+
+                                <echo level="info">Running '${executables.node} yarn install'</echo>
+
+                                <exec executable="${executables.node}"
+                                      dir="${pom.basedir}"
+                                      failonerror="true"
+                                      failifexecutionfails="true">
+                                    <arg value="${script.yarn}" />
+                                    <arg value="install"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+					</execution>
+					<execution>
+                        <id>build-yarn</id>
+                        <phase>compile</phase>
+                        <configuration>
+                            <target>
+                                <condition property="executables.node"
+                                           value="${pom.basedir}/../../../../../.node/node.exe"
+                                           else="../../../../../.node/bin/node">
+                                    <os family="windows"/>
+                                </condition>
+                                <condition property="script.yarn"
+                                           value="../../../../../.node/yarn"
+                                           else="../../../../../.node/bin/yarn">
+                                    <os family="windows"/>
+                                </condition>
+
+                                <echo level="info">Running '${executables.node} yarn build'</echo>
+
+                                <exec executable="${executables.node}"
+                                      dir="${pom.basedir}"
+                                      failonerror="true"
+                                      failifexecutionfails="true">
+                                    <arg value="${script.yarn}" />
+                                    <arg value="build"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+					</execution>
+					<execution>
+                        <id>test-yarn</id>
+                        <phase>test</phase>
+                        <configuration>
+                            <target>
+                                <condition property="executables.node"
+                                           value="${pom.basedir}/../../../../../.node/node.exe"
+                                           else="../../../../../.node/bin/node">
+                                    <os family="windows"/>
+                                </condition>
+                                <condition property="script.yarn"
+                                           value="../../../../../.node/yarn"
+                                           else="../../../../../.node/bin/yarn">
+                                    <os family="windows"/>
+                                </condition>
+
+                                <echo level="info">Running '${executables.node} yarn test'</echo>
+
+                                <exec executable="${executables.node}"
+                                      dir="${pom.basedir}"
+                                      failonerror="true"
+                                      failifexecutionfails="true">
+                                    <arg value="${script.yarn}" />
+                                    <arg value="test"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+					</execution>
+					<execution>
+                        <id>lint-yarn</id>
+                        <phase>compile</phase>
+                        <configuration>
+                            <target>
+                                <condition property="executables.node"
+                                           value="${pom.basedir}/../../../../../.node/node.exe"
+                                           else="../../../../../.node/bin/node">
+                                    <os family="windows"/>
+                                </condition>
+                                <condition property="script.yarn"
+                                           value="../../../../../.node/yarn"
+                                           else="../../../../../.node/bin/yarn">
+                                    <os family="windows"/>
+                                </condition>
+
+                                <echo level="info">Running '${executables.node} yarn lint'</echo>
+
+                                <exec executable="${executables.node}"
+                                      dir="${pom.basedir}"
+                                      failonerror="true"
+                                      failifexecutionfails="true">
+                                    <arg value="${script.yarn}" />
+                                    <arg value="lint"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+    </build>
+</project>
+
