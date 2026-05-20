@@ -1,0 +1,591 @@
+0 verbose cli C:\Projekte\pzw-mkp\.node\node.exe C:\Projekte\pzw-mkp\.node\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.6.2
+2 info using node@v24.13.0
+3 silly config load:file:C:\Projekte\pzw-mkp\.node\node_modules\npm\npmrc
+4 silly config load:file:C:\Projekte\pzw-mkp\pzw-cpl-web\src\main\typescript\zeitwirtschaft\.npmrc
+5 silly config load:file:C:\Users\j780800\.npmrc
+6 silly config load:file:C:\Projekte\pzw-mkp\.node\etc\npmrc
+7 verbose title npm exec @finanzinformatik/cpl-scripts@latest env install --skip-install --skip-vcs
+8 verbose argv "exec" "--yes" "--cache" "../../../../../.npx" "--registry" "https://nexus.intern/repository/npm-group-mkp/" "--" "@finanzinformatik/cpl-scripts@latest" "env" "install" "--skip-install" "--skip-vcs"
+9 verbose logfile logs-max:10 dir:C:\Projekte\pzw-mkp\.npx\_logs\2026-05-20T14_15_09_031Z-
+10 verbose logfile C:\Projekte\pzw-mkp\.npx\_logs\2026-05-20T14_15_09_031Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly logfile done cleaning log files
+13 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+14 http fetch GET 200 https://nexus.intern/repository/npm-group-mkp/@finanzinformatik%2fcpl-scripts 2112ms (cache updated)
+15 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+16 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+17 silly idealTree buildDeps
+18 silly fetch manifest @finanzinformatik/cpl-scripts@9.0.2-261-PR-2134-SNAPSHOT-1
+19 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@finanzinformatik%2fcpl-scripts cache-miss
+20 http fetch GET 200 https://nexus.intern/repository/npm-group-mkp/@finanzinformatik%2fcpl-scripts 1904ms (cache updated)
+21 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@finanzinformatik%2fcpl-scripts set size:undefined disposed:false
+22 silly fetch manifest @finanzinformatik/cpl-module-templates@^5.0.3
+23 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@finanzinformatik%2fcpl-module-templates cache-miss
+24 http cache https://nexus.intern/repository/npm-group-mkp/@finanzinformatik%2fcpl-module-templates 12ms (cache hit)
+25 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@finanzinformatik%2fcpl-module-templates set size:884353 disposed:false
+26 silly fetch manifest typescript@5.9.3
+27 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/typescript cache-miss
+28 http cache https://nexus.intern/repository/npm-group-mkp/typescript 32ms (cache hit)
+29 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/typescript set size:15478215 disposed:false
+30 silly placeDep ROOT @finanzinformatik/cpl-scripts@9.0.2-261-PR-2134-SNAPSHOT-1 REPLACE for:  want: 9.0.2-261-PR-2134-SNAPSHOT-1
+31 silly placeDep ROOT @finanzinformatik/cpl-module-templates@5.0.3 OK for: @finanzinformatik/cpl-scripts@9.0.2-261-PR-2134-SNAPSHOT-1 want: ^5.0.3
+32 silly placeDep ROOT typescript@5.9.3 REPLACE for: @finanzinformatik/cpl-scripts@9.0.2-261-PR-2134-SNAPSHOT-1 want: 5.9.3
+33 silly fetch manifest @finanzinformatik/cpl-module-vite-plugin@^5.1.0-261-PR-2134-SNAPSHOT-1
+34 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@finanzinformatik%2fcpl-module-vite-plugin cache-miss
+35 silly fetch manifest @finanzinformatik/eslint-plugin-fiqa-eslint@260
+36 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@finanzinformatik%2feslint-plugin-fiqa-eslint cache-miss
+37 silly fetch manifest figures@2
+38 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/figures cache-miss
+39 silly fetch manifest listr2@^10.1.0
+40 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/listr2 cache-miss
+41 silly fetch manifest rxjs@6.6.7
+42 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/rxjs cache-miss
+43 silly fetch manifest uuid@^14.0.0
+44 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/uuid cache-miss
+45 silly fetch manifest velocityjs@^2.1.6
+46 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/velocityjs cache-miss
+47 silly fetch manifest vite@^7.3.2
+48 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/vite cache-miss
+49 silly fetch manifest yaml@^2.8.3
+50 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/yaml cache-miss
+51 http cache https://nexus.intern/repository/npm-group-mkp/@finanzinformatik%2feslint-plugin-fiqa-eslint 26ms (cache hit)
+52 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@finanzinformatik%2feslint-plugin-fiqa-eslint set size:249331 disposed:false
+53 http cache https://nexus.intern/repository/npm-group-mkp/yaml 27ms (cache hit)
+54 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/yaml set size:387665 disposed:false
+55 http cache https://nexus.intern/repository/npm-group-mkp/uuid 32ms (cache hit)
+56 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/uuid set size:235661 disposed:false
+57 http cache https://nexus.intern/repository/npm-group-mkp/listr2 35ms (cache hit)
+58 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/listr2 set size:1061351 disposed:false
+59 http cache https://nexus.intern/repository/npm-group-mkp/figures 41ms (cache hit)
+60 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/figures set size:65027 disposed:false
+61 http cache https://nexus.intern/repository/npm-group-mkp/velocityjs 41ms (cache hit)
+62 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/velocityjs set size:163156 disposed:false
+63 http cache https://nexus.intern/repository/npm-group-mkp/rxjs 44ms (cache hit)
+64 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/rxjs set size:983205 disposed:false
+65 http cache https://nexus.intern/repository/npm-group-mkp/vite 101ms (cache hit)
+66 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/vite set size:38851944 disposed:false
+67 http fetch GET 200 https://nexus.intern/repository/npm-group-mkp/@finanzinformatik%2fcpl-module-vite-plugin 1208ms (cache updated)
+68 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@finanzinformatik%2fcpl-module-vite-plugin set size:undefined disposed:false
+69 silly fetch manifest @types/node@^20.19.0 || >=22.12.0
+70 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@types%2fnode cache-miss
+71 http cache https://nexus.intern/repository/npm-group-mkp/@types%2fnode 34ms (cache hit)
+72 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@types%2fnode set size:11060089 disposed:false
+73 silly fetch manifest jiti@>=1.21.0
+74 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/jiti cache-miss
+75 http cache https://nexus.intern/repository/npm-group-mkp/jiti 16ms (cache hit)
+76 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/jiti set size:389986 disposed:false
+77 silly fetch manifest less@^4.0.0
+78 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/less cache-miss
+79 http cache https://nexus.intern/repository/npm-group-mkp/less 26ms (cache hit)
+80 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/less set size:464355 disposed:false
+81 silly fetch manifest lightningcss@^1.21.0
+82 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/lightningcss cache-miss
+83 http cache https://nexus.intern/repository/npm-group-mkp/lightningcss 8ms (cache hit)
+84 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/lightningcss set size:187506 disposed:false
+85 silly fetch manifest sass@^1.70.0
+86 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/sass cache-miss
+87 http cache https://nexus.intern/repository/npm-group-mkp/sass 9ms (cache hit)
+88 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/sass set size:732145 disposed:false
+89 silly fetch manifest sass-embedded@^1.70.0
+90 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/sass-embedded cache-miss
+91 http cache https://nexus.intern/repository/npm-group-mkp/sass-embedded 10ms (cache hit)
+92 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/sass-embedded set size:417657 disposed:false
+93 silly fetch manifest stylus@>=0.54.8
+94 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/stylus cache-miss
+95 http cache https://nexus.intern/repository/npm-group-mkp/stylus 11ms (cache hit)
+96 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/stylus set size:290197 disposed:false
+97 silly fetch manifest sugarss@^5.0.0
+98 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/sugarss cache-miss
+99 http cache https://nexus.intern/repository/npm-group-mkp/sugarss 9ms (cache hit)
+100 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/sugarss set size:45310 disposed:false
+101 silly fetch manifest postcss@^8.3.3
+102 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/postcss cache-miss
+103 http cache https://nexus.intern/repository/npm-group-mkp/postcss 9ms (cache hit)
+104 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/postcss set size:728571 disposed:false
+105 silly fetch manifest terser@^5.16.0
+106 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/terser cache-miss
+107 http cache https://nexus.intern/repository/npm-group-mkp/terser 8ms (cache hit)
+108 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/terser set size:804060 disposed:false
+109 silly fetch manifest tsx@^4.8.1
+110 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/tsx cache-miss
+111 http cache https://nexus.intern/repository/npm-group-mkp/tsx 9ms (cache hit)
+112 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/tsx set size:304468 disposed:false
+113 silly placeDep ROOT @finanzinformatik/cpl-module-vite-plugin@5.1.0-261-PR-2134-SNAPSHOT-1 OK for: @finanzinformatik/cpl-scripts@9.0.2-261-PR-2134-SNAPSHOT-1 want: ^5.1.0-261-PR-2134-SNAPSHOT-1
+114 silly placeDep ROOT vite@7.3.3 OK for: @finanzinformatik/cpl-module-vite-plugin@5.1.0-261-PR-2134-SNAPSHOT-1 want: ^7.3.2
+115 silly placeDep ROOT @finanzinformatik/eslint-plugin-fiqa-eslint@260.1.0 OK for: @finanzinformatik/cpl-scripts@9.0.2-261-PR-2134-SNAPSHOT-1 want: 260
+116 silly placeDep ROOT figures@2.0.0 OK for: @finanzinformatik/cpl-scripts@9.0.2-261-PR-2134-SNAPSHOT-1 want: 2
+117 silly placeDep ROOT listr2@10.2.1 OK for: @finanzinformatik/cpl-scripts@9.0.2-261-PR-2134-SNAPSHOT-1 want: ^10.1.0
+118 silly placeDep ROOT rxjs@6.6.7 OK for: @finanzinformatik/cpl-scripts@9.0.2-261-PR-2134-SNAPSHOT-1 want: 6.6.7
+119 silly placeDep ROOT uuid@14.0.0 OK for: @finanzinformatik/cpl-scripts@9.0.2-261-PR-2134-SNAPSHOT-1 want: ^14.0.0
+120 silly placeDep ROOT velocityjs@2.1.6 OK for: @finanzinformatik/cpl-scripts@9.0.2-261-PR-2134-SNAPSHOT-1 want: ^2.1.6
+121 silly placeDep ROOT yaml@2.9.0 REPLACE for: @finanzinformatik/cpl-scripts@9.0.2-261-PR-2134-SNAPSHOT-1 want: ^2.8.3
+122 silly fetch manifest node-fetch-commonjs@^3.3.1
+123 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/node-fetch-commonjs cache-miss
+124 silly fetch manifest vite-plugin-externals@^0.6.2
+125 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/vite-plugin-externals cache-miss
+126 silly fetch manifest fdir@^6.5.0
+127 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/fdir cache-miss
+128 silly fetch manifest rollup@^4.43.0
+129 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/rollup cache-miss
+130 silly fetch manifest esbuild@^0.27.0
+131 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/esbuild cache-miss
+132 silly fetch manifest postcss@^8.5.6
+133 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/postcss cache-hit
+134 silly fetch manifest picomatch@^4.0.3
+135 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/picomatch cache-miss
+136 silly fetch manifest tinyglobby@^0.2.15
+137 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/tinyglobby cache-miss
+138 silly fetch manifest fsevents@~2.3.3
+139 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/fsevents cache-miss
+140 silly fetch manifest eslint@8.57.0
+141 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eslint cache-miss
+142 silly fetch manifest eslint-plugin-react@7.35.0
+143 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eslint-plugin-react cache-miss
+144 silly fetch manifest eslint-plugin-react-hooks@4.6.2
+145 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eslint-plugin-react-hooks cache-miss
+146 silly fetch manifest @typescript-eslint/eslint-plugin@6.21.0
+147 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2feslint-plugin cache-miss
+148 silly fetch manifest @typescript-eslint/parser@6.21.0
+149 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2fparser cache-miss
+150 silly fetch manifest typescript@5.9.2
+151 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/typescript cache-miss
+152 silly fetch manifest eslint-plugin-import@2.29.1
+153 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eslint-plugin-import cache-miss
+154 http cache https://nexus.intern/repository/npm-group-mkp/tinyglobby 37ms (cache hit)
+155 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/tinyglobby set size:52995 disposed:false
+156 silly fetch manifest escape-string-regexp@^1.0.5
+157 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/escape-string-regexp cache-miss
+158 http cache https://nexus.intern/repository/npm-group-mkp/node-fetch-commonjs 43ms (cache hit)
+159 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/node-fetch-commonjs set size:21015 disposed:false
+160 silly fetch manifest cli-truncate@^5.2.0
+161 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/cli-truncate cache-miss
+162 http cache https://nexus.intern/repository/npm-group-mkp/vite-plugin-externals 46ms (cache hit)
+163 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/vite-plugin-externals set size:68745 disposed:false
+164 silly fetch manifest eventemitter3@^5.0.4
+165 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eventemitter3 cache-miss
+166 http cache https://nexus.intern/repository/npm-group-mkp/fdir 50ms (cache hit)
+167 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/fdir set size:137056 disposed:false
+168 silly fetch manifest log-update@^6.1.0
+169 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/log-update cache-miss
+170 http cache https://nexus.intern/repository/npm-group-mkp/picomatch 55ms (cache hit)
+171 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/picomatch set size:124144 disposed:false
+172 silly fetch manifest rfdc@^1.4.1
+173 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/rfdc cache-miss
+174 http cache https://nexus.intern/repository/npm-group-mkp/esbuild 60ms (cache hit)
+175 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/esbuild set size:1263782 disposed:false
+176 silly fetch manifest wrap-ansi@^10.0.0
+177 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/wrap-ansi cache-miss
+178 http cache https://nexus.intern/repository/npm-group-mkp/rollup 83ms (cache hit)
+179 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/rollup set size:6211406 disposed:false
+180 silly fetch manifest tslib@^1.9.0
+181 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/tslib cache-miss
+182 http cache https://nexus.intern/repository/npm-group-mkp/eslint-plugin-react-hooks 151ms (cache hit)
+183 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eslint-plugin-react-hooks set size:7421219 disposed:false
+184 silly fetch manifest debug@^4.3.4
+185 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/debug cache-miss
+186 http cache https://nexus.intern/repository/npm-group-mkp/eslint-plugin-react 178ms (cache hit)
+187 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eslint-plugin-react set size:648768 disposed:false
+188 http cache https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2fparser 206ms (cache hit)
+189 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2fparser set size:15277166 disposed:false
+190 http cache https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2feslint-plugin 290ms (cache hit)
+191 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2feslint-plugin set size:18016344 disposed:false
+192 http cache https://nexus.intern/repository/npm-group-mkp/typescript 362ms (cache hit)
+193 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/typescript set size:15478215 disposed:false
+194 http cache https://nexus.intern/repository/npm-group-mkp/fsevents 470ms (cache hit)
+195 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/fsevents set size:183699 disposed:false
+196 http cache https://nexus.intern/repository/npm-group-mkp/eslint-plugin-import 472ms (cache hit)
+197 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eslint-plugin-import set size:487702 disposed:false
+198 http cache https://nexus.intern/repository/npm-group-mkp/eslint 491ms (cache hit)
+199 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eslint set size:2002446 disposed:false
+200 http cache https://nexus.intern/repository/npm-group-mkp/wrap-ansi 493ms (cache hit)
+201 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/wrap-ansi set size:55672 disposed:false
+202 http cache https://nexus.intern/repository/npm-group-mkp/escape-string-regexp 526ms (cache hit)
+203 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/escape-string-regexp set size:21384 disposed:false
+204 http cache https://nexus.intern/repository/npm-group-mkp/rfdc 511ms (cache hit)
+205 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/rfdc set size:45603 disposed:false
+206 http cache https://nexus.intern/repository/npm-group-mkp/log-update 515ms (cache hit)
+207 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/log-update set size:61143 disposed:false
+208 http cache https://nexus.intern/repository/npm-group-mkp/cli-truncate 527ms (cache hit)
+209 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/cli-truncate set size:35417 disposed:false
+210 http cache https://nexus.intern/repository/npm-group-mkp/tslib 432ms (cache hit)
+211 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/tslib set size:107010 disposed:false
+212 http cache https://nexus.intern/repository/npm-group-mkp/debug 397ms (cache hit)
+213 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/debug set size:194746 disposed:false
+214 http cache https://nexus.intern/repository/npm-group-mkp/eventemitter3 531ms (cache hit)
+215 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eventemitter3 set size:92968 disposed:false
+216 silly fetch manifest yaml@^2.4.2
+217 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/yaml cache-hit
+218 silly placeDep ROOT node-fetch-commonjs@3.3.2 OK for: @finanzinformatik/cpl-module-vite-plugin@5.1.0-261-PR-2134-SNAPSHOT-1 want: ^3.3.1
+219 silly placeDep ROOT vite-plugin-externals@0.6.2 OK for: @finanzinformatik/cpl-module-vite-plugin@5.1.0-261-PR-2134-SNAPSHOT-1 want: ^0.6.2
+220 silly fetch manifest web-streams-polyfill@^3.0.3
+221 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/web-streams-polyfill cache-miss
+222 silly fetch manifest acorn@^8.4.0
+223 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/acorn cache-miss
+224 silly fetch manifest es-module-lexer@^0.4.1
+225 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/es-module-lexer cache-miss
+226 silly fetch manifest fs-extra@^10.0.0
+227 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/fs-extra cache-miss
+228 silly fetch manifest magic-string@^0.25.7
+229 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/magic-string cache-miss
+230 http cache https://nexus.intern/repository/npm-group-mkp/web-streams-polyfill 19ms (cache hit)
+231 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/web-streams-polyfill set size:141483 disposed:false
+232 http cache https://nexus.intern/repository/npm-group-mkp/acorn 20ms (cache hit)
+233 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/acorn set size:380564 disposed:false
+234 http cache https://nexus.intern/repository/npm-group-mkp/magic-string 23ms (cache hit)
+235 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/magic-string set size:334127 disposed:false
+236 http cache https://nexus.intern/repository/npm-group-mkp/fs-extra 27ms (cache hit)
+237 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/fs-extra set size:236815 disposed:false
+238 http cache https://nexus.intern/repository/npm-group-mkp/es-module-lexer 30ms (cache hit)
+239 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/es-module-lexer set size:206712 disposed:false
+240 silly placeDep node_modules/@finanzinformatik/eslint-plugin-fiqa-eslint @typescript-eslint/eslint-plugin@6.21.0 OK for: @finanzinformatik/eslint-plugin-fiqa-eslint@260.1.0 want: 6.21.0
+241 silly placeDep node_modules/@finanzinformatik/eslint-plugin-fiqa-eslint @typescript-eslint/parser@6.21.0 OK for: @typescript-eslint/eslint-plugin@6.21.0 want: ^6.0.0 || ^6.0.0-alpha
+242 silly placeDep node_modules/@finanzinformatik/eslint-plugin-fiqa-eslint eslint@8.57.0 OK for: @finanzinformatik/eslint-plugin-fiqa-eslint@260.1.0 want: 8.57.0
+243 silly placeDep ROOT eslint-plugin-import@2.29.1 OK for: @finanzinformatik/eslint-plugin-fiqa-eslint@260.1.0 want: 2.29.1
+244 silly placeDep node_modules/@finanzinformatik/eslint-plugin-fiqa-eslint eslint-plugin-react@7.35.0 OK for: @finanzinformatik/eslint-plugin-fiqa-eslint@260.1.0 want: 7.35.0
+245 silly placeDep node_modules/@finanzinformatik/eslint-plugin-fiqa-eslint eslint-plugin-react-hooks@4.6.2 OK for: @finanzinformatik/eslint-plugin-fiqa-eslint@260.1.0 want: 4.6.2
+246 silly placeDep node_modules/@finanzinformatik/eslint-plugin-fiqa-eslint typescript@5.9.2 OK for: @finanzinformatik/eslint-plugin-fiqa-eslint@260.1.0 want: 5.9.2
+247 silly fetch manifest ignore@^5.2.4
+248 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/ignore cache-miss
+249 silly fetch manifest graphemer@^1.4.0
+250 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/graphemer cache-miss
+251 silly fetch manifest ts-api-utils@^1.0.1
+252 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/ts-api-utils cache-miss
+253 silly fetch manifest natural-compare@^1.4.0
+254 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/natural-compare cache-miss
+255 silly fetch manifest @typescript-eslint/utils@6.21.0
+256 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2futils cache-miss
+257 silly fetch manifest @eslint-community/regexpp@^4.5.1
+258 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@eslint-community%2fregexpp cache-miss
+259 silly fetch manifest @typescript-eslint/type-utils@6.21.0
+260 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2ftype-utils cache-miss
+261 silly fetch manifest @typescript-eslint/visitor-keys@6.21.0
+262 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2fvisitor-keys cache-miss
+263 silly fetch manifest @typescript-eslint/scope-manager@6.21.0
+264 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2fscope-manager cache-miss
+265 silly fetch manifest @typescript-eslint/types@6.21.0
+266 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2ftypes cache-miss
+267 silly fetch manifest @typescript-eslint/visitor-keys@6.21.0
+268 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2fvisitor-keys cache-miss
+269 silly fetch manifest @typescript-eslint/scope-manager@6.21.0
+270 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2fscope-manager cache-miss
+271 silly fetch manifest @typescript-eslint/typescript-estree@6.21.0
+272 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2ftypescript-estree cache-miss
+273 silly fetch manifest ajv@^6.12.4
+274 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/ajv cache-miss
+275 silly fetch manifest levn@^0.4.1
+276 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/levn cache-miss
+277 http cache https://nexus.intern/repository/npm-group-mkp/natural-compare 35ms (cache hit)
+278 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/natural-compare set size:6556 disposed:false
+279 silly fetch manifest debug@^4.3.2
+280 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/debug cache-hit
+281 silly fetch manifest espree@^9.6.1
+282 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/espree cache-miss
+283 http cache https://nexus.intern/repository/npm-group-mkp/graphemer 40ms (cache hit)
+284 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/graphemer set size:26107 disposed:false
+285 silly fetch manifest ignore@^5.2.0
+286 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/ignore cache-miss
+287 http cache https://nexus.intern/repository/npm-group-mkp/ignore 43ms (cache hit)
+288 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/ignore set size:234173 disposed:false
+289 silly fetch manifest esquery@^1.4.2
+290 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/esquery cache-miss
+291 http cache https://nexus.intern/repository/npm-group-mkp/ts-api-utils 49ms (cache hit)
+292 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/ts-api-utils set size:227872 disposed:false
+293 silly fetch manifest esutils@^2.0.2
+294 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/esutils cache-miss
+295 http cache https://nexus.intern/repository/npm-group-mkp/@eslint-community%2fregexpp 57ms (cache hit)
+296 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@eslint-community%2fregexpp set size:107109 disposed:false
+297 silly fetch manifest find-up@^5.0.0
+298 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/find-up cache-miss
+299 http cache https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2futils 83ms (cache hit)
+300 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2futils set size:10205589 disposed:false
+301 silly fetch manifest globals@^13.19.0
+302 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/globals cache-miss
+303 http cache https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2fscope-manager 170ms (cache hit)
+304 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2fscope-manager set size:12509473 disposed:false
+305 silly fetch manifest is-glob@^4.0.0
+306 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/is-glob cache-miss
+307 http cache https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2ftypes 231ms (cache hit)
+308 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2ftypes set size:12322497 disposed:false
+309 silly fetch manifest js-yaml@^4.1.0
+310 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/js-yaml cache-miss
+311 http cache https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2ftypescript-estree 308ms (cache hit)
+312 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2ftypescript-estree set size:16478750 disposed:false
+313 silly fetch manifest doctrine@^3.0.0
+314 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/doctrine cache-miss
+315 http cache https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2fvisitor-keys 387ms (cache hit)
+316 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2fvisitor-keys set size:11912509 disposed:false
+317 silly fetch manifest minimatch@^3.1.2
+318 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/minimatch cache-miss
+319 http cache https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2ftype-utils 489ms (cache hit)
+320 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2ftype-utils set size:9370225 disposed:false
+321 silly fetch manifest @eslint/js@8.57.0
+322 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@eslint%2fjs cache-miss
+323 http cache https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2fscope-manager 564ms (cache hit)
+324 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2fscope-manager set size:12509473 disposed:false
+325 silly fetch manifest optionator@^0.9.3
+326 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/optionator cache-miss
+327 http cache https://nexus.intern/repository/npm-group-mkp/levn 614ms (cache hit)
+328 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/levn set size:26417 disposed:false
+329 silly fetch manifest strip-ansi@^6.0.1
+330 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/strip-ansi cache-miss
+331 http cache https://nexus.intern/repository/npm-group-mkp/ajv 618ms (cache hit)
+332 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/ajv set size:1141989 disposed:false
+333 silly fetch manifest text-table@^0.2.0
+334 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/text-table cache-miss
+335 http cache https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2fvisitor-keys 647ms (cache hit)
+336 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@typescript-eslint%2fvisitor-keys set size:11912509 disposed:false
+337 silly fetch manifest cross-spawn@^7.0.2
+338 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/cross-spawn cache-miss
+339 http cache https://nexus.intern/repository/npm-group-mkp/esutils 658ms (cache hit)
+340 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/esutils set size:27738 disposed:false
+341 silly fetch manifest glob-parent@^6.0.2
+342 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/glob-parent cache-miss
+343 http cache https://nexus.intern/repository/npm-group-mkp/ignore 675ms (cache hit)
+344 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/ignore set size:234173 disposed:false
+345 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/ignore dispose
+346 silly fetch manifest imurmurhash@^0.1.4
+347 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/imurmurhash cache-miss
+348 http cache https://nexus.intern/repository/npm-group-mkp/esquery 673ms (cache hit)
+349 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/esquery set size:46643 disposed:false
+350 silly fetch manifest eslint-scope@^7.2.2
+351 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eslint-scope cache-miss
+352 http cache https://nexus.intern/repository/npm-group-mkp/espree 684ms (cache hit)
+353 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/espree set size:325362 disposed:false
+354 silly fetch manifest lodash.merge@^4.6.2
+355 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/lodash.merge cache-miss
+356 http cache https://nexus.intern/repository/npm-group-mkp/find-up 665ms (cache hit)
+357 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/find-up set size:42879 disposed:false
+358 silly fetch manifest is-path-inside@^3.0.3
+359 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/is-path-inside cache-miss
+360 http cache https://nexus.intern/repository/npm-group-mkp/is-glob 514ms (cache hit)
+361 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/is-glob set size:38301 disposed:false
+362 silly fetch manifest fast-deep-equal@^3.1.3
+363 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/fast-deep-equal cache-miss
+364 http cache https://nexus.intern/repository/npm-group-mkp/globals 580ms (cache hit)
+365 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/globals set size:316155 disposed:false
+366 silly fetch manifest @eslint/eslintrc@^2.1.4
+367 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@eslint%2feslintrc cache-miss
+368 http cache https://nexus.intern/repository/npm-group-mkp/js-yaml 449ms (cache hit)
+369 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/js-yaml set size:151429 disposed:false
+370 silly fetch manifest @nodelib/fs.walk@^1.2.8
+371 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@nodelib%2ffs.walk cache-miss
+372 http cache https://nexus.intern/repository/npm-group-mkp/minimatch 261ms (cache hit)
+373 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/minimatch set size:376896 disposed:false
+374 silly fetch manifest file-entry-cache@^6.0.1
+375 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/file-entry-cache cache-miss
+376 http cache https://nexus.intern/repository/npm-group-mkp/doctrine 369ms (cache hit)
+377 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/doctrine set size:61276 disposed:false
+378 silly fetch manifest eslint-visitor-keys@^3.4.3
+379 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eslint-visitor-keys cache-miss
+380 http cache https://nexus.intern/repository/npm-group-mkp/optionator 123ms (cache hit)
+381 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/optionator set size:48076 disposed:false
+382 silly fetch manifest escape-string-regexp@^4.0.0
+383 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/escape-string-regexp cache-hit
+384 silly fetch manifest @ungap/structured-clone@^1.2.0
+385 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@ungap%2fstructured-clone cache-miss
+386 http cache https://nexus.intern/repository/npm-group-mkp/@eslint%2fjs 195ms (cache hit)
+387 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@eslint%2fjs set size:141630 disposed:false
+388 silly fetch manifest @eslint-community/regexpp@^4.6.1
+389 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@eslint-community%2fregexpp cache-hit
+390 silly fetch manifest @humanwhocodes/config-array@^0.11.14
+391 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@humanwhocodes%2fconfig-array cache-miss
+392 http cache https://nexus.intern/repository/npm-group-mkp/text-table 113ms (cache hit)
+393 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/text-table set size:17334 disposed:false
+394 silly fetch manifest @eslint-community/eslint-utils@^4.2.0
+395 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@eslint-community%2feslint-utils cache-miss
+396 http cache https://nexus.intern/repository/npm-group-mkp/strip-ansi 126ms (cache hit)
+397 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/strip-ansi set size:43206 disposed:false
+398 silly fetch manifest @humanwhocodes/module-importer@^1.0.1
+399 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@humanwhocodes%2fmodule-importer cache-miss
+400 http cache https://nexus.intern/repository/npm-group-mkp/cross-spawn 61ms (cache hit)
+401 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/cross-spawn set size:107733 disposed:false
+402 silly fetch manifest json-stable-stringify-without-jsonify@^1.0.1
+403 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/json-stable-stringify-without-jsonify cache-miss
+404 http cache https://nexus.intern/repository/npm-group-mkp/eslint-scope 53ms (cache hit)
+405 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eslint-scope set size:97018 disposed:false
+406 silly fetch manifest debug@^3.2.7
+407 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/debug cache-hit
+408 silly fetch manifest hasown@^2.0.0
+409 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/hasown cache-miss
+410 http cache https://nexus.intern/repository/npm-group-mkp/imurmurhash 58ms (cache hit)
+411 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/imurmurhash set size:30350 disposed:false
+412 silly fetch manifest semver@^6.3.1
+413 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/semver cache-miss
+414 http cache https://nexus.intern/repository/npm-group-mkp/glob-parent 63ms (cache hit)
+415 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/glob-parent set size:40208 disposed:false
+416 silly fetch manifest is-glob@^4.0.3
+417 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/is-glob cache-hit
+418 silly fetch manifest doctrine@^2.1.0
+419 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/doctrine cache-hit
+420 silly fetch manifest object.values@^1.1.7
+421 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/object.values cache-miss
+422 http cache https://nexus.intern/repository/npm-group-mkp/lodash.merge 57ms (cache hit)
+423 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/lodash.merge set size:79233 disposed:false
+424 silly fetch manifest array-includes@^3.1.7
+425 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array-includes cache-miss
+426 http cache https://nexus.intern/repository/npm-group-mkp/fast-deep-equal 56ms (cache hit)
+427 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/fast-deep-equal set size:46451 disposed:false
+428 silly fetch manifest is-core-module@^2.13.1
+429 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/is-core-module cache-miss
+430 http cache https://nexus.intern/repository/npm-group-mkp/is-path-inside 58ms (cache hit)
+431 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/is-path-inside set size:23730 disposed:false
+432 silly fetch manifest object.groupby@^1.0.1
+433 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/object.groupby cache-miss
+434 http cache https://nexus.intern/repository/npm-group-mkp/eslint-visitor-keys 47ms (cache hit)
+435 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eslint-visitor-keys set size:65493 disposed:false
+436 silly fetch manifest tsconfig-paths@^3.15.0
+437 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/tsconfig-paths cache-miss
+438 http cache https://nexus.intern/repository/npm-group-mkp/@eslint%2feslintrc 57ms (cache hit)
+439 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@eslint%2feslintrc set size:167164 disposed:false
+440 silly fetch manifest object.fromentries@^2.0.7
+441 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/object.fromentries cache-miss
+442 http cache https://nexus.intern/repository/npm-group-mkp/@nodelib%2ffs.walk 57ms (cache hit)
+443 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@nodelib%2ffs.walk set size:39665 disposed:false
+444 silly fetch manifest eslint-module-utils@^2.8.0
+445 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eslint-module-utils cache-miss
+446 http cache https://nexus.intern/repository/npm-group-mkp/@ungap%2fstructured-clone 52ms (cache hit)
+447 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@ungap%2fstructured-clone set size:59797 disposed:false
+448 silly fetch manifest array.prototype.flat@^1.3.2
+449 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array.prototype.flat cache-miss
+450 http cache https://nexus.intern/repository/npm-group-mkp/file-entry-cache 56ms (cache hit)
+451 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/file-entry-cache set size:151389 disposed:false
+452 silly fetch manifest array.prototype.flatmap@^1.3.2
+453 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array.prototype.flatmap cache-miss
+454 http cache https://nexus.intern/repository/npm-group-mkp/@humanwhocodes%2fconfig-array 54ms (cache hit)
+455 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@humanwhocodes%2fconfig-array set size:140284 disposed:false
+456 silly fetch manifest eslint-import-resolver-node@^0.3.9
+457 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eslint-import-resolver-node cache-miss
+458 http cache https://nexus.intern/repository/npm-group-mkp/@humanwhocodes%2fmodule-importer 53ms (cache hit)
+459 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@humanwhocodes%2fmodule-importer set size:9510 disposed:false
+460 silly fetch manifest array.prototype.findlastindex@^1.2.3
+461 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array.prototype.findlastindex cache-miss
+462 http cache https://nexus.intern/repository/npm-group-mkp/@eslint-community%2feslint-utils 55ms (cache hit)
+463 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/@eslint-community%2feslint-utils set size:93731 disposed:false
+464 silly fetch manifest hasown@^2.0.2
+465 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/hasown cache-miss
+466 http cache https://nexus.intern/repository/npm-group-mkp/json-stable-stringify-without-jsonify 55ms (cache hit)
+467 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/json-stable-stringify-without-jsonify set size:4607 disposed:false
+468 silly fetch manifest semver@^6.3.1
+469 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/semver cache-miss
+470 http cache https://nexus.intern/repository/npm-group-mkp/is-core-module 54ms (cache hit)
+471 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/is-core-module set size:72135 disposed:false
+472 silly fetch manifest resolve@^2.0.0-next.5
+473 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/resolve cache-miss
+474 http cache https://nexus.intern/repository/npm-group-mkp/hasown 64ms (cache hit)
+475 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/hasown set size:15479 disposed:false
+476 silly fetch manifest estraverse@^5.3.0
+477 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/estraverse cache-miss
+478 http cache https://nexus.intern/repository/npm-group-mkp/object.values 62ms (cache hit)
+479 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/object.values set size:46238 disposed:false
+480 silly fetch manifest prop-types@^15.8.1
+481 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/prop-types cache-miss
+482 http cache https://nexus.intern/repository/npm-group-mkp/semver 66ms (cache hit)
+483 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/semver set size:232976 disposed:false
+484 silly fetch manifest jsx-ast-utils@^2.4.1 || ^3.0.0
+485 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/jsx-ast-utils cache-miss
+486 http cache https://nexus.intern/repository/npm-group-mkp/object.groupby 63ms (cache hit)
+487 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/object.groupby set size:15536 disposed:false
+488 silly fetch manifest object.values@^1.2.0
+489 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/object.values cache-hit
+490 silly fetch manifest array-includes@^3.1.8
+491 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array-includes cache-miss
+492 http cache https://nexus.intern/repository/npm-group-mkp/array-includes 67ms (cache hit)
+493 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array-includes set size:74930 disposed:false
+494 silly fetch manifest object.entries@^1.1.8
+495 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/object.entries cache-miss
+496 http cache https://nexus.intern/repository/npm-group-mkp/tsconfig-paths 64ms (cache hit)
+497 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/tsconfig-paths set size:193470 disposed:false
+498 silly fetch manifest object.fromentries@^2.0.8
+499 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/object.fromentries cache-miss
+500 http cache https://nexus.intern/repository/npm-group-mkp/object.fromentries 65ms (cache hit)
+501 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/object.fromentries set size:35248 disposed:false
+502 silly fetch manifest es-iterator-helpers@^1.0.19
+503 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/es-iterator-helpers cache-miss
+504 http cache https://nexus.intern/repository/npm-group-mkp/eslint-module-utils 65ms (cache hit)
+505 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eslint-module-utils set size:78078 disposed:false
+506 silly fetch manifest array.prototype.flatmap@^1.3.2
+507 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array.prototype.flatmap cache-miss
+508 http cache https://nexus.intern/repository/npm-group-mkp/array.prototype.flat 65ms (cache hit)
+509 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array.prototype.flat set size:38453 disposed:false
+510 silly fetch manifest string.prototype.repeat@^1.0.0
+511 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/string.prototype.repeat cache-miss
+512 http cache https://nexus.intern/repository/npm-group-mkp/array.prototype.flatmap 65ms (cache hit)
+513 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array.prototype.flatmap set size:49047 disposed:false
+514 silly fetch manifest array.prototype.findlast@^1.2.5
+515 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array.prototype.findlast cache-miss
+516 http cache https://nexus.intern/repository/npm-group-mkp/array.prototype.findlastindex 62ms (cache hit)
+517 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array.prototype.findlastindex set size:44973 disposed:false
+518 silly fetch manifest array.prototype.tosorted@^1.1.4
+519 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array.prototype.tosorted cache-miss
+520 http cache https://nexus.intern/repository/npm-group-mkp/hasown 62ms (cache hit)
+521 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/hasown set size:15479 disposed:false
+522 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/hasown dispose
+523 silly fetch manifest string.prototype.matchall@^4.0.11
+524 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/string.prototype.matchall cache-miss
+525 http cache https://nexus.intern/repository/npm-group-mkp/eslint-import-resolver-node 66ms (cache hit)
+526 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/eslint-import-resolver-node set size:39415 disposed:false
+527 http cache https://nexus.intern/repository/npm-group-mkp/semver 64ms (cache hit)
+528 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/semver set size:232976 disposed:false
+529 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/semver dispose
+530 http cache https://nexus.intern/repository/npm-group-mkp/resolve 46ms (cache hit)
+531 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/resolve set size:243820 disposed:false
+532 http cache https://nexus.intern/repository/npm-group-mkp/estraverse 48ms (cache hit)
+533 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/estraverse set size:58960 disposed:false
+534 http cache https://nexus.intern/repository/npm-group-mkp/prop-types 48ms (cache hit)
+535 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/prop-types set size:73449 disposed:false
+536 http cache https://nexus.intern/repository/npm-group-mkp/array-includes 44ms (cache hit)
+537 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array-includes set size:74930 disposed:false
+538 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array-includes dispose
+539 http cache https://nexus.intern/repository/npm-group-mkp/jsx-ast-utils 48ms (cache hit)
+540 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/jsx-ast-utils set size:114143 disposed:false
+541 http cache https://nexus.intern/repository/npm-group-mkp/object.entries 48ms (cache hit)
+542 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/object.entries set size:47337 disposed:false
+543 http cache https://nexus.intern/repository/npm-group-mkp/object.fromentries 46ms (cache hit)
+544 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/object.fromentries set size:35248 disposed:false
+545 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/object.fromentries dispose
+546 http cache https://nexus.intern/repository/npm-group-mkp/string.prototype.repeat 40ms (cache hit)
+547 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/string.prototype.repeat set size:8620 disposed:false
+548 http cache https://nexus.intern/repository/npm-group-mkp/es-iterator-helpers 45ms (cache hit)
+549 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/es-iterator-helpers set size:258952 disposed:false
+550 http cache https://nexus.intern/repository/npm-group-mkp/array.prototype.flatmap 45ms (cache hit)
+551 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array.prototype.flatmap set size:49047 disposed:false
+552 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array.prototype.flatmap dispose
+553 http cache https://nexus.intern/repository/npm-group-mkp/array.prototype.findlast 44ms (cache hit)
+554 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array.prototype.findlast set size:40449 disposed:false
+555 http cache https://nexus.intern/repository/npm-group-mkp/array.prototype.tosorted 43ms (cache hit)
+556 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/array.prototype.tosorted set size:24731 disposed:false
+557 http cache https://nexus.intern/repository/npm-group-mkp/string.prototype.matchall 43ms (cache hit)
+558 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/string.prototype.matchall set size:61162 disposed:false
+559 silly fetch manifest string-width@^5.1.2
+560 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/string-width cache-miss
+561 http cache https://nexus.intern/repository/npm-group-mkp/string-width 8ms (cache hit)
+562 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/string-width set size:68671 disposed:false
+563 silly fetch manifest strip-ansi@^7.0.1
+564 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/strip-ansi cache-hit
+565 silly fetch manifest wrap-ansi@^8.1.0
+566 silly packumentCache full:https://nexus.intern/repository/npm-group-mkp/wrap-ansi cache-hit
+567 silly placeDep ROOT string-width@5.1.2 OK for: @isaacs/cliui@8.0.2 want: ^5.1.2
+568 verbose stack TypeError: Invalid Version: 
+568 verbose stack     at new SemVer (C:\Projekte\pzw-mkp\.node\node_modules\npm\node_modules\semver\classes\semver.js:40:13)
+568 verbose stack     at compare (C:\Projekte\pzw-mkp\.node\node_modules\npm\node_modules\semver\functions\compare.js:5:32)
+568 verbose stack     at Object.eq (C:\Projekte\pzw-mkp\.node\node_modules\npm\node_modules\semver\functions\eq.js:4:29)
+568 verbose stack     at Node.canDedupe (C:\Projekte\pzw-mkp\.node\node_modules\npm\node_modules\@npmcli\arborist\lib\node.js:1140:32)
+568 verbose stack     at PlaceDep.pruneDedupable (C:\Projekte\pzw-mkp\.node\node_modules\npm\node_modules\@npmcli\arborist\lib\place-dep.js:426:14)
+568 verbose stack     at new PlaceDep (C:\Projekte\pzw-mkp\.node\node_modules\npm\node_modules\@npmcli\arborist\lib\place-dep.js:278:14)
+568 verbose stack     at #buildDepStep (C:\Projekte\pzw-mkp\.node\node_modules\npm\node_modules\@npmcli\arborist\lib\arborist\build-ideal-tree.js:945:18)
+568 verbose stack     at async Arborist.buildIdealTree (C:\Projekte\pzw-mkp\.node\node_modules\npm\node_modules\@npmcli\arborist\lib\arborist\build-ideal-tree.js:182:7)
+568 verbose stack     at async Promise.all (index 1)
+568 verbose stack     at async Arborist.reify (C:\Projekte\pzw-mkp\.node\node_modules\npm\node_modules\@npmcli\arborist\lib\arborist\reify.js:114:5)
+569 error Invalid Version: 
+570 silly unfinished npm timer reify 1779286513464
+571 silly unfinished npm timer reify:loadTrees 1779286513466
+572 silly unfinished npm timer idealTree:buildDeps 1779286513791
+573 silly unfinished npm timer idealTree:node_modules/@isaacs/cliui 1779286518914
+574 verbose cwd C:\Projekte\pzw-mkp\pzw-cpl-web\src\main\typescript\zeitwirtschaft
+575 verbose os Windows_NT 10.0.22631
+576 verbose node v24.13.0
+577 verbose npm  v11.6.2
+578 verbose exit 1
+579 verbose code 1
+580 error A complete log of this run can be found in: C:\Projekte\pzw-mkp\.npx\_logs\2026-05-20T14_15_09_031Z-debug-0.log
