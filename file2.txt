@@ -441,6 +441,9 @@ public interface IPmgtPzwKalenderLesenService extends IFachobjektOoService {
 ===================
 npm view @isaacs/cliui@8.0.2 --registry https://nexus.intern/repository/npm-group-mkp/ --json > debug.json
 
+npm view string-width@5.1.2 --registry https://nexus.intern/repository/npm-group-mkp/
+npm view strip-ansi@7.0.1 --registry https://nexus.intern/repository/npm-group-mkp/
+npm view wrap-ansi@10.0.0 --registry https://nexus.intern/repository/npm-group-mkp/
 
 
 
