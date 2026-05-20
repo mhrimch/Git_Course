@@ -445,6 +445,7 @@ npm view string-width@5.1.2 --registry https://nexus.intern/repository/npm-group
 npm view strip-ansi@7.0.1 --registry https://nexus.intern/repository/npm-group-mkp/
 npm view wrap-ansi@10.0.0 --registry https://nexus.intern/repository/npm-group-mkp/
 
+   C:\Projekte\pzw-mkp\.node\node.exe C:\Projekte\pzw-mkp\.node\node_modules\npm\bin\npm-cli.js cache clean --force
 
 
 
