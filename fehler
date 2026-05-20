@@ -1,0 +1,26 @@
+[INFO] 
+[INFO] ---------------< osplus.pzw:pzw-cpl-web-zeitwirtschaft >----------------
+[INFO] Building pzw-cpl-web-zeitwirtschaft 261.0.0-SNAPSHOT              [7/12]
+[INFO]   from pzw-cpl-web\src\main\typescript\zeitwirtschaft\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.5.0:clean (default-clean) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] Deleting C:\Projekte\pzw-mkp\pzw-cpl-web\src\main\typescript\zeitwirtschaft\target
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-no-apl-snapshots-in-release-build) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.dependency.RequireReleaseDeps passed
+[INFO] 
+[INFO] --- dependency:3.9.0:properties (default) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] 
+[INFO] --- jacoco:0.8.12:prepare-agent (prepare-agent) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] Skipping JaCoCo execution because property jacoco.skip is set.
+[INFO] surefireArgLine set to empty
+[INFO] 
+[INFO] --- apl:261.0.0-M3:set-build-properties (set-build-properties) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] Build is Snapshot-Build. Maven-Variable apl.isSnapshotBuild is true
+[INFO] 
+[INFO] --- antrun:3.1.0:run (install-node) @ pzw-cpl-web-zeitwirtschaft ---
+[INFO] Executing tasks
+[INFO]      [echo] Running 'npx.cmd @finanzinformatik/cpl-scripts env install'
+[INFO]      [exec] npm error Invalid Version: 
+[INFO]      [exec] npm error A complete log of this run can be found in: C:\Projekte\pzw-mkp\
