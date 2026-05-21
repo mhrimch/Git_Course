@@ -263,3 +263,22 @@ public class ZeitkontoUiModule extends AbstractUiModule {
 
 
 }
+
+=========================
+/**
+ * Die Funktion readGleitzeitRotbereich liest den Rotbereich-Grenzwert des Gleitzeitkontos.
+ *
+ * @return ServiceResponse<Integer>
+ */
+@UiService(value = ZeitkontoUiModuleConstants.UI_SERVICE_READ_GLEITZEIT_ROTBEREICH, method = MethodType.GET)
+@UiServiceReturnType(value = {
+        @ServiceReturnType(statusCode = 200, value = Integer.class),
+        @ServiceReturnType(statusCode = 400),
+        @ServiceReturnType(statusCode = 502)
+})
+@KursPermission(value = {KursRechtConstants.PE_ZW_MA})
+@AplLogging(logExecutionTime = true, logTrace = true)
+public ServiceResponse<Integer> readGleitzeitRotbereich() {
+    // TODO: Mock entfernen und echten Service-Aufruf ergänzen
+    return new ServiceResponse<>(HttpStatus.OK.value(), 45);
+}
