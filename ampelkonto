@@ -1,115 +1,73 @@
-import { useMcdPalette } from '@finanzinformatik/mcd-module-theme-provider';
-import { Badge } from '@mui/material';
-import Grid from '@mui/material/Grid';
-import Typography from '@mui/material/Typography';
-import { GleitzeitsalRotbereich } from './GeitzeitsaldoRotbereich';
-import ResturlaubRotbereich from './ResturlaubRotbereich';
+import { ButtonBase, Card, CardContent } from '@mui/material';
+import { ThemeConstants } from '@personalsysteme/core';
+import { InfoCardContent } from './InfoCardContent';
 
-function Anzahl({ anzahl }: { anzahl: number }) {
-  const categoryColors = useMcdPalette().ColorCategoryTokens;
+interface InfoCardRotbereichProps {
+  title: string;
+  anzahlMitarbeiterRotbereich: number | undefined;
+  interaktiv: boolean;
+  onClick: () => void;
+}
+
+export function InfoCardRotbereich({
+  title,
+  anzahlMitarbeiterRotbereich,
+  interaktiv,
+  onClick,
+}: InfoCardRotbereichProps) {
   return (
-    <Badge
-      sx={{
-        width: 32,
-        height: 32,
-        borderRadius: '50%',
-        backgroundColor: categoryColors['category-health-02'],
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
+    <ButtonBase disabled={interaktiv} sx={{ minWidth: 275, width: ThemeConstants.WIDTH_100_PERCENT }} onClick={onClick}>
+      <Card sx={{ width: ThemeConstants.WIDTH_100_PERCENT }}>
+        <CardContent>
+          <InfoCardContent title={title} anzahlMitarbeiterRotbereich={anzahlMitarbeiterRotbereich}></InfoCardContent>
+        </CardContent>
+      </Card>
+    </ButtonBase>
+  );
+}
+================================================
+import { DynamicTypography } from '@finanzinformatik/cpl-module-reactlib';
+import { Avatar } from '@mui/material';
+import { Stack } from '@mui/system';
+import { ThemeConstants } from '@personalsysteme/core';
+
+function AnzahlMitarbeiterRotbereich({
+  anzahlMitarbeiterRotbereich,
+}: {
+  anzahlMitarbeiterRotbereich: number | undefined;
+}) {
+  return (
+    <>
+      <Avatar
+        data-size={ThemeConstants.SMALL}
+        variant={ThemeConstants.VARIANT_CIRCULAR}
+        data-color={ThemeConstants.WARNING}
+      >
+        {anzahlMitarbeiterRotbereich}
+      </Avatar>
+    </>
+  );
+}
+
+interface InfoCardContentProps {
+  title: string;
+  anzahlMitarbeiterRotbereich: number | undefined;
+}
+
+export function InfoCardContent({ title, anzahlMitarbeiterRotbereich }: InfoCardContentProps) {
+  return (
+    <Stack
+      direction="row"
+      alignItems={ThemeConstants.DIALOG_CONTENT_CENTER.justifyContent}
+      justifyContent={ThemeConstants.CONTENT_ALIGN_SPACE_BETWEEN}
     >
-      <Typography variant="h6" fontWeight="bold" sx={{ color: categoryColors['category-health-01'] }}>
-        {anzahl}
-      </Typography>
-    </Badge>
+      <Stack direction="column" alignItems="start">
+        <DynamicTypography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_03}>{title}</DynamicTypography>
+        <DynamicTypography>Mitarbeiter im roten Bereich</DynamicTypography>
+      </Stack>
+      <AnzahlMitarbeiterRotbereich
+        anzahlMitarbeiterRotbereich={anzahlMitarbeiterRotbereich}
+      ></AnzahlMitarbeiterRotbereich>
+    </Stack>
   );
 }
-
-interface AmpelkontoUebersichtProps {
-  gleitzeitsaldoAnzahl: number;
-  resturlaubAnzahl: number;
-}
-
-export function AmpelkontoUebersicht({ gleitzeitsaldoAnzahl, resturlaubAnzahl }: AmpelkontoUebersichtProps) {
-  return (
-    <Grid container justifyContent="center" spacing={10} flexDirection="column" sx={{ width: '100%' }} gap={0}>
-      {/* Überschrift */}
-      <Grid container justifyContent="space-between" alignItems="center" spacing={1} margin={3}>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Typography variant="headline02">Ampelkonto</Typography>
-        </Grid>
-      </Grid>
-
-      {/* Karten */}
-      <Grid container size={12} justifyContent="flex-start" alignItems="center" spacing={3}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <GleitzeitsalRotbereich anzahlMitarbeiter={gleitzeitsaldoAnzahl} />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <ResturlaubRotbereich anzahlMitarbeiter={resturlaubAnzahl} />
-        </Grid>
-      </Grid>
-    </Grid>
-  );
-}
-
-
-==================
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Grid from '@mui/material/Grid';
-import Typography from '@mui/material/Typography';
-import React from 'react';
-
-type GleitzeitsaldoProps = {
-  anzahlMitarbeiter: number;
-};
-
-export function GleitzeitsalRotbereich({ anzahlMitarbeiter }: GleitzeitsaldoProps) {
-  return (
-    <Card sx={{ width: '100%' }}>
-      <CardContent>
-        <Grid container alignItems="center" spacing={2}>
-          <Grid sx={{ flex: 1, textAlign: 'left' }}>
-            <Typography variant="h6">Gleitzeitsaldo</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Mitarbeiter im roten Bereich
-            </Typography>
-          </Grid>
-          <Grid>Anzahl</Grid>
-        </Grid>
-      </CardContent>
-    </Card>
-  );
-}
-
-=====================
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Grid from '@mui/material/Grid';
-import Typography from '@mui/material/Typography';
-
-interface ResturlaubProps {
-  anzahlMitarbeiter: number;
-}
-
-export default function ResturlaubRotbereich({ anzahlMitarbeiter }: ResturlaubProps) {
-  return (
-    <Card sx={{ width: '100%' }}>
-      <CardContent>
-        <Grid container alignItems="center" spacing={2}>
-          <Grid sx={{ flex: 1, textAlign: 'left' }}>
-            <Typography variant="h6">Resturlaub</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Mitarbeiter im roten Bereich
-            </Typography>
-          </Grid>
-          <Grid>Anzahl</Grid>
-        </Grid>
-      </CardContent>
-    </Card>
-  );
-}
-
-
