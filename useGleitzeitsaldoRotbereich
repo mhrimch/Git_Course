@@ -176,3 +176,90 @@ export function useReadGleitzeitsaldoRotbereich(): UseQueryResult<number | undef
   const notificationStoreActions = useNotificationStoreActions();
   return useQuery(readGleitzeitsaldoRotbereichOptions(uuiService, notificationStoreActions));
 }
+==========================================================================================================================
+package osplus.pzw.uimodule;
+
+import org.springframework.http.HttpStatus;
+import osplus.apl.core.api.AplLogging;
+import osplus.apl.core.api.KursPermission;
+import osplus.apl.core.api.i18n.I18nService;
+import osplus.apl.core.api.validation.AplValidated;
+import osplus.apl.uui.api.MethodType;
+import osplus.apl.uui.api.ServiceParam;
+import osplus.apl.uui.api.ServiceResponse;
+import osplus.apl.uui.api.ServiceReturnType;
+import osplus.apl.uui.api.UiModule;
+import osplus.apl.uui.api.UiService;
+import osplus.apl.uui.api.UiServiceReturnType;
+import osplus.apl.uui.api.message.MessageService;
+import osplus.fi.core.uui.api.message.MessageType;
+import osplus.psk.core.apl.AbstractUiModule;
+import osplus.psk.core.apl.exception.UiServiceException;
+import osplus.psk.core.apl.messages.MessageCallType;
+import osplus.psk.core.apl.messages.MessageCode;
+import osplus.psk.core.apl.messages.MessageMetadata;
+import osplus.psk.core.apl.messages.MessageScope;
+import osplus.psk.kurs.KursRechtConstants;
+import osplus.pzw.constants.ZeitkontoUiModuleConstants;
+import osplus.pzw.model.zeitkonto.ZeitkontoTabelleEintrag;
+import osplus.pzw.service.ZeitkontoService;
+
+import java.time.LocalDate;
+import java.util.List;
+
+
+/**
+ * UiModule für Service-Funktionen zum Zeitkonto.
+ *
+ * @see UiModule
+ */
+@UiModule(ZeitkontoUiModuleConstants.NAME)
+@AplValidated
+public class ZeitkontoUiModule extends AbstractUiModule {
+
+    private final transient ZeitkontoService zeitkontoService;
+
+    public ZeitkontoUiModule(
+            final MessageService messageService,
+            final I18nService i18nService,
+            final ZeitkontoService zeitkontoService
+    ) {
+        super(messageService, i18nService);
+        this.zeitkontoService = zeitkontoService;
+    }
+
+    /**
+     * Die Funktion readZeitkonto liest das Zeitkonto zu einem Zeitraum beginn/ende.
+     *
+     * @param beginn                      Beginn Zeitraum
+     * @param ende                        Ende Zeitraum
+     * @param zuVertretendePersonalnummer Personalnummer
+     * @return ServiceResponse<List < ZeitkontoTabelleEintrag>>
+     */
+    @UiService(value = ZeitkontoUiModuleConstants.UI_SERVICE_READ_ZEITKONTO, method = MethodType.GET, internalOnly = true)
+    @UiServiceReturnType(value = {
+            @ServiceReturnType(statusCode = 200, value = ZeitkontoTabelleEintrag.class, containerType = List.class),
+            @ServiceReturnType(statusCode = 400),
+            @ServiceReturnType(statusCode = 502)
+    })
+    @KursPermission(value = {KursRechtConstants.PE_ZW_MA})
+    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
+    public ServiceResponse<List<ZeitkontoTabelleEintrag>> readZeitkonto(
+            @ServiceParam(value = ZeitkontoUiModuleConstants.PARAM_BEGINN) LocalDate beginn,
+            @ServiceParam(value = ZeitkontoUiModuleConstants.PARAM_ENDE) LocalDate ende,
+            @ServiceParam(value = ZeitkontoUiModuleConstants.PARAM_ZU_VERTRETENDE_PERSONALNUMMER) String zuVertretendePersonalnummer
+    ) {
+        try {
+            List<ZeitkontoTabelleEintrag> res = zeitkontoService.readZeitkonto(beginn, ende, zuVertretendePersonalnummer);
+            messageService.addMessage(MessageType.SUCCESS, MessageCode.OK,
+                    i18nService.getMessage("Zeitereignisse.Zeitkonto.Read.HttpStatus.200"),
+                    MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
+            return new ServiceResponse<>(HttpStatus.OK.value(), res);
+        } catch (UiServiceException uiServiceException) {
+            handleException(uiServiceException);
+            return new ServiceResponse<>(HttpStatus.OK.value(), List.of());
+        }
+    }
+
+
+}
