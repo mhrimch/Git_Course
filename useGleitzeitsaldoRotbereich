@@ -144,4 +144,35 @@ export const callGleitzeitsaldoRotbereich = async (
   });
 };
 
+====================================================================================
+import { useUuiService, UuiServiceClientDef, UuiServiceResponse } from '@finanzinformatik/cpl-module-reactlib';
+import {
+  ExtendedUuiServiceMessage,
+  NotificationStoreActions,
+  useNotificationStoreActions,
+} from '@personalsysteme/core';
+import { queryOptions, useQuery, UseQueryResult } from '@tanstack/react-query';
+import { callGleitzeitsaldoRotbereich } from '../../apl/pzw/zeitkontoUiModule/ZeitkontoUiModule.api';
+import { TanstackConstants } from '../../constants/TanstackConstants';
 
+export function readGleitzeitsaldoRotbereichOptions(
+  uuiService: Readonly<UuiServiceClientDef>,
+  notificationStoreActions: NotificationStoreActions
+) {
+  return queryOptions({
+    queryKey: ['gleitzeitsaldorotbereich'],
+    queryFn: (): Promise<number> =>
+      callGleitzeitsaldoRotbereich(uuiService).then((response: UuiServiceResponse<number>) => {
+        notificationStoreActions.handleMessages(response.messages as ExtendedUuiServiceMessage[], true);
+        return response.payload as number;
+      }),
+    staleTime: TanstackConstants.LONG_STALE_TIME,
+    retry: false,
+  });
+}
+
+export function useReadGleitzeitsaldoRotbereich(): UseQueryResult<number | undefined> {
+  const uuiService = useUuiService();
+  const notificationStoreActions = useNotificationStoreActions();
+  return useQuery(readGleitzeitsaldoRotbereichOptions(uuiService, notificationStoreActions));
+}
