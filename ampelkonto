@@ -71,3 +71,40 @@ export function InfoCardContent({ title, anzahlMitarbeiterRotbereich }: InfoCard
     </Stack>
   );
 }
+===============================================import { DynamicTypography } from '@finanzinformatik/cpl-module-reactlib';
+import PersonIcon from '@mui/icons-material/Person';
+import { Avatar, Skeleton } from '@mui/material';
+import { Stack } from '@mui/system';
+import { ThemeConstants } from '@personalsysteme/core';
+
+function AnzahlMitarbeiterRotbereich({
+  anzahlMitarbeiterRotbereich,
+}: {
+  anzahlMitarbeiterRotbereich: number | undefined;
+}) {
+  if (anzahlMitarbeiterRotbereich === undefined) {
+    return (
+      <Skeleton variant="circular" width={40} height={40}>
+        <Avatar
+          data-size={ThemeConstants.SMALL}
+          variant={ThemeConstants.VARIANT_CIRCULAR}
+          data-color={ThemeConstants.WARNING}
+        >
+          <PersonIcon />
+        </Avatar>
+      </Skeleton>
+    );
+  }
+
+  return (
+    <Avatar
+      data-size={ThemeConstants.SMALL}
+      variant={ThemeConstants.VARIANT_CIRCULAR}
+      data-color={ThemeConstants.WARNING}
+    >
+      {anzahlMitarbeiterRotbereich}
+    </Avatar>
+  );
+}
+
+
