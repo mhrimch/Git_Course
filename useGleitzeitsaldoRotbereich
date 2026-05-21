@@ -1,0 +1,147 @@
+import { useUuiService, UuiServiceClientDef, UuiServiceResponse } from '@finanzinformatik/cpl-module-reactlib';
+import {
+  ExtendedUuiServiceMessage,
+  NotificationStoreActions,
+  useNotificationStoreActions,
+} from '@personalsysteme/core';
+import { queryOptions, useQuery, UseQueryResult } from '@tanstack/react-query';
+import { BenutzerSaldoRead } from '../../apl/pzw/benutzerUiModule/BenutzerSaldoRead';
+import { callReadBenutzerSaldo } from '../../apl/pzw/benutzerUiModule/BenutzerUiModule.api';
+import { TanstackConstants } from '../../constants/TanstackConstants';
+import { isRollout } from '../../utils/rolloutUtils';
+import { BenutzerKeys } from './Benutzer.keys';
+
+export function readStatusOptions(
+  uuiService: Readonly<UuiServiceClientDef>,
+  notificationStoreActions: NotificationStoreActions
+) {
+  return queryOptions({
+    queryKey: BenutzerKeys.saldo,
+    queryFn: async (): Promise<BenutzerSaldoRead & { isRollout: boolean }> =>
+      callReadBenutzerSaldo(uuiService).then((response: UuiServiceResponse<BenutzerSaldoRead>) => {
+        notificationStoreActions.handleMessages(response.messages as ExtendedUuiServiceMessage[], true);
+        return {
+          ...(response.payload as BenutzerSaldoRead),
+          //TODO Entfernen wenn Rollout abgeschlossen ist
+          isRollout: isRollout(response.messages),
+        };
+      }),
+    staleTime: TanstackConstants.LONG_STALE_TIME,
+    retry: false,
+  });
+}
+
+export function useReadBenutzerSaldo(): UseQueryResult<(BenutzerSaldoRead & { isRollout: boolean }) | undefined> {
+  const uuiService = useUuiService();
+  const notificationStoreActions = useNotificationStoreActions();
+  return useQuery(readStatusOptions(uuiService, notificationStoreActions));
+}
+
+====================
+
+import { HttpMethod, UuiServiceClient, UuiServiceResponse } from '@finanzinformatik/cpl-module-reactlib';
+import { App, Services } from '../../../constants/ServiceConstants';
+import { BenutzerSaldoRead } from './BenutzerSaldoRead';
+import { BenutzerStatusRead } from './BenutzerStatusRead';
+import { BenutzerUrlaubRead } from './BenutzerUrlaubRead';
+
+/**
+ * Die Funktion callReadBenutzerStatus liest die Benutzer-Buchung-Status-Informationen zum angemeldeten Benutzer.
+ * @param uuiService
+ */
+export const callReadBenutzerStatus = async (
+  uuiService: UuiServiceClient
+): Promise<UuiServiceResponse<BenutzerStatusRead>> => {
+  return uuiService.execute<BenutzerStatusRead>({
+    method: HttpMethod.Get,
+    app: App.PZW,
+    module: Services.BenutzerUiModule.module,
+    service: Services.BenutzerUiModule.services.readBenutzerStatus,
+  });
+};
+/**
+ * Die Funktion callReadBenutzerSaldoStatus liest die Benutzer-Saldo-Status-Informationen zum angemeldeten Benutzer.
+ * @param uuiService
+ */
+export const callReadBenutzerSaldo = async (
+  uuiService: UuiServiceClient
+): Promise<UuiServiceResponse<BenutzerSaldoRead>> => {
+  return uuiService.execute<BenutzerSaldoRead>({
+    method: HttpMethod.Get,
+    app: App.PZW,
+    module: Services.BenutzerUiModule.module,
+    service: Services.BenutzerUiModule.services.readBenutzerSaldo,
+  });
+};
+/**
+ * Die Funktion callReadBenutzerUrlaub liest die Urlaubs-Informationen zum angemeldeten Benutzer.
+ * @param uuiService
+ */
+export const callReadBenutzerUrlaub = async (
+  uuiService: UuiServiceClient
+): Promise<UuiServiceResponse<BenutzerUrlaubRead>> => {
+  return uuiService.execute<BenutzerUrlaubRead>({
+    method: HttpMethod.Get,
+    app: App.PZW,
+    module: Services.BenutzerUiModule.module,
+    service: Services.BenutzerUiModule.services.readBenutzerUrlaub,
+  });
+};
+
+========================================
+export interface BenutzerSaldoRead {
+  saldoDatum: Date | undefined;
+  saldoArtBezeichnung: string;
+  saldoWert: number;
+}
+
+=====================================================================
+
+import { useUuiService, UuiServiceClientDef, UuiServiceResponse } from '@finanzinformatik/cpl-module-reactlib';
+import {
+  ExtendedUuiServiceMessage,
+  NotificationStoreActions,
+  useNotificationStoreActions,
+} from '@personalsysteme/core';
+import { queryOptions, useQuery, UseQueryResult } from '@tanstack/react-query';
+import { callGleitzeitsaldoRotbereich } from '../../apl/pzw/zeitkontoUiModule/ZeitkontoUiModule.api';
+import { TanstackConstants } from '../../constants/TanstackConstants';
+
+export function readGleitzeitsaldoRotbereichOptions(
+  uuiService: Readonly<UuiServiceClientDef>,
+  notificationStoreActions: NotificationStoreActions
+) {
+  return queryOptions({
+    queryKey: ['gleitzeitsaldorotbereich'],
+    queryFn: async (): Promise<number> => {
+      callGleitzeitsaldoRotbereich(uuiService).then((response: UuiServiceResponse<number>) => {
+        notificationStoreActions.handleMessages(response.messages as ExtendedUuiServiceMessage[], true);
+        return {
+          response.payload as number,
+        };
+      });
+    },
+    staleTime: TanstackConstants.LONG_STALE_TIME,
+    retry: false,
+  });
+}
+
+export function useReadGleitzeitsaldoRotbereich(): UseQueryResult<number | undefined> {
+  const uuiService = useUuiService();
+  const notificationStoreActions = useNotificationStoreActions();
+  return useQuery(readGleitzeitsaldoRotbereichOptions(uuiService, notificationStoreActions));
+}
+
+======================================================
+export const callGleitzeitsaldoRotbereich = async (
+  uuiService: UuiServiceClient
+): Promise<UuiServiceResponse<number>> => {
+  return uuiService.execute<number>({
+    method: HttpMethod.Get,
+    app: App.PZW,
+    module: Services.ZeitkontoUiModule.module,
+    service: Services.ZeitkontoUiModule.services.readZeitkonto,
+  });
+};
+
+
