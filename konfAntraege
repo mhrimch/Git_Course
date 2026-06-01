@@ -1,0 +1,675 @@
+export const KonfAntraege = () => {
+  const { t } = useTranslation();
+  const workflowService = useWorkflowService();
+  const [kategorieAuswahl, setKategorieAuswahl] = useState<KonfAntragskategorieRead | null>(null);
+  const { data: konfAntraege, isFetching: isKonfAntraegeLoading } = useReadKonfAntraege();
+  console.log('konfAntraege', konfAntraege);
+  const handleClickAntragKategorie = (kategorie: KonfAntragskategorieRead) => {
+    setKategorieAuswahl(kategorie);
+  };
+  const handleClickZurueckZuKonfiguration = () => {
+    navigateToPskKonfiguration(workflowService);
+  };
+  const handleClickZurueckZuAntraege = () => {
+    setKategorieAuswahl(null);
+  };
+  const categoryColors = useMcdPalette().ColorCategoryTokens;
+  if (!konfAntraege?.isRollout) {
+    return <></>;
+  }
+  if (kategorieAuswahl) {
+    return (
+      <KonfAntragsgruppen
+        antragskategorie={kategorieAuswahl}
+        versionsnummer={konfAntraege.versionsnummer}
+        buchungskreis={konfAntraege.buchungskreis}
+        handleClickZurueckZuAntraege={handleClickZurueckZuAntraege}
+      />
+    );
+  }
+  return (
+    <Stack spacing={ThemeConstants.STACK_SPACING} width={ThemeConstants.WIDTH_100_PERCENT}>
+      <Box>
+        <Button size="small" onClick={handleClickZurueckZuKonfiguration}>
+          {t('ZurueckZurKonfiguration')}
+        </Button>
+      </Box>
+      <Grid container spacing={ThemeConstants.GRID_CONTAINER_SPACING} justifyContent={'center'}>
+        <Grid size={{ xs: 12 }}>
+          <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02} component="div">
+            {t('Antraege')}
+          </Typography>
+        </Grid>
+        {!isKonfAntraegeLoading && (
+          <Grid size={{ xs: 12 }} container spacing={ThemeConstants.GRID_CONTAINER_SPACING}>
+            {konfAntraege.antragskategorien?.map((kategorie) => {
+              const iconConfig = getAntragskategorieIcon(kategorie.id);
+              return (
+                <Grid key={kategorie.id} size={{ xs: 12 }}>
+                  <KonfMenuCard
+                    ueberschrift={kategorie.bezeichnung}
+                    beschreibung={kategorie.beschreibung}
+                    CardIcon={iconConfig.icon}
+                    iconColor={categoryColors[iconConfig.color]}
+                    iconBgColor={categoryColors[iconConfig.bgColor]}
+                    onClick={() => handleClickAntragKategorie(kategorie)}
+                  />
+                </Grid>
+              );
+            })}
+          </Grid>
+        )}
+      </Grid>
+    </Stack>
+  );
+};
+==================================================================================
+export const KonfAntragCollapsible = ({
+  antrag,
+  antragsgruppe,
+  versionsnummer,
+  buchungskreis,
+}: KonfAntragsgruppenCollapsibleProps) => {
+  const theme = useTheme();
+  const matches = useMediaQuery(theme.breakpoints.up('sm'));
+  const [open, setOpen] = useState(false);
+  const [antragAktiv, setAntragAktiv] = useState(antrag.isAktiv);
+  const { t } = useTranslation();
+  const notificationStoreActions = useNotificationStoreActions();
+  const { data: isAntragInPersonalservicesAktiv, isLoading: isAntragPSLoading } = isPersonalserviceAktiv(
+    AntragsschluesselPersonalservices[antrag.schluessel],
+    antrag.isUrl
+  );
+  const isAntragAktiv =
+    antrag.isUrl && !isAntragPSLoading && isAntragInPersonalservicesAktiv === false ? false : antragAktiv;
+  const handleClickAktivitaetAendern = () => {
+    if (antrag.isUrl && !isAntragPSLoading && isAntragInPersonalservicesAktiv === false) {
+      notificationStoreActions.addInfoNotification(t('KonfigurationPersonalservicesMeldung'));
+      return;
+    }
+    setAntragAktiv(!antragAktiv);
+  };
+  if (matches) {
+    return (
+      <>
+        <TableRow>
+          <TableCell component="th" scope="row">
+            <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01} noWrap={true}>
+              {antrag.bezeichnung}
+            </Typography>
+          </TableCell>
+          <TableCell width={'15%'}>
+            {!isAntragPSLoading && (
+              <Stack
+                direction={'row'}
+                alignItems={'center'}
+                spacing={2}
+                justifyContent={ThemeConstants.CONTENT_ALIGN_SPACE_BETWEEN}
+              >
+                <Stack
+                  direction={'row'}
+                  alignItems={'center'}
+                  justifyContent={ThemeConstants.CONTENT_ALIGN_SPACE_BETWEEN}
+                >
+                  <Switch checked={isAntragAktiv} value={antragAktiv} onClick={handleClickAktivitaetAendern}></Switch>
+                  <Typography variant={ThemeConstants.TYPOGRAPHY_LABEL_03} noWrap={true}>
+                    {isAntragAktiv ? t('aktiviert') : t('deaktiviert')}
+                  </Typography>
+                </Stack>
+                <IconButton
+                  aria-label="expand row"
+                  onClick={() => {
+                    setOpen(!open);
+                  }}
+                >
+                  {open ? <IcUpS /> : <IcDownS />}
+                </IconButton>
+              </Stack>
+            )}
+          </TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={2}>
+            <Collapse in={open} timeout="auto" unmountOnExit>
+              <KonfAntragEigenschaftenPanel
+                antragsgruppe={antragsgruppe}
+                antrag={antrag}
+                antragAktiv={antragAktiv}
+                buchungskreis={buchungskreis}
+                versionsnummer={versionsnummer}
+                isAntragInPersonalservicesAktiv={isAntragInPersonalservicesAktiv}
+              />
+            </Collapse>
+          </TableCell>
+        </TableRow>
+      </>
+    );
+  }
+  return (
+    <>
+      <TableRow>
+        <TableCell component="th" scope="row">
+          <Grid container spacing={10}>
+            <Grid size={{ xs: 12, lg: 8 }}>
+              <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01}>{antragsgruppe.bezeichnung}</Typography>
+            </Grid>
+            {!isAntragPSLoading && (
+              <Grid size={{ xs: 10, lg: 8 }}>
+                <Stack direction={'row'} alignItems={'center'}>
+                  <Switch checked={isAntragAktiv} value={antragAktiv} onClick={handleClickAktivitaetAendern}></Switch>
+                  <Typography>{antragAktiv ? t('aktiviert') : t('deaktiviert')}</Typography>
+                </Stack>
+              </Grid>
+            )}
+            <Grid size={{ xs: 2, lg: 12 }}>
+              <IconButton
+                aria-label="expand row"
+                onClick={() => {
+                  if (antragAktiv || open) {
+                    setOpen(!open);
+                  }
+                }}
+              >
+                {open ? <IcUpS /> : <IcDownS />}
+              </IconButton>
+            </Grid>
+          </Grid>
+        </TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={4}>
+          <Collapse in={open} timeout="auto" unmountOnExit>
+            <KonfAntragEigenschaftenPanel
+              antragsgruppe={antragsgruppe}
+              antrag={antrag}
+              antragAktiv={antragAktiv}
+              buchungskreis={buchungskreis}
+              versionsnummer={versionsnummer}
+            />
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </>
+  );
+};
+======================================================================================================
+interface CheckboxRowProps {
+  beschreibung: string;
+  status: boolean;
+  name: string;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  disabled: boolean;
+}
+
+interface AntraegeKonfigCheckboxPanelProps {
+  versionsnummer: string;
+  buchungskreis: string;
+  antragsgruppe: KonfAntragsgruppeRead;
+  antrag: KonfAntragRead;
+  antragAktiv: boolean;
+  isAntragInPersonalservicesAktiv?: boolean;
+}
+
+export const KonfAntragEigenschaftenPanel = ({
+  versionsnummer,
+  buchungskreis,
+  antrag,
+  antragsgruppe,
+  antragAktiv,
+  isAntragInPersonalservicesAktiv,
+}: AntraegeKonfigCheckboxPanelProps) => {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [konfAntrag, setKonfAntrag] = useState<KonfAntragRead>(antrag);
+  const { mutateAsync: updateKonfAntrag } = useUpdateKonfAntraege();
+  const workflowService = useWorkflowService();
+  const isZeitkorrektur = antragsgruppe.id === AntragsgruppenIds.zeitkorrektur;
+  const updateEigenschaft = (event: ChangeEvent<HTMLInputElement>) => {
+    if (konfAntrag.isUrl) {
+      return;
+    }
+    setKonfAntrag((prev) => ({ ...prev, [event.target.name]: event.target.checked }));
+  };
+  const handleClickSpeichern = () => {
+    if (antrag.isUrl && !isAntragInPersonalservicesAktiv) {
+      return;
+    }
+    const konfAntragWrite: KonfAntragWrite = {
+      versionsnummer: versionsnummer,
+      buchungskreis: buchungskreis,
+      gruppenIconId: antragsgruppe.iconId,
+      antragId: konfAntrag.id,
+      hinweis: konfAntrag.hinweis,
+      isAktiv: antragAktiv,
+      isFreigabe: konfAntrag.isFreigabe,
+      isFavorit: konfAntrag.isFavorit,
+      isKommentar: konfAntrag.isKommentar,
+      url: konfAntrag.url,
+      isUrl: konfAntrag.isUrl,
+      isGanztaegig: konfAntrag.isGanztaegig,
+      isUhrzeit: konfAntrag.isUhrzeit,
+      isSerienelement: konfAntrag.isSerienelement,
+      isDocumentUpload: konfAntrag.isDocumentUpload,
+      maxAnzahlTage: konfAntrag.maxAnzahlTage,
+      maxAnzahlTageEinheit: konfAntrag.maxAnzahlTageEinheit,
+      verarbeitungsart: konfAntrag.verarbeitungsart,
+      psKommentar: konfAntrag.psKommentar,
+    };
+    updateKonfAntrag(konfAntragWrite).then(() => {
+      queryClient.invalidateQueries({ queryKey: KonfigKeys.konfigAntraege }).then(() => {
+        navigateToPskKonfiguration(workflowService);
+      });
+    });
+  };
+  const AntragseigenschaftCheckbox = ({ beschreibung, onChange, status, name, disabled }: CheckboxRowProps) => {
+    return (
+      <TableRow>
+        <TableCell padding="checkbox">
+          <Stack direction={'row'} alignItems={'center'} spacing={2}>
+            <Checkbox checked={status} onChange={(e) => onChange(e)} name={name} disabled={disabled} />
+            <Typography noWrap={true}>{beschreibung}</Typography>
+          </Stack>
+        </TableCell>
+        <TableCell width={ThemeConstants.WIDTH_100_PERCENT} />
+      </TableRow>
+    );
+  };
+  return (
+    <TableContainer>
+      <TableHead>
+        <TableRow>
+          <TableCell>
+            <Typography noWrap={true}>{t('Einstellungen') + ' ' + antrag.bezeichnung}</Typography>
+          </TableCell>
+          <TableCell width={ThemeConstants.WIDTH_100_PERCENT} />
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {!isZeitkorrektur && (
+          <AntragseigenschaftCheckbox
+            key={'isGanztaegig'}
+            beschreibung={t('ganztaegigZulassen')}
+            status={konfAntrag.isGanztaegig}
+            name={'isGanztaegig'}
+            onChange={updateEigenschaft}
+            disabled={konfAntrag.isUrl}
+          />
+        )}
+        {!isZeitkorrektur && (
+          <AntragseigenschaftCheckbox
+            key={'isUhrzeit'}
+            beschreibung={t('UhrzeitZulassen')}
+            status={konfAntrag.isUhrzeit}
+            name={'isUhrzeit'}
+            onChange={updateEigenschaft}
+            disabled={konfAntrag.isUrl}
+          />
+        )}
+        <AntragseigenschaftCheckbox
+          key={'isKommentar'}
+          beschreibung={t('KommentarAlsPflichtfeld')}
+          status={konfAntrag.isFreigabe ? konfAntrag.isKommentar : false}
+          name={'isKommentar'}
+          onChange={updateEigenschaft}
+          disabled={konfAntrag.isUrl}
+        />
+        <AntragseigenschaftCheckbox
+          key={'isFreigabe'}
+          beschreibung={t('GenehmigungErforderlich')}
+          status={konfAntrag.isFreigabe}
+          name={'isFreigabe'}
+          onChange={updateEigenschaft}
+          disabled={konfAntrag.isUrl}
+        />
+        {!isZeitkorrektur && (
+          <AntragseigenschaftCheckbox
+            key={'isDocumentUpload'}
+            beschreibung={t('DokumentenUploadMoeglich')}
+            status={konfAntrag.isDocumentUpload}
+            name={'isDocumentUpload'}
+            onChange={updateEigenschaft}
+            disabled={konfAntrag.isUrl}
+          />
+        )}
+        <TableRow>
+          <TableCell>
+            <Button variant="contained" size="large" onClick={handleClickSpeichern}>
+              {t('Speichern')}
+            </Button>
+          </TableCell>
+          <TableCell width={ThemeConstants.WIDTH_100_PERCENT} />
+        </TableRow>
+      </TableBody>
+    </TableContainer>
+  );
+};
+========================================================================================
+interface KonfMenuCardProps {
+  ueberschrift: string;
+  beschreibung: string;
+  onClick?: () => void;
+  CardIcon: (props: SvgIconProps) => React.ReactNode;
+  iconColor: string;
+  iconBgColor: string;
+}
+
+export const KonfMenuCard = ({
+  ueberschrift,
+  beschreibung,
+  onClick,
+  CardIcon,
+  iconColor,
+  iconBgColor,
+}: KonfMenuCardProps) => {
+  return (
+    <Card>
+      <CardActionArea onClick={onClick}>
+        <CardContent>
+          <Stack direction={'row'} spacing={2} alignItems={'center'}>
+            <Avatar
+              sx={{
+                background: iconBgColor,
+                color: iconColor,
+              }}
+            >
+              <CardIcon />
+            </Avatar>
+            <Stack spacing={1}>
+              <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_03} component="div">
+                {ueberschrift}
+              </Typography>
+              <Typography component="div">{beschreibung}</Typography>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </CardActionArea>
+    </Card>
+  );
+};
+====================================================================================
+function TableHeader() {
+  const { t } = useTranslation();
+  return (
+    <TableHead>
+      <TableRow>
+        <TableCell>
+          <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_05} noWrap={true}>
+            {t('Antrag')}
+          </Typography>
+        </TableCell>
+        <TableCell>
+          <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_05} noWrap={true}>
+            {t('Status')}
+          </Typography>
+        </TableCell>
+      </TableRow>
+    </TableHead>
+  );
+}
+
+interface KonfAntragsgruppenTableProps {
+  antragsgruppe: KonfAntragsgruppeRead;
+  versionsnummer: string;
+  buchungskreis: string;
+  handleClickZurueckZuAntragsgruppen: () => void;
+}
+
+export const KonfAntragTable = ({
+  antragsgruppe,
+  versionsnummer,
+  buchungskreis,
+  handleClickZurueckZuAntragsgruppen,
+}: KonfAntragsgruppenTableProps) => {
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const matches = useMediaQuery(theme.breakpoints.up('sm'));
+  const { ColorTokens } = useMcdPalette();
+
+  return (
+    <Stack spacing={4} width={ThemeConstants.WIDTH_100_PERCENT}>
+      <Box>
+        <Button size={'small'} onClick={handleClickZurueckZuAntragsgruppen}>
+          {t('ZurueckZuAntragsgruppen')}
+        </Button>
+      </Box>
+      <Stack spacing={ThemeConstants.GRID_CONTAINER_SPACING}>
+        <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02} noWrap={true}>
+          {antragsgruppe.bezeichnung}
+        </Typography>
+        <TableContainer sx={{ border: 1, borderRadius: 2, borderColor: ColorTokens['ui-01'] }}>
+          <Table aria-label="collapsible table">
+            {matches ? (
+              <TableHeader />
+            ) : (
+              <TableRow>
+                <TableCell>
+                  <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_05}>Anträge</Typography>
+                </TableCell>
+              </TableRow>
+            )}
+            <TableBody>
+              {antragsgruppe.antraege.map((antrag) => (
+                <KonfAntragCollapsible
+                  key={antrag.id}
+                  antrag={antrag}
+                  antragsgruppe={antragsgruppe}
+                  versionsnummer={versionsnummer}
+                  buchungskreis={buchungskreis}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Stack>
+    </Stack>
+  );
+};
+==============================================================================================
+export const KonfigurationZeitwirtschaft = () => {
+  const workflowService = useWorkflowService();
+  const { t } = useTranslation();
+
+  return (
+    <Grid container spacing={ThemeConstants.GRID_CONTAINER_SPACING} justifyContent={'center'}>
+      <Grid size={{ xs: 12 }}>
+        <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02} component="div">
+          {t('KonfigurationZeitwirtschaft')}
+        </Typography>
+      </Grid>
+      <Grid container size={{ xs: 12 }} spacing={ThemeConstants.GRID_CONTAINER_SPACING}>
+        <Grid size={{ xs: 12 }}>
+          <KonfMenuCard
+            ueberschrift={t('Antraege')}
+            beschreibung={t('AntraegeBeschreibung')}
+            CardIcon={IcDocumentS}
+            iconColor={PzwIconMap.Antraege.color}
+            iconBgColor={PzwIconMap.Antraege.bgColor}
+            onClick={() => navigateToKonfAntraege(workflowService)}
+          />
+        </Grid>
+        <Grid size={{ xs: 12 }}>
+          <KonfMenuCard
+            ueberschrift={t('ZugelasseneEinsatzorte')}
+            beschreibung={t('ZugelasseneEinsatzorteBeschreibung')}
+            CardIcon={IcEditS}
+            iconColor={PzwIconMap.Arbeitsorte.color}
+            iconBgColor={PzwIconMap.Arbeitsorte.bgColor}
+            onClick={() => navigateToKonfArbeitsorte(workflowService)}
+          />
+        </Grid>
+      </Grid>
+    </Grid>
+  );
+};
+===========================================================================
+
+
+
+interface KonfAntragsgruppenProps {
+  antragskategorie: KonfAntragskategorieRead;
+  versionsnummer: string;
+  buchungskreis: string;
+  handleClickZurueckZuAntraege: () => void;
+}
+
+export const KonfAntragsgruppen = ({
+  antragskategorie,
+  versionsnummer,
+  buchungskreis,
+  handleClickZurueckZuAntraege,
+}: KonfAntragsgruppenProps) => {
+  const categoryColors = useMcdPalette().ColorCategoryTokens;
+  const [gruppenAuswahl, setGruppenAuswahl] = useState<KonfAntragsgruppeRead | null>(null);
+  const { t } = useTranslation();
+  const handleClickAntragsgruppe = (antragsgruppe: KonfAntragsgruppeRead) => {
+    setGruppenAuswahl(antragsgruppe);
+  };
+  const handleClickZurueckZuAntragsgruppen = () => {
+    setGruppenAuswahl(null);
+  };
+  const iconConfig = getAntragskategorieIcon(antragskategorie.id);
+  if (gruppenAuswahl) {
+    return (
+      <KonfAntragTable
+        antragsgruppe={gruppenAuswahl}
+        versionsnummer={versionsnummer}
+        buchungskreis={buchungskreis}
+        handleClickZurueckZuAntragsgruppen={handleClickZurueckZuAntragsgruppen}
+      />
+    );
+  }
+  return (
+    <Stack spacing={ThemeConstants.STACK_SPACING} width={ThemeConstants.WIDTH_100_PERCENT}>
+      <Box>
+        <Button size="small" onClick={handleClickZurueckZuAntraege}>
+          {t('ZurueckZuAntraege')}
+        </Button>
+      </Box>
+      <Grid container spacing={ThemeConstants.GRID_CONTAINER_SPACING} justifyContent={'center'}>
+        <Grid size={{ xs: 12 }}>
+          <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02} component="div">
+            {t('Antragsgruppen')}
+          </Typography>
+        </Grid>
+        <Grid size={{ xs: 12 }} container spacing={ThemeConstants.GRID_CONTAINER_SPACING}>
+          {antragskategorie.antragsgruppen.map((antragsgruppe) => {
+            return (
+              <Grid key={antragsgruppe.id} size={{ xs: 6 }}>
+                <KonfMenuCard
+                  ueberschrift={antragsgruppe.bezeichnung}
+                  beschreibung={antragsgruppe.beschreibung}
+                  CardIcon={iconConfig.icon}
+                  iconColor={categoryColors[iconConfig.color]}
+                  iconBgColor={categoryColors[iconConfig.bgColor]}
+                  onClick={() => handleClickAntragsgruppe(antragsgruppe)}
+                />
+              </Grid>
+            );
+          })}
+        </Grid>
+      </Grid>
+    </Stack>
+  );
+};
+============================================================================================
+export const KonfArbeitsorte = () => {
+  const queryClient = useQueryClient();
+
+  const [showKonfArbeitsorte, setShowKonfArbeitsorte] = useState<KonfArbeitsorteRead>({
+    isBuero: true,
+    isMobileArbeit: false,
+  } as KonfArbeitsorteRead);
+
+  function updateKonfArbeitsorte(arbeitsort: string, value: boolean) {
+    setShowKonfArbeitsorte((prevState: KonfArbeitsorteRead) => {
+      return { ...prevState, [arbeitsort]: value };
+    });
+  }
+
+  const { data: benutzer } = useReadKonfArbeitsorte();
+
+  useEffect(() => {
+    if (benutzer?.isBuero) {
+      setShowKonfArbeitsorte(benutzer);
+    }
+  }, [benutzer]);
+
+  const { t } = useTranslation();
+  const workflowService = useWorkflowService();
+
+  const { mutateAsync: writeKonfig } = useUpdateKonfArbeitsorte();
+
+  function createData(arbeitsort: string, status: JSX.Element) {
+    return { arbeitsort, status };
+  }
+
+  const handleClickZurueckZuKonfiguration = () => {
+    navigateToPskKonfiguration(workflowService);
+  };
+
+  function setUpdateKonfig(arbeitsort: string, value: boolean) {
+    updateKonfArbeitsorte(arbeitsort, value);
+    writeKonfig({
+      arbeitsort: arbeitsort,
+      isAktiv: value,
+    } as KonfArbeitsorteWrite).then(() => {
+      queryClient.invalidateQueries({ queryKey: KonfigKeys.konfig });
+    });
+  }
+
+  const rows = [
+    createData(t('KonfigurationArbeitsorte.ImBueroDefault'), <Switch checked={true} />),
+    createData(
+      t('mobileArbeit'),
+      <Switch
+        checked={showKonfArbeitsorte.isMobileArbeit}
+        onChange={(event) => setUpdateKonfig('mobileArbeit', event.target.checked)}
+      />
+    ),
+  ];
+  if (!benutzer?.isRollout) {
+    return <></>;
+  }
+  return (
+    <>
+      <Grid size={{ xs: 12, lg: 10 }} mt={10}>
+        <Stack spacing={ThemeConstants.GRID_CONTAINER_SPACING}>
+          <Box>
+            <Button
+              size={ThemeConstants.SMALL}
+              onClick={handleClickZurueckZuKonfiguration}
+              startIcon={<IcBackArrowS />}
+            >
+              {t('ZurueckZurKonfiguration')}
+            </Button>
+          </Box>
+          <DynamicTypography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02}>
+            {t('KonfigurationArbeitsorte.ZugelasseneEinsatzorte')}
+          </DynamicTypography>
+        </Stack>
+      </Grid>
+      <Grid size={{ xs: 12, lg: 10 }} mt={10}>
+        <TableContainer component={Paper}>
+          <Table width={ThemeConstants.WIDTH_100_PERCENT} aria-label="simple table">
+            <TableHead>
+              <TableRow>
+                <TableCell>{t('KonfigurationArbeitsorte.OrtdesArbeitens')}</TableCell>
+                <TableCell align="right">Status</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.map((row) => (
+                <TableRow key={row.arbeitsort} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell component="th" scope="row">
+                    {row.arbeitsort}
+                  </TableCell>
+                  <TableCell align="right">{row.status}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Grid>
+    </>
+  );
+};
