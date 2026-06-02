@@ -673,3 +673,107 @@ export const KonfArbeitsorte = () => {
     </>
   );
 };
+
+===================================================================1.	zurück zu Anträgen	Funktion zur Verzweigung zur Maske Antragsgruppen	
+
+
+2.	Label	Bezeichnung der Antragsgruppe	
+
+
+3.	Tabelle zur Beschreibung des Antrags	CollapsibleTable	
+
+
+3.1.	Antrag	DynamicTypography	nicht editierbar	
+
+3.2	Status	Switch	
+Inaktiv (disabled) bei Antrag auf Tagesbuchungen.	
+3.3	Statusbezeichnung	DynamicTypography	
+aktiviert oder deaktiviert nach 3.3	
+4.	Einstellungen	
+
+
+
+4.1.	Genehmigung Führungskraft erforderlich	Checkbox	
+Die Voreinstellung ist deaktiviert. 
+Mit dieser Checkbox kann ein einstufiges Freigabeverfahren für diese Antragsart aktiviert werden. Als Empfänger wird immer die disziplinarische Führungskraft des betroffenen Mitarbeiters ermittelt. 	
+4.2	Genehmigung Personal erforderlich    	Select	
+Als Genehmiger kann eine Person, eine Stelle, eine OE oder eine Team-OE hinterlegt werden. Die Festlegung erfolgt in der Empfängersteuerung in der ABS und gilt für alle Antragsarten einheitlich.	
+4.2.	Kommentar als Pflichtfeld	Checkbox	
+Die Voreinstellung ist deaktiviert. 
+Das Kommentarfeld ist immer vorhanden, aber optional in der Erfassung. 
+Mit der Aktivierung dieser Checkbox wird die Erfassung eines Kommentares verpflichtend. 	
+4.4.	Uhrzeit zulassen	
+Checkbox
+
+
+Die Voreinstellung ist aktiviert. 
+Aktivierung stundenweiser Beantragung mit Uhrzeit Beginn und Ende
+
+Bei den Antragsarten Tagesbuchung hinzufügen, Verfallzeitgutschrift und Zeitgutschrift entfällt das Feld.
+
+
+4.5.	Ganztägig zulassen	
+Checkbox
+
+
+Aktivierung zur Anzeige des Schalters "ganztägig" bei der Beantragung einer Abwesenheit.
+Die Voreinstellung ist aktiviert. 
+
+Ist der Schalter in der Konfiguration nicht ausgewählt, müssen bei der Antragstellung vom User immer Uhrzeiten erfasst werden.
+
+Bei den Antragsarten Tagesbuchung hinzufügen, Verfallzeitgutschrift und Zeitgutschrift entfällt das Feld.
+
+Bei einem Urlaubsantrag muss die Checkbox angehakt und änderungsgeschützt (disabled) sein. (RQ11349)
+
+
+4.6.	Dokumentenupload möglich	
+Checkbox
+
+
+Ist diese Checkbox aktiviert, wird die Option zum Dateiupload optional angeboten 
+Ist die Option "Dokumentenupload aktivieren" nicht ausgewählt, wird beim Antrag kein Upload angeboten.
+
+Bei den Antragsarten Tagesbuchung hinzufügen, Verfallzeitgutschrift und Zeitgutschrift entfällt das Feld.
+
+
+4.6.1	Upload als Pflicht    	
+Checkbox
+
+
+Eingerückt unter 4.6. Über diese Checkbox kann definiert werden, dass der Upload verpflichtend ist. Wenn 4.6 aktiv ist. 	
+4.7	Ablageordner ePa    	
+Select
+
+
+Auswahlliste mit den Dokumententypen der elektronischen Personakte; 2spaltig mit Kürzel und Langbezeichnung des Dokumententyps 
+Siehe RQ 12082.
+
+Die Liste der Optionen ist über die PSK Servicemethode readSvzSap zu erhalten. Der Eingabeparameter für den Schlüssel lautet "Z_DOKART".
+
+
+4.8	Anzahl Tage rückwirkende Korrektur	
+Textfield
+
+
+Maximale Anzahl der Tage für die der Mitarbeiter den Antrag rückwirkend stellen darf ausgehend vom Tagesdatum 
+
+Bei allen Anträgen sind 90 Tage voreingestellt. Es sind ganztägige Werte zwischen 0 und 180 möglich.
+
+
+4.9	Intranetlink    	
+Textfield
+
+mit Button "Link testen"
+
+
+Option je Antragsart einen individuellen Link auf ein interne Seite des Instituts aufzunehmen. 
+Ist ein Link hinterlegt, wird ein Prüffeld zur Überprüfung des Links angeboten
+
+Bei Klick auf den Button wird die eingegebene URL in einem neuen Browserfenster/-tab geöffnet.
+
+
+5.	Speichern	Button	
+Aktion: KonfAntraegeUiModule - updateKonfAntrag	
+
+
+Sofern für eine Antragsart eine Verlinkungen zu Personalservices vorliegt, wird diese nicht hier, sondern in dem Konfigurationsmenüpunkt der Funktion Personalservices konfiguriert. Bei diesen Antragsarten stehen von den oben genannten Feldern nur die Felder "Genehmigung Führungskraft erforderlich" und "Genehmigung Personal erforderlich" zur Verfügung. Alle weitere Steuerungsfelder sind ausgeblendet.
