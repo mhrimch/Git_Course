@@ -1,0 +1,40 @@
+const AntragseigenschaftSelect = ({ label, value, onChange, name, disabled }) => {
+  return (
+    <TableRow>
+      <TableCell>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Typography noWrap>{label}</Typography>
+          <Select
+            value={value}
+            onChange={(e) => onChange(e)}
+            name={name}
+            disabled={disabled}
+            size="small"
+          >
+            <MenuItem value="PERSON">{t('Person')}</MenuItem>
+            <MenuItem value="STELLE">{t('Stelle')}</MenuItem>
+            <MenuItem value="OE">{t('OE')}</MenuItem>
+            <MenuItem value="TEAM_OE">{t('TeamOE')}</MenuItem>
+          </Select>
+        </Stack>
+      </TableCell>
+      <TableCell />
+    </TableRow>
+  );
+};
+
+=======================
+<AntragseigenschaftSelect
+  label={t('GenehmigungPersonalErforderlich')}
+  value={konfAntrag.genehmigerTyp}
+  name="genehmigerTyp"
+  onChange={(e) =>
+seigenschaftSelect
+  label={t('GenehmigungPersonalErforderlich')}
+  value={konfAntrag.genehmigerTyp}
+  name="genehmigerTyp"
+  onChange={(e) =>
+    setKonfAntrag(prev => ({ ...prev, genehmigerTyp: e.target.value }))
+  }
+  disabled={konfAntrag.isUrl || !konfAntrag.isFreigabe}
+/>
