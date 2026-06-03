@@ -132,3 +132,27 @@ seigenschaftSelect
   </TableCell>
   <TableCell />
 </TableRow>
+============================
+<TableRow>
+  <TableCell sx={{ width: '100%' }}>
+    <Stack direction={'row'} width="100%" alignItems={'center'} justifyContent={'space-between'} spacing={2}>
+      <Typography noWrap={true}>{t('AblageortEpa')}</Typography>
+      <FormControl size="small" sx={{ minWidth: 320 }}>
+        <InputLabel>{t('Dokumententyp')}</InputLabel>
+        <Select
+          value={konfAntrag.epaArt ?? ''}
+          label={t('Dokumententyp')}
+          name={'epaArt'}
+          displayEmpty
+          renderValue={(value) => value ? value : <Typography color="text.secondary">{t('BitteAuswaehlen')}</Typography>}
+        >
+          <MenuItem value="DOK_A">DOK_A – Arbeitsvertrag</MenuItem>
+          <MenuItem value="DOK_B">DOK_B – Bescheinigung</MenuItem>
+          <MenuItem value="DOK_C">DOK_C – Zeugnis</MenuItem>
+          <MenuItem value="DOK_D">DOK_D – Sonstiges</MenuItem>
+        </Select>
+      </FormControl>
+    </Stack>
+  </TableCell>
+  <TableCell />
+</TableRow>
