@@ -113,15 +113,26 @@ export const KonfAntragEigenschaftenPanel = ({
   interface TextfieldRowProps {
     beschreibung: string;
     label: string;
-    value: string | number;
     name: string;
+    value: string | number;
+    type: string;
     placeholder?: string;
     helperText?: string;
     onChange: (event: ChangeEvent<HTMLInputElement>) => void;
-    slotProps: {};
+    slotProps?: TextFieldProps['slotProps'] | undefined;
   }
 
-  const AntragseigenschaftTextfield = ({ beschreibung, label, value, onChange, slotProps }: TextfieldRowProps) => {
+  const AntragseigenschaftTextfield = ({
+    beschreibung,
+    label,
+    value,
+    name,
+    type,
+    onChange,
+    slotProps,
+    helperText,
+    placeholder,
+  }: TextfieldRowProps) => {
     return (
       <TableRow>
         <TableCell sx={{ width: '100%' }}>
@@ -132,8 +143,12 @@ export const KonfAntragEigenschaftenPanel = ({
               sx={{ minWidth: '50%' }}
               label={label}
               value={value}
-              name={'anzahlTageRückwirkenderKorrektur'}
+              name={name}
+              type={type}
+              placeholder={placeholder}
+              helperText={helperText}
               onChange={onChange}
+              slotProps={slotProps}
             />
           </Stack>
         </TableCell>
@@ -224,7 +239,7 @@ export const KonfAntragEigenschaftenPanel = ({
         <AntragseigenschaftSelect
           beschreibung={'Ablageort Epa'}
           label={'Dokumenententyp'}
-          value={antrag.epaArt}
+          value={konfAntrag.epaArt}
           name={'isEpaArt'}
           onChange={(event: SelectChangeEvent) => {}}
           dokumententype={['1', '2']}
@@ -233,8 +248,9 @@ export const KonfAntragEigenschaftenPanel = ({
         <AntragseigenschaftTextfield
           beschreibung={'Anzahl Tage rückwirkender Korrektur'}
           label={'Anzahl Tage rückwirkender Korrektur'}
-          value={antrag.anzahlTageRueckwirkenderKorrektur}
-          name={'isAnzahlTageRückwirkenderKorrektur'}
+          name={'isAnzahl'}
+          value={konfAntrag.anzahlTageRueckwirkenderKorrektur}
+          type={'number'}
           onChange={(e) =>
             setKonfAntrag((prev) => ({
               ...prev,
@@ -248,8 +264,9 @@ export const KonfAntragEigenschaftenPanel = ({
         <AntragseigenschaftTextfield
           beschreibung={'Intranetlink'}
           label={'Interanetlink'}
-          value={''}
-          name={'isInteranet'}
+          name={'isUrl'}
+          type={'string'}
+          value={konfAntrag.url}
           placeholder={'Geben Sie die Url an'}
           onChange={(e) => setKonfAntrag((prev) => ({ ...prev, url: e.target.value }))}
           slotProps={{
@@ -275,6 +292,5 @@ export const KonfAntragEigenschaftenPanel = ({
     </TableContainer>
   );
 };
-
 ========================================================================
 kannst du mir ein Mash in Typescript erstellen, dieses mappt kürzel zu dokumententyp aus dieser Tabelle: Kategorie Abwesenheitsart Kürzel DokumententypUrlaub Urlaub U200 Z950 Urlaub Abbau Urlaubskauf S915 Z950 Urlaub Sonstiges Dienstreise Z300 A33 Dienstreiseanträge Personalratstätigkeit Z254 A34 Personalratstätigkeit Streik S997 A35 Streik Gesundheit Ärztliche Behandlung K610 Z936 Krankmeldung Bildung Ausbildung Z400, Z480 oder Z490 Z979 Ausbildung Berufsschule Z410 Z979 Ausbildung IHK Prüfung Z430 Z979 Ausbildung Dozententätigkeit Z460, Z567 oder Z569 Z916 Betriebliche Fortbildung Fortbildung Z500, Z580 oder Z590 Z916 Betriebliche Fortbildung Lehrgang Spk.Kfm/Kffr. Z510 Z916 Betriebliche Fortbildung Studiengang Spk. BetrWirt Z530 Z948 Studium Fachlehrgang Z533 Z916 Betriebliche Fortbildung KBL Z550 Z916 Betriebliche Fortbildung Seminar Z570 Z916 Betriebliche FortbildungSonderurlaub Geburt D160 ZA15 Arbeitsbefreiung Jubiläum D210, D220 oder D240 ZA15 Arbeitsbefreiung Tod eines Angehörigen D170 oder D180 ZA15 Arbeitsbefreiung Erkrankung Angehörige B241, B242, B244 ZA15 Arbeitsbefreiung Umzug D200 ZA15 Arbeitsbefreiung Erfüllung allgemeiner staatsbürgerlicher Pflichten B230 ZA15 Arbeitsbefreiung Arbeitsbefreiung in sonstigen dringenden Fällen B250 ZA15 Arbeitsbefreiung Zur Teilnahme an Tagungen gewählter Vertreter B251 ZA15 Arbeitsbefreiung Freistellung unbezahlt S935 ZA15 Arbeitsbefreiung Sonderurlaub bezahlt (B291) Z946 Sonderu
