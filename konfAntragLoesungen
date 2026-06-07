@@ -1,21 +1,56 @@
-const AntragseigenschaftSelect = ({ label, value, onChange, name, disabled }) => {
+interface CheckboxRowProps {
+  beschreibung: string;
+  status: boolean;
+  name: string;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  disabled: boolean;
+}
+
+const AntragseigenschaftCheckbox = ({ beschreibung, onChange, status, name, disabled }: CheckboxRowProps) => {
   return (
     <TableRow>
-      <TableCell>
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <Typography noWrap>{label}</Typography>
-          <Select
-            value={value}
-            onChange={(e) => onChange(e)}
-            name={name}
-            disabled={disabled}
-            size="small"
-          >
-            <MenuItem value="PERSON">{t('Person')}</MenuItem>
-            <MenuItem value="STELLE">{t('Stelle')}</MenuItem>
-            <MenuItem value="OE">{t('OE')}</MenuItem>
-            <MenuItem value="TEAM_OE">{t('TeamOE')}</MenuItem>
-          </Select>
+      <TableCell padding="checkbox">
+        <Stack direction={'row'} alignItems={'center'} spacing={2}>
+          <Checkbox checked={status} onChange={(e) => onChange(e)} name={name} disabled={disabled} />
+          <Typography noWrap={true}>{beschreibung}</Typography>
+        </Stack>
+      </TableCell>
+      <TableCell width={ThemeConstants.WIDTH_100_PERCENT} />
+    </TableRow>
+  );
+};
+
+interface SelectRowProps {
+  beschreibung: string;
+  label: string;
+  value: string;
+  name: string;
+  onChange: (event: SelectChangeEvent) => void;
+  dokumententype: string[];
+}
+
+const AntragseigenschaftSelect = ({ beschreibung, label, onChange, value, name, dokumententype }: SelectRowProps) => {
+  return (
+    <TableRow>
+      <TableCell sx={{ width: '100%' }}>
+        <Stack direction={'row'} width="100%" alignItems={'center'} justifyContent={'space-between'}>
+          <DynamicTypography noWrap={true}>{beschreibung}</DynamicTypography>
+          <FormControl size="small" sx={{ minWidth: '50%' }}>
+            <InputLabel>{label}</InputLabel>
+            <Select
+              value={value}
+              name={name}
+              displayEmpty
+              onChange={onChange}
+              renderValue={(currentValue) => (currentValue ? value : <em>Bitte Auswählen</em>)}
+            >
+              {dokumententype.map((dokumententyp) => (
+                <MenuItem key={dokumententyp} value={dokumententyp}>
+                  {dokumententyp}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Stack>
       </TableCell>
       <TableCell />
@@ -23,136 +58,284 @@ const AntragseigenschaftSelect = ({ label, value, onChange, name, disabled }) =>
   );
 };
 
-=======================
-<AntragseigenschaftSelect
-  label={t('GenehmigungPersonalErforderlich')}
-  value={konfAntrag.genehmigerTyp}
-  name="genehmigerTyp"
-  onChange={(e) =>
-seigenschaftSelect
-  label={t('GenehmigungPersonalErforderlich')}
-  value={konfAntrag.genehmigerTyp}
-  name="genehmigerTyp"
-  onChange={(e) =>
-    setKonfAntrag(prev => ({ ...prev, genehmigerTyp: e.target.value }))
-  }
-  disabled={konfAntrag.isUrl || !konfAntrag.isFreigabe}
-/>
+interface TextfieldRowProps {
+  beschreibung: string;
+  label: string;
+  name: string;
+  value: string | number;
+  type: string;
+  placeholder?: string;
+  helperText?: string;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  slotProps?: TextFieldProps['slotProps'] | undefined;
+}
 
-=========================================================
-<AntragseigenschaftCheckbox
-  key={'isDocumentUpload'}
-  beschreibung={t('DokumentenUploadMoeglich')}
-  status={konfAntrag.isDocumentUpload}
-  name={'isDocumentUpload'}
-  onChange={updateEigenschaft}
-  disabled={false}
-/>
+const AntragseigenschaftTextfield = ({
+  beschreibung,
+  label,
+  value,
+  name,
+  type,
+  onChange,
+  slotProps,
+  helperText,
+  placeholder,
+}: TextfieldRowProps) => {
+  return (
+    <TableRow>
+      <TableCell sx={{ width: '100%' }}>
+        <Stack direction={'row'} width="100%" alignItems={'center'} justifyContent={'space-between'}>
+          <Typography noWrap={true}>{beschreibung} </Typography>
+          <TextField
+            size="small"
+            sx={{ minWidth: '50%' }}
+            label={label}
+            value={value}
+            name={name}
+            type={type}
+            placeholder={placeholder}
+            helperText={helperText}
+            onChange={onChange}
+            slotProps={slotProps}
+          />
+        </Stack>
+      </TableCell>
+      <TableCell />
+    </TableRow>
+  );
+};
 
-{konfAntrag.isDocumentUpload && (
-  <TableRow>
-    <TableCell padding="checkbox">
-      <Stack direction={'row'} alignItems={'center'} spacing={2} sx={{ pl: 6 }}>
-        <Checkbox
-          checked={konfAntrag.isDocumentUploadPflicht}
+interface AntraegeKonfigCheckboxPanelProps {
+  versionsnummer: string;
+  buchungskreis: string;
+  antragsgruppe: KonfAntragsgruppeRead;
+  antrag: KonfAntragRead;
+  antragAktiv: boolean;
+  isAntragInPersonalservicesAktiv?: boolean;
+}
+
+export const KonfAntragEigenschaftenPanel = ({
+  versionsnummer,
+  buchungskreis,
+  antrag,
+  antragsgruppe,
+  antragAktiv,
+  isAntragInPersonalservicesAktiv,
+}: AntraegeKonfigCheckboxPanelProps) => {
+  console.log('5.antrag', antrag);
+  console.log('5.antragsgruppe', antragsgruppe);
+  const dokumentenTyp: string[] = ['"ZZZ!" - keine Archivierung"', 'Z950 Urlaub'];
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [konfAntrag, setKonfAntrag] = useState<KonfAntragRead>(antrag);
+  const { mutateAsync: updateKonfAntrag } = useUpdateKonfAntraege();
+  const workflowService = useWorkflowService();
+  const isZeitkorrektur = antragsgruppe.id === AntragsgruppenIds.zeitkorrektur;
+  const updateEigenschaft = (event: ChangeEvent<HTMLInputElement>) => {
+    setKonfAntrag((prev) => ({ ...prev, [event.target.name]: event.target.checked }));
+  };
+  const handleAnzahlTageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const raw = event.target.value;
+    if (raw === '') {
+      setKonfAntrag((prev) => ({ ...prev, anzahlTageRueckwirkenderKorrektur: 0 }));
+      return;
+    }
+
+    const parsed = parseInt(raw, 10);
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 180) {
+      return;
+    }
+
+    setKonfAntrag((prev) => ({ ...prev, anzahlTageRueckwirkenderKorrektur: parsed }));
+  };
+
+  const isValidUrl = (value: string): boolean => {
+    try {
+      const url = new URL(value);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  const handleClickSpeichern = () => {
+    if (antrag.isUrl && !isAntragInPersonalservicesAktiv) {
+      return;
+    }
+    const konfAntragWrite: KonfAntragWrite = {
+      versionsnummer: versionsnummer,
+      buchungskreis: buchungskreis,
+      gruppenIconId: antragsgruppe.iconId,
+      antragId: konfAntrag.id,
+      hinweis: konfAntrag.hinweis,
+      isAktiv: antragAktiv,
+      isFavorit: konfAntrag.isFavorit,
+      isFuehrungskraftFreigabePflicht: konfAntrag.isFuehrungskraftFreigabePflicht,
+      isPersonalFreigabePflicht: konfAntrag.isPersonalFreigabePflicht,
+      isKommentarPflicht: konfAntrag.isKommentarPflicht,
+      isGanztaegig: konfAntrag.isGanztaegig,
+      isUhrzeit: konfAntrag.isUhrzeit,
+      isSerienelement: konfAntrag.isSerienelement,
+      isDocumentUpload: konfAntrag.isDocumentUpload,
+      isDocumentUploadPflicht: konfAntrag.isDocumentUploadPflicht,
+      epaArt: konfAntrag.epaArt,
+      maxAnzahlTage: konfAntrag.maxAnzahlTage,
+      maxAnzahlTageEinheit: konfAntrag.maxAnzahlTageEinheit,
+      anzahlTageRueckwirkenderKorrektur: konfAntrag.anzahlTageRueckwirkenderKorrektur,
+      url: konfAntrag.url,
+      isUrl: konfAntrag.isUrl,
+      verarbeitungsart: konfAntrag.verarbeitungsart,
+      personalserviceSchluessel: konfAntrag.personalserviceSchluessel,
+      personalserviceBezeichnung: konfAntrag.personalserviceBezeichnung,
+      personalserviceKommentar: konfAntrag.personalserviceKommentar,
+    };
+    updateKonfAntrag(konfAntragWrite).then(() => {
+      queryClient.invalidateQueries({ queryKey: KonfigKeys.konfigAntraege }).then(() => {
+        navigateToPskKonfiguration(workflowService);
+      });
+    });
+  };
+
+  return (
+    <TableContainer>
+      <TableHead>
+        <TableRow>
+          <TableCell>
+            <Typography noWrap={true}>{t('Einstellungen') + ' ' + antrag.bezeichnung}</Typography>
+          </TableCell>
+          <TableCell width={ThemeConstants.WIDTH_100_PERCENT} />
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        <AntragseigenschaftCheckbox
+          key={'isFuehrungskraftFreigabePflicht'}
+          beschreibung="Genehmigung Führungskraft erforderlich"
+          status={konfAntrag.isFuehrungskraftFreigabePflicht}
+          name={'isFuehrungskraftFreigabePflicht'}
           onChange={updateEigenschaft}
-          name={'isDocumentUploadPflicht'}
           disabled={false}
         />
-        <Typography noWrap={true}>{t('UploadAlsPflicht')}</Typography>
-      </Stack>
-    </TableCell>
-    <TableCell width={ThemeConstants.WIDTH_100_PERCENT} />
-  </TableRow>
-)}
-
-{/* 4.7 - Ablageordner ePa */}
-<TableRow>
-  <TableCell sx={{ width: '100%' }}>
-    <Stack direction={'row'} width="100%" alignItems={'center'} justifyContent={'space-between'} spacing={2}>
-      <Typography noWrap={true}>{t('AblageordnerEpa')}</Typography>
-      <Select value={konfAntrag.epaArt ?? ''} size="small" sx={{ minWidth: 160 }} name={'epaArt'}>
-        <MenuItem value="DOK_A">DOK_A – Arbeitsvertrag</MenuItem>
-        <MenuItem value="DOK_B">DOK_B – Bescheinigung</MenuItem>
-        <MenuItem value="DOK_C">DOK_C – Zeugnis</MenuItem>
-        <MenuItem value="DOK_D">DOK_D – Sonstiges</MenuItem>
-      </Select>
-    </Stack>
-  </TableCell>
-  <TableCell />
-</TableRow>
-
-{/* 4.8 - Anzahl Tage rückwirkende Korrektur */}
-<TableRow>
-  <TableCell sx={{ width: '100%' }}>
-    <Stack direction={'row'} width="100%" alignItems={'center'} justifyContent={'space-between'} spacing={2}>
-      <Typography noWrap={true}>{t('AnzahlTageRueckwirkenderKorrektur')}</Typography>
-      <TextField
-        size="small"
-        type="number"
-        value={konfAntrag.anzahlTageRueckwirkenderKorrektur ?? 90}
-        name={'anzahlTageRueckwirkenderKorrektur'}
-        onChange={(e) =>
-          setKonfAntrag((prev) => ({
-            ...prev,
-            anzahlTageRueckwirkenderKorrektur: Number(e.target.value),
-          }))
-        }
-        slotProps={{ htmlInput: { min: 0, max: 180 } }}
-        sx={{ width: 100 }}
-      />
-    </Stack>
-  </TableCell>
-  <TableCell />
-</TableRow>
-
-{/* 4.9 - Intranetlink */}
-<TableRow>
-  <TableCell sx={{ width: '100%' }}>
-    <Stack direction={'row'} width="100%" alignItems={'center'} justifyContent={'space-between'} spacing={2}>
-      <Typography noWrap={true}>{t('Intranetlink')}</Typography>
-      <Stack direction={'row'} alignItems={'center'} spacing={1}>
-        <TextField
-          size="small"
-          value={konfAntrag.url ?? ''}
-          name={'url'}
-          onChange={(e) => setKonfAntrag((prev) => ({ ...prev, url: e.target.value }))}
-          sx={{ width: 240 }}
+        <AntragseigenschaftCheckbox
+          key={'isPersonalFreigabePflicht'}
+          beschreibung="Zentrale Genehmigung erforderlich"
+          status={konfAntrag.isPersonalFreigabePflicht}
+          name={'isPersonalFreigabePflicht'}
+          onChange={updateEigenschaft}
+          disabled={false}
         />
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => window.open(konfAntrag.url, '_blank')}
-          disabled={!konfAntrag.url}
-        >
-          {t('LinkTesten')}
-        </Button>
-      </Stack>
-    </Stack>
-  </TableCell>
-  <TableCell />
-</TableRow>
-============================
-<TableRow>
-  <TableCell sx={{ width: '100%' }}>
-    <Stack direction={'row'} width="100%" alignItems={'center'} justifyContent={'space-between'} spacing={2}>
-      <Typography noWrap={true}>{t('AblageortEpa')}</Typography>
-      <FormControl size="small" sx={{ minWidth: 320 }}>
-        <InputLabel>{t('Dokumententyp')}</InputLabel>
-        <Select
-          value={konfAntrag.epaArt ?? ''}
-          label={t('Dokumententyp')}
+
+        <AntragseigenschaftCheckbox
+          key={'isKommentarPflicht'}
+          beschreibung={t('KommentarAlsPflichtfeld')}
+          status={konfAntrag.isFuehrungskraftFreigabePflicht ? konfAntrag.isKommentarPflicht : false}
+          name={'isKommentarPflicht'}
+          onChange={updateEigenschaft}
+          disabled={konfAntrag.isUrl}
+        />
+
+        <AntragseigenschaftCheckbox
+          key={'isUhrzeit'}
+          beschreibung={t('UhrzeitZulassen')}
+          status={konfAntrag.isUhrzeit}
+          name={'isUhrzeit'}
+          onChange={updateEigenschaft}
+          disabled={false}
+        />
+
+        <AntragseigenschaftCheckbox
+          key={'isGanztaegig'}
+          beschreibung={t('ganztaegigZulassen')}
+          status={konfAntrag.isGanztaegig}
+          name={'isGanztaegig'}
+          onChange={updateEigenschaft}
+          disabled={false}
+        />
+
+        <AntragseigenschaftCheckbox
+          key={'isDocumentUpload'}
+          beschreibung={t('DokumentenUploadMoeglich')}
+          status={konfAntrag.isDocumentUpload}
+          name={'isDocumentUpload'}
+          onChange={updateEigenschaft}
+          disabled={false}
+        />
+        {konfAntrag.isDocumentUpload && (
+          <TableRow>
+            <TableCell padding="checkbox">
+              <Stack direction={'row'} alignItems={'center'} spacing={2} sx={{ pl: 6 }}>
+                <Checkbox
+                  checked={konfAntrag.isDocumentUploadPflicht}
+                  onChange={updateEigenschaft}
+                  name={'isDocumentUploadPflicht'}
+                  disabled={false}
+                />
+                <Typography noWrap={true}>Upload als Pflicht</Typography>
+              </Stack>
+            </TableCell>
+            <TableCell width={ThemeConstants.WIDTH_100_PERCENT} />
+          </TableRow>
+        )}
+        <AntragseigenschaftSelect
+          beschreibung={'Ablageort Epa'}
+          label={'Dokumenententyp'}
+          value={konfAntrag.epaArt}
           name={'epaArt'}
-          displayEmpty
-          renderValue={(value) => value ? value : <Typography color="text.secondary">{t('BitteAuswaehlen')}</Typography>}
-        >
-          <MenuItem value="DOK_A">DOK_A – Arbeitsvertrag</MenuItem>
-          <MenuItem value="DOK_B">DOK_B – Bescheinigung</MenuItem>
-          <MenuItem value="DOK_C">DOK_C – Zeugnis</MenuItem>
-          <MenuItem value="DOK_D">DOK_D – Sonstiges</MenuItem>
-        </Select>
-      </FormControl>
-    </Stack>
-  </TableCell>
-  <TableCell />
-</TableRow>
+          onChange={(event: SelectChangeEvent) =>
+            setKonfAntrag((prev) => ({
+              ...prev,
+              epaArt: event.target.value,
+            }))
+          }
+          dokumententype={['1', '2']}
+        ></AntragseigenschaftSelect>
+
+        <AntragseigenschaftTextfield
+          beschreibung={'Anzahl Tage rückwirkender Korrektur'}
+          label={'Anzahl Tage rückwirkender Korrektur'}
+          name={'anzahlTageRueckwirkenderKorrektur'}
+          value={konfAntrag.anzahlTageRueckwirkenderKorrektur}
+          type={'number'}
+          helperText={'max. 180 Tage'}
+          onChange={handleAnzahlTageChange}
+          slotProps={{ htmlInput: { min: 0, max: 180 } }}
+        ></AntragseigenschaftTextfield>
+
+        <AntragseigenschaftTextfield
+          beschreibung={'Intranetlink'}
+          label={'Interanetlink'}
+          name={'url'}
+          type={'text'}
+          value={konfAntrag.url}
+          placeholder={'Geben Sie die Url an'}
+          helperText={'Kein gültiges Format'}
+          onChange={(e) => setKonfAntrag((prev) => ({ ...prev, url: e.target.value }))}
+          slotProps={{
+            input: {
+              endAdornment: (
+                <InputAdornment position={'end'}>
+                  <Button
+                    onClick={() => {
+                      if (!isValidUrl(konfAntrag.url)) {
+                      }
+                    }}
+                  >
+                    Link Testen
+                  </Button>
+                </InputAdornment>
+              ),
+            },
+          }}
+        ></AntragseigenschaftTextfield>
+
+        <TableRow>
+          <TableCell>
+            <Button variant="contained" size="large" onClick={handleClickSpeichern}>
+              {t('Speichern')}
+            </Button>
+          </TableCell>
+          <TableCell width={ThemeConstants.WIDTH_100_PERCENT} />
+        </TableRow>
+      </TableBody>
+    </TableContainer>
+  );
+};
