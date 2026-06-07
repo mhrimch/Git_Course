@@ -1,641 +1,310 @@
-import { useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
-import { IcClockS, IcNextS } from '@finanzinformatik/mcd-module-icons';
-import { Chip, IconButton, Stack, Typography } from '@mui/material';
-import dayjs, { Dayjs } from 'dayjs';
-import { t } from 'i18next';
-import { KalendertagRead } from '../../apl/pzw/kalenderUiModule/KalendertagRead';
-import { KalenderConstants } from '../../constants/KalenderConstants';
-import { useReadKalender } from '../../tanstack/kalender/useReadKalender';
-import { navigateToAntragAbwesenheitAnzeigen, navigateToZeitkorrekturOhneMeldung } from '../../utils/bookmarkUtil';
-import {
-  convertDecimalToHHmm,
-  dayjsToIdTimestamp,
-  ermittleDauerAusDayjsSpanne,
-  formatiereDayjsSpanne,
-} from '../../utils/DateUtils';
-import { ZeitKontoStatusConstants } from './ZeitereignisseConstants';
-import { FITabelle, FITabelleProps } from '@finanzinformatik/cpl-module-reactui';
-import { AnwesendIcon, IconConstants } from './EreignisIcons';
-import { ValueGetterParams } from '@finanzinformatik/cpl-module-reactui/build/esm/components/FITabelle';
-import { Grid } from '@mui/system';
-import { ThemeConstants } from '../../constants/ThemeConstants';
-import { GetRowIdParams } from 'ag-grid-community';
-import { ZeitereignisseTabelleProps } from '../../views/ZeitereignisseView';
-import { AntragIcon } from '../antraege/abwesenheit/AntragAbwesenheitItem';
-import { AnOderAbwesenheitsarten } from '../../constants/PzwConstants';
-
-type StatusChipTyp = 'dauer' | 'saldo' | 'ganztaegig';
-
-type ZeitkontoRow = {
-  datum: Dayjs;
-  typ: string;
-  zeitraum?: string;
-  anfangTs?: string;
-  endeTs?: string;
-  iconId?: number;
-  status: ZeitkontoStatusProps['label'];
-  statusChipTyp: StatusChipTyp;
+const AntragseigenschaftTextfield = ({ ... }) => {
+  return (
+    <TableRow>
+      <TableCell sx={{ width: '100%' }}>
+        <Stack direction={'row'} width="100%" alignItems={'center'} justifyContent={'space-between'}>
+          <Typography noWrap={true}>{beschreibung}</Typography>
+          <TextField
+            size="small"
+            sx={{ minWidth: '50%' }}
+            label={label}
+            value={value}
+            name={name}
+            type={type}
+            placeholder={placeholder}
+            helperText={helperText}
+            onChange={onChange}
+            slotProps={slotProps}
+          />
+        </Stack>
+      </TableCell>
+      <TableCell />
+    </TableRow>
+  );
 };
-function mapKalenderReadToZeitkontoRow(kalendertage: KalendertagRead[]) {
-  const rows: ZeitkontoRow[] = [];
-  for (const tag of kalendertage) {
-    const { datum, buchungspaare, tagesSaldo } = tag;
-    const dayjsDatum = dayjs(datum);
-    for (const abwesenheit of tag.antraege) {
-      if (abwesenheit.beginn && abwesenheit.ende && abwesenheit.art !== AnOderAbwesenheitsarten.anwesend) {
-        const start = dayjs(abwesenheit.beginn);
-        const ende = dayjs(abwesenheit.ende);
-        const istGanztaegig = start.hour() === 0 && start.minute() === 0 && ende.hour() === 23 && ende.minute() === 59;
-        const zeitraum = formatiereDayjsSpanne(start, ende, !istGanztaegig);
-        const status: ZeitkontoStatusProps['label'] = istGanztaegig
-          ? 'Ganztägig'
-          : ermittleDauerAusDayjsSpanne(start, ende);
+================================================================
+<AntragseigenschaftTextfield
+  beschreibung={'Anzahl Tage rückwirkender Korrektur'}
+  label={'Anzahl Tage rückwirkender Korrektur'}
+  name={'anzahlTageRueckwirkenderKorrektur'}
+  value={konfAntrag.anzahlTageRueckwirkenderKorrektur}
+  type={'number'}
+  onChange={(e) => {
+    const raw = e.target.value;
 
-        rows.push({
-          datum: dayjsDatum,
-          zeitraum,
-          anfangTs: dayjsToIdTimestamp(start),
-          endeTs: dayjsToIdTimestamp(ende),
-          iconId: abwesenheit.iconNr,
-          status,
-          statusChipTyp: istGanztaegig ? 'ganztaegig' : 'dauer',
-          typ: abwesenheit.art,
-        });
-      }
+    // Leeres Feld erlauben (damit der User alles löschen kann)
+    if (raw === '') {
+      setKonfAntrag((prev) => ({ ...prev, anzahlTageRueckwirkenderKorrektur: '' }));
+      return;
     }
 
-    if (tag.buchungspaare.length > 0) {
-      const convertedSaldo = convertDecimalToHHmm(tagesSaldo.toString());
-      const status: ZeitkontoStatusProps['label'] =
-        tagesSaldo < 0 ? (convertedSaldo as `-${string}`) : `+${convertedSaldo}`;
-      rows.push({
-        datum: dayjsDatum,
-        zeitraum: `${buchungspaare[0].beginn} - ${buchungspaare[buchungspaare.length - 1].ende}`,
-        typ: AnOderAbwesenheitsarten.anwesend,
-        status: status,
-        statusChipTyp: 'saldo',
-      });
+    const parsed = parseInt(raw, 10);
+
+    // Nur ganzzahlige Werte zwischen 0 und 180 akzeptieren
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 180) return;
+
+    setKonfAntrag((prev) => ({ ...prev, anzahlTageRueckwirkenderKorrektur: parsed }));
+  }}
+  slotProps={{ htmlInput: { min: 0, max: 180, step: 1 } }}
+  helperText={'Ganztägige Werte zwischen 0 und 180 möglich'}
+/>
+===========================================================================
+const [konfAntrag, setKonfAntrag] = useState<KonfAntragRead>({
+  ...antrag,
+  anzahlTageRueckwirkenderKorrektur: antrag.anzahlTageRueckwirkenderKorrektur ?? 90,
+});
+=======================================================================
+const [anzahlTageError, setAnzahlTageError] = useState<string | null>(null);
+=======================================================================
+<AntragseigenschaftTextfield
+  beschreibung={'Anzahl Tage rückwirkender Korrektur'}
+  label={'Anzahl Tage rückwirkender Korrektur'}
+  name={'anzahlTageRueckwirkenderKorrektur'}
+  value={konfAntrag.anzahlTageRueckwirkenderKorrektur}
+  type={'number'}
+  error={!!anzahlTageError}
+  helperText={anzahlTageError ?? 'max. 180 Tage'}
+  onChange={(e) => {
+    const raw = e.target.value;
+
+    if (raw === '') {
+      setAnzahlTageError(null);
+      setKonfAntrag((prev) => ({ ...prev, anzahlTageRueckwirkenderKorrektur: '' }));
+      return;
     }
-  }
-  return rows;
-}
 
-export default function ZeitkontoTabelle({ hidden, anfangDatum, endeDatum }: ZeitereignisseTabelleProps) {
-  const data = useReadKalender(anfangDatum, endeDatum).data?.kalendertage;
-  const rows = data ? mapKalenderReadToZeitkontoRow(data) : [];
+    const parsed = parseInt(raw, 10);
 
-  return (
-    <Grid
-      container
-      spacing={ThemeConstants.GRID_CONTAINER_SPACING}
-      direction="column"
-      display={hidden ? 'none' : 'flex'}
-    >
-      <ZeitkontoFITabelle rows={rows} />
-    </Grid>
-  );
-}
-type ZeitkontoStatusProps = {
-  label: 'Ganztägig' | `-${string}` | `+${string}` | `aktiv seit${string}`;
-  statusChipTyp: StatusChipTyp;
-};
-
-function ZeitkontoStatus({ label, statusChipTyp }: ZeitkontoStatusProps) {
-  if (statusChipTyp === 'ganztaegig' || statusChipTyp === 'dauer') {
-    return <Chip label={label} variant="outlined" color="secondary" />;
-  }
-
-  if (label.startsWith(ZeitKontoStatusConstants.PLUS)) {
-    return <Chip icon={<IcClockS />} label={label} color="success" />;
-  }
-  return <Chip icon={<IcClockS />} label={label} color="error" />;
-}
-
-function ZeitkontoFITabelle({ rows }: { rows: ZeitkontoRow[] }) {
-  const workflowService = useWorkflowService();
-  const coldefs: FITabelleProps['colDefs'] = [
-    {
-      comparator: (valueA: Dayjs, valueB: Dayjs) => {
-        if (valueA.isBefore(valueB)) {
-          return -1;
-        }
-        if (valueA.isAfter(valueB)) {
-          return 1;
-        }
-        return 0;
-      },
-      sort: 'desc',
-      autoHeight: true,
-      headerName: t('datum'),
-      field: 'datum',
-      cellRenderer: (params: ValueGetterParams<ZeitkontoRow>) =>
-        params.data && (
-          <Typography width="100%">{params.data.datum.format(KalenderConstants.DATUM_FORMAT_STRING)}</Typography>
-        ),
-    },
-    {
-      autoHeight: true,
-      headerName: t('typ'),
-      field: 'typ',
-      cellStyle: () => ({ height: 'auto', justifyContent: 'center' }),
-      cellRenderer: ({ data }: ValueGetterParams<ZeitkontoRow>) =>
-        data && (
-          <Stack gap={2} alignItems="center" direction="row">
-            {data.iconId ? <AntragIcon iconId={data.iconId} size={IconConstants.ICON_36} /> : <AnwesendIcon />}
-            {data.typ}
-          </Stack>
-        ),
-    },
-    {
-      autoHeight: true,
-      headerName: t('zeitenZeitraum'),
-      field: 'zeitraum',
-    },
-    {
-      autoHeight: true,
-      headerName: t('statusZeitSaldo'),
-      field: 'status',
-      wrapText: true,
-      cellRenderer: ({ data }: ValueGetterParams<ZeitkontoRow>) => {
-        if (!data) {
-          return;
-        }
-        const { anfangTs, endeTs, datum } = data;
-        if (data.typ === AnOderAbwesenheitsarten.anwesend) {
-          return (
-            <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
-              <ZeitkontoStatus label={data.status} statusChipTyp={data.statusChipTyp} />
-              <IconButton
-                aria-label="next"
-                onClick={() =>
-                  navigateToZeitkorrekturOhneMeldung(
-                    workflowService,
-                    dayjs(datum).format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
-                  )
-                }
-              >
-                <IcNextS />
-              </IconButton>
-            </Stack>
-          );
-        }
-        if (!anfangTs || !endeTs) {
-          return <ZeitkontoStatus label={data.status} statusChipTyp={data.statusChipTyp} />;
-        }
-        return (
-          <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
-            <ZeitkontoStatus label={data.status} statusChipTyp={data.statusChipTyp} />
-            <IconButton
-              aria-label="next"
-              onClick={() => navigateToAntragAbwesenheitAnzeigen(workflowService, { beginn: anfangTs, ende: endeTs })}
-            >
-              <IcNextS />
-            </IconButton>
-          </Stack>
-        );
-      },
-    },
-  ];
-  return (
-    <FITabelle
-      selektionsVariante="NONE"
-      colDefs={coldefs}
-      rows={rows}
-      sideBar={false}
-      getRowId={(params: GetRowIdParams<ZeitkontoRow>) => `${params.data.datum} ${params.data.zeitraum}`}
-      disableSettingsSection={true}
-      statusBar={undefined}
-      minHeight={ThemeConstants.TABLE_MIN_HEIGHT}
-    ></FITabelle>
-  );
-}
-
-______________________________________________________
-const dayjs = require("dayjs");
-
-const start = dayjs("2026-03-13T10:00:00");
-const end = dayjs("2026-03-13T12:30:00");
-
-// prüfen ob ganztägig
-const isFullDay =
-  start.hour() === 0 &&
-  start.minute() === 0 &&
-  end.hour() === 23 &&
-  end.minute() === 59;
-
-if (!isFullDay) {
-
-  const diffMinutes = end.diff(start, "minute");
-
-  const hours = Math.floor(diffMinutes / 60);
-  const minutes = diffMinutes % 60;
-
-  const duration = `${hours}:${String(minutes).padStart(2, "0")}`;
-
-  console.log("untertägige Dauer:", duration);
-}
-
-
-----------------------------------------------------------------------------
-
-const isUrlaubsantrag = currentAntrag?.antragSchluessel === Antragsschluessel.urlaubsantrag;
-// nur anpassen, wenn anzahlTage existiert und kein Urlaubsantrag
-if (currentAntrag && !isUrlaubsantrag && currentAntrag.anzahlTage != null) {
-  // prüfen, ob Start oder Ende eine Uhrzeit hat → dann NICHT ganztägig
-  const startHatUhrzeit =
-    anfangDayjs.hour() !== 0 || anfangDayjs.minute() !== 0;
-  const endeHatUhrzeit =
-    endeDayjs.hour() !== 0 || endeDayjs.minute() !== 0;
-  const istGanztags = !startHatUhrzeit && !endeHatUhrzeit;
-  if (istGanztags) {
-    currentAntrag.anzahlTage =
-      endeDayjs.diff(anfangDayjs, KalenderConstants.TAG) + 1;
-  }
-}
-=================================
-import { useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
-import { IcClockS, IcNextS } from '@finanzinformatik/mcd-module-icons';
-import { Chip, IconButton, Stack, Typography } from '@mui/material';
-import dayjs, { Dayjs } from 'dayjs';
-import { t } from 'i18next';
-import { KalendertagRead } from '../../apl/pzw/kalenderUiModule/KalendertagRead';
-import { KalenderConstants } from '../../constants/KalenderConstants';
-import { useReadKalender } from '../../tanstack/kalender/useReadKalender';
-import { navigateToAntragAbwesenheitAnzeigen, navigateToZeitkorrekturOhneMeldung } from '../../utils/bookmarkUtil';
-import { convertDecimalToHHmm, convertISOTimestampToDate, dayjsToIdTimestamp } from '../../utils/DateUtils';
-import { ZeitKontoStatusConstants } from './ZeitereignisseConstants';
-import { FITabelle, FITabelleProps } from '@finanzinformatik/cpl-module-reactui';
-import { AnwesendIcon, IconConstants } from './EreignisIcons';
-import { ValueGetterParams } from '@finanzinformatik/cpl-module-reactui/build/esm/components/FITabelle';
-import { Grid } from '@mui/system';
-import { ThemeConstants } from '../../constants/ThemeConstants';
-import { GetRowIdParams } from 'ag-grid-community';
-import { ZeitereignisseTabelleProps } from '../../views/ZeitereignisseView';
-import { AntragIcon } from '../antraege/abwesenheit/AntragAbwesenheitItem';
-import { AnOderAbwesenheitsarten } from '../../constants/PzwConstants';
-
-type ZeitkontoRow = {
-  datum: Dayjs;
-  typ: string;
-  zeitraum?: string;
-  anfangTs?: string;
-  endeTs?: string;
-  iconId?: number;
-  status: ZeitkontoStatusProps['label'];
-};
-
-export type ZeitkontoTabelleProps = {
-  items: ZeitkontoRow[];
-};
-
-function mapKalenderReadToZeitkontoRow(kalendertage: KalendertagRead[]) {
-  const rows: ZeitkontoRow[] = [];
-  for (const tag of kalendertage) {
-    const { datum, buchungspaare, tagesSaldo } = tag;
-    const dayjsDatum = dayjs(datum);
-    for (const abwesenheit of tag.antraege) {
-      if (abwesenheit.beginn && abwesenheit.ende && abwesenheit.art !== AnOderAbwesenheitsarten.anwesend) {
-        rows.push({
-          datum: dayjsDatum,
-          zeitraum: `${convertISOTimestampToDate(abwesenheit.beginn)} - ${convertISOTimestampToDate(abwesenheit.ende)}`,
-          anfangTs: dayjsToIdTimestamp(dayjs(abwesenheit.beginn)),
-          endeTs: dayjsToIdTimestamp(dayjs(abwesenheit.ende)),
-          iconId: abwesenheit.iconNr,
-          status: 'Ganztägig',
-          typ: abwesenheit.art,
-        });
-      }
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 180) {
+      setAnzahlTageError('Ganztägige Werte zwischen 0 und 180 möglich');
+      return;
     }
-    if (tag.buchungspaare.length > 0) {
-      const convertedSaldo = convertDecimalToHHmm(tagesSaldo.toString());
-      let status: ZeitkontoStatusProps['label'] =
-        tagesSaldo < 0 ? (convertedSaldo as `-${string}`) : `+${convertedSaldo}`;
-      if (tagesSaldo === 0) {
-        status = 'Ganztägig';
-      }
-      rows.push({
-        datum: dayjsDatum,
-        zeitraum: `${buchungspaare[0].beginn} - ${buchungspaare[buchungspaare.length - 1].ende}`,
-        typ: AnOderAbwesenheitsarten.anwesend,
-        status: status,
-      });
-    }
-  }
-  return rows;
+
+    setAnzahlTageError(null);
+    setKonfAntrag((prev) => ({ ...prev, anzahlTageRueckwirkenderKorrektur: parsed }));
+  }}
+  slotProps={{ htmlInput: { min: 0, max: 180, step: 1 } }}
+/>
+=======================================================================
+interface TextfieldRowProps {
+  // ... bestehende Props
+  error?: boolean;        // neu
+  helperText?: string;
 }
 
-export default function ZeitkontoTabelle({ hidden, anfangDatum, endeDatum }: ZeitereignisseTabelleProps) {
-  const data = useReadKalender(anfangDatum, endeDatum).data?.kalendertage;
-  const rows = data ? mapKalenderReadToZeitkontoRow(data) : [];
-
+const AntragseigenschaftTextfield = ({
+  // ... bestehende Props
+  error,
+  helperText,
+}: TextfieldRowProps) => {
   return (
-    <Grid
-      container
-      spacing={ThemeConstants.GRID_CONTAINER_SPACING}
-      direction="column"
-      display={hidden ? 'none' : 'flex'}
-    >
-      <ZeitkontoFITabelle rows={rows} />
-    </Grid>
+    <TableRow>
+      ...
+          <TextField
+            ...
+            error={error}          // neu
+            helperText={helperText}
+          />
+      ...
+    </TableRow>
   );
-}
-type ZeitkontoStatusProps = {
-  label: 'Ganztägig' | `+${string}` | `-${string}` | `aktiv seit${string}`;
 };
+========================================================================
+const [urlError, setUrlError] = useState<string | null>(null);
 
-function ZeitkontoStatus({ label }: ZeitkontoStatusProps) {
-  if (label.startsWith(ZeitKontoStatusConstants.MINUS)) {
-    return <Chip icon={<IcClockS />} label={label} color="error" />;
+const isValidUrl = (value: string): boolean => {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
   }
-  if (label.startsWith(ZeitKontoStatusConstants.PLUS)) {
-    return <Chip icon={<IcClockS />} label={label} color="success" />;
-  }
-  if (label.toLocaleLowerCase() === ZeitKontoStatusConstants.GANZTAEGIG) {
-    return <Chip label={label} variant="outlined" color="secondary" />;
-  }
-  return <Chip icon={<IcClockS />} label={label} />;
-}
-
-function ZeitkontoFITabelle({ rows }: { rows: ZeitkontoRow[] }) {
-  const workflowService = useWorkflowService();
-  const coldefs: FITabelleProps['colDefs'] = [
-    {
-      comparator: (valueA: Dayjs, valueB: Dayjs) => {
-        if (valueA.isBefore(valueB)) {
-          return -1;
-        }
-        if (valueA.isAfter(valueB)) {
-          return 1;
-        }
-        return 0;
-      },
-      sort: 'desc',
-      autoHeight: true,
-      headerName: t('datum'),
-      field: 'datum',
-      cellRenderer: (params: ValueGetterParams<ZeitkontoRow>) =>
-        params.data && (
-          <Typography width="100%">{params.data.datum.format(KalenderConstants.DATUM_FORMAT_STRING)}</Typography>
-        ),
+};
+====================================================================
+<AntragseigenschaftTextfield
+  beschreibung={'Intranetlink'}
+  label={'Intranetlink'}
+  name={'url'}
+  type={'text'}
+  value={konfAntrag.url}
+  placeholder={'Geben Sie die URL an'}
+  error={!!urlError}
+  helperText={urlError ?? undefined}
+  onChange={(e) => {
+    // Beim Tippen nur State setzen, noch keine Validierung
+    setUrlError(null);
+    setKonfAntrag((prev) => ({ ...prev, url: e.target.value }));
+  }}
+  slotProps={{
+    input: {
+      endAdornment: (
+        <InputAdornment position={'end'}>
+          <Button
+            onClick={() => {
+              if (!isValidUrl(konfAntrag.url)) {
+                setUrlError('Kein gültiges Format');
+                return;
+              }
+              setUrlError(null);
+              window.open(konfAntrag.url, '_blank', 'noopener,noreferrer');
+            }}
+          >
+            Link Testen
+          </Button>
+        </InputAdornment>
+      ),
     },
-    {
-      autoHeight: true,
-      headerName: t('typ'),
-      field: 'typ',
-      cellStyle: () => ({ height: 'auto', justifyContent: 'center' }),
-      cellRenderer: ({ data }: ValueGetterParams<ZeitkontoRow>) =>
-        data && (
-          <Stack gap={2} alignItems="center" direction="row">
-            {data.iconId ? <AntragIcon iconId={data.iconId} size={IconConstants.ICON_36} /> : <AnwesendIcon />}
-            {data.typ}
-          </Stack>
-        ),
-    },
-    {
-      autoHeight: true,
-      headerName: t('zeitenZeitraum'),
-      field: 'zeitraum',
-    },
-    {
-      autoHeight: true,
-      headerName: t('statusZeitSaldo'),
-      field: 'status',
-      wrapText: true,
-      cellRenderer: ({ data }: ValueGetterParams<ZeitkontoRow>) => {
-        if (!data) {
-          return;
-        }
-        const { anfangTs, endeTs, datum } = data;
-        if (data.typ === AnOderAbwesenheitsarten.anwesend) {
-          return (
-            <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
-              <ZeitkontoStatus label={data.status} />
-              <IconButton
-                aria-label="next"
-                onClick={() =>
-                  navigateToZeitkorrekturOhneMeldung(
-                    workflowService,
-                    dayjs(datum).format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
-                  )
-                }
-              >
-                <IcNextS />
-              </IconButton>
-            </Stack>
-          );
-        }
-        if (!anfangTs || !endeTs) {
-          return <ZeitkontoStatus label={data.status} />;
-        }
-        return (
-          <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
-            <ZeitkontoStatus label={data.status} />
-            <IconButton
-              aria-label="next"
-              onClick={() => navigateToAntragAbwesenheitAnzeigen(workflowService, { beginn: anfangTs, ende: endeTs })}
-            >
-              <IcNextS />
-            </IconButton>
-          </Stack>
-        );
-      },
-    },
-  ];
-  return (
-    <FITabelle
-      selektionsVariante="NONE"
-      colDefs={coldefs}
-      rows={rows}
-      sideBar={false}
-      getRowId={(params: GetRowIdParams<ZeitkontoRow>) => `${params.data.datum} ${params.data.zeitraum}`}
-      disableSettingsSection={true}
-      statusBar={undefined}
-      minHeight={ThemeConstants.TABLE_MIN_HEIGHT}
-    ></FITabelle>
-  );
-}
-=====================================
-if (
-  abwesenheit.beginn &&
-  abwesenheit.ende &&
-  abwesenheit.art !== AnOderAbwesenheitsarten.anwesend
-) {
-  const start = dayjs(abwesenheit.beginn);
-  const end = dayjs(abwesenheit.ende);
-  const startDate = start.format("DD.MM.YY");
-  const endDate = end.format("DD.MM.YY");
-  const isSameDay = start.isSame(end, "day");
-  // Untertägig = gleicher Tag, aber nicht 00:00 bis 23:xx
-  const isUntertaegig =
-    isSameDay &&
-    (start.hour() !== 0 || end.hour() !== 23);
-  // Zeitraum bauen
-  let zeitraum;
-  if (!isSameDay) {
-    // Mehrtägig → immer ganztägig
-    zeitraum = `${startDate} - ${endDate}`;
-  } else if (isUntertaegig) {
-    zeitraum = `${startDate} ${start.format("HH:mm")} - ${end.format("HH:mm")}`;
-  } else {
-    zeitraum = `${startDate}`;
+  }}
+/>
+=======================================================================
+// ❌ vorher – verschachtelt
+const handleClickSpeichern = () => {
+  if (antrag.isUrl && !isAntragInPersonalservicesAktiv) {
+    return;
   }
-  // Status bestimmen
-  let status: ZeitkontoStatusProps['label'];
-  if (isUntertaegig) {
-    // Dauer berechnen (HH:mm)
-    const diffMinutes = end.diff(start, "minute");
-    const hours = Math.floor(diffMinutes / 60)
-      .toString()
-      .padStart(2, "0");
-    const minutes = (diffMinutes % 60).toString().padStart(2, "0");
-    status = `+${hours}:${minutes}`;
-  } else {
-    // Ganztägig
-    status = "Ganztägig";
-  }
-  rows.push({
-    datum: start,
-    zeitraum,
-    anfangTs: dayjsToIdTimestamp(start),
-    endeTs: dayjsToIdTimestamp(end),
-    iconId: abwesenheit.iconNr,
-    status,
-    typ: abwesenheit.art,
+  updateKonfAntrag(konfAntragWrite).then(() => {
+    queryClient.invalidateQueries(...).then(() => {
+      navigateToPskKonfiguration(workflowService);
+    });
   });
-}
-
-==============================
-function ZeitkontoStatus({ label }: ZeitkontoStatusProps) {
-  const isTimeOnly = /^\d{2}:\d{2}$/.test(label); // z.B. "01:19"
-  if (isTimeOnly) {
-    return <Chip label={label} />; // kein Icon, kein +/-
-  }
-  if (label.startsWith(ZeitKontoStatusConstants.MINUS)) {
-    return <Chip icon={<IcClockS />} label={label} color="error" />;
-  }
-  if (label.startsWith(ZeitKontoStatusConstants.PLUS)) {
-    return <Chip icon={<IcClockS />} label={label} color="success" />;
-  }
-  if (label.toLowerCase() === ZeitKontoStatusConstants.GANZTAEGIG) {
-    return <Chip label={label} variant="outlined" color="secondary" />;
-  }
-  return <Chip icon={<IcClockS />} label={label} />;
-}
-
-============================================================
-function ZeitkontoStatus({ label }: ZeitkontoStatusProps) {
-  const startsWithPlus = label.startsWith("+");
-  const startsWithMinus = label.startsWith("-");
-  // Nur bei + oder - das Uhr-Icon anzeigen
-  if (startsWithPlus) {
-    return <Chip icon={<IcClockS />} label={label} color="success" />;
-  }
-  if (startsWithMinus) {
-    return <Chip icon={<IcClockS />} label={label} color="error" />;
-  }
-  // Bei allem anderen KEIN Icon
-  if (label.toLowerCase() === ZeitKontoStatusConstants.GANZTAEGIG) {
-    return <Chip label={label} variant="outlined" color="secondary" />;
-  }
-  // Untertägige Abwesenheit ("1:26") → kein Icon
-  return <Chip label={label} />;
-}
-
-===================================
-type ZeitkontoStatusProps = {
-  label: string;
-  typ: string;
 };
 
-<ZeitkontoStatus label={data.status} typ={data.typ} />
+// ✅ nachher – flach und lesbar
+const handleClickSpeichern = async () => {
+  if (antrag.isUrl && !isAntragInPersonalservicesAktiv) return;
 
-function ZeitkontoStatus({ label, typ }: ZeitkontoStatusProps) {
-  const isAnwesenheit = typ === AnOderAbwesenheitsarten.anwesend;
-  if (label.startsWith("-")) {
-    return <Chip icon={<IcClockS />} label={label} color="error" />;
-  }
-  if (label.startsWith("+")) {
-    return <Chip icon={<IcClockS />} label={label} color="success" />;
-  }
-  if (isAnwesenheit) {
-    return <Chip icon={<IcClockS />} label={label} color="success" />;
-  }
-  if (label.toLowerCase() === ZeitKontoStatusConstants.GANZTAEGIG) {
-    return <Chip label={label} variant="outlined" color="secondary" />;
-  }
-  return <Chip label={label} />;
-}
+  await updateKonfAntrag(konfAntragWrite);
+  await queryClient.invalidateQueries({ queryKey: KonfigKeys.konfigAntraege });
+  navigateToPskKonfiguration(workflowService);
+};
+====================================================================
+// ❌ vorher – direkt im Handler, unübersichtlich
+const handleClickSpeichern = async () => {
+  const konfAntragWrite: KonfAntragWrite = { ...alle Felder... };
+  await updateKonfAntrag(konfAntragWrite);
+};
 
-======================
-function ZeitkontoStatus({ label, typ }: ZeitkontoStatusProps) {
-  const isAnwesenheit = typ === AnOderAbwesenheitsarten.anwesend;
-  // 1. Negativer Wert -> rotes Icon
-  if (label.startsWith("-")) {
-    return <Chip icon={<IcClockS />} label={label} color="error" />;
-  }
-  // 2. Positiver Wert -> grünes Icon
-  if (label.startsWith("+")) {
-    return <Chip icon={<IcClockS />} label={label} color="success" />;
-  }
-  // 3. Ganztägig
-  if (label.toLowerCase() === ZeitKontoStatusConstants.GANZTAEGIG) {
-    if (isAnwesenheit) {
-      // Anwesenheit -> GRÜNES ICON
-      return <Chip icon={<IcClockS />} label={label} color="success" />;
-    }
-    // Abwesenheit -> OUTLINED, wie bisher
-    return <Chip label={label} variant="outlined" color="secondary" />;
-  }
-  // 4. Anwesenheit ohne + oder - -> Icon (z. B. 0:19)
-  if (isAnwesenheit) {
-    return <Chip icon={<IcClockS />} label={label} color="success" />;
-  }
-  // 5. Untertägige Abwesenheit (Dauer wie "1:26") -> kein Icon
-  return <Chip label={label} />;
-}
+// ✅ nachher – eigene Funktion, wiederverwendbar und testbar
+const buildKonfAntragWrite = (): KonfAntragWrite => ({
+  versionsnummer,
+  buchungskreis,
+  gruppenIconId: antragsgruppe.iconId,
+  antragId: konfAntrag.id,
+  hinweis: konfAntrag.hinweis,
+  isAktiv: antragAktiv,
+  isFavorit: konfAntrag.isFavorit,
+  isFuehrungskraftFreigabePflicht: konfAntrag.isFuehrungskraftFreigabePflicht,
+  isPersonalFreigabePflicht: konfAntrag.isPersonalFreigabePflicht,
+  isKommentarPflicht: konfAntrag.isKommentarPflicht,
+  isGanztaegig: konfAntrag.isGanztaegig,
+  isUhrzeit: konfAntrag.isUhrzeit,
+  isSerienelement: konfAntrag.isSerienelement,
+  isDocumentUpload: konfAntrag.isDocumentUpload,
+  isDocumentUploadPflicht: konfAntrag.isDocumentUploadPflicht,
+  epaArt: konfAntrag.epaArt,
+  maxAnzahlTage: konfAntrag.maxAnzahlTage,
+  maxAnzahlTageEinheit: konfAntrag.maxAnzahlTageEinheit,
+  anzahlTageRueckwirkenderKorrektur: konfAntrag.anzahlTageRueckwirkenderKorrektur,
+  url: konfAntrag.url,
+  isUrl: konfAntrag.isUrl,
+  verarbeitungsart: konfAntrag.verarbeitungsart,
+  personalserviceSchluessel: konfAntrag.personalserviceSchluessel,
+  personalserviceBezeichnung: konfAntrag.personalserviceBezeichnung,
+  personalserviceKommentar: konfAntrag.personalserviceKommentar,
+});
 
-=====================================
-function ZeitkontoStatus({ label: initialLabel, typ }: ZeitkontoStatusProps) {
-  const isAnwesenheit = typ === AnOderAbwesenheitsarten.anwesend;
-  let label = initialLabel;
-  // 0. Bei Anwesenheit IMMER + hinzufügen, außer bei Ganztägig oder -Werten
-  if (
-    isAnwesenheit &&
-    !label.startsWith("+") &&
-    !label.startsWith("-") &&
-    label.toLowerCase() !== ZeitKontoStatusConstants.GANZTAEGIG
-  ) {
-    label = `+${label}`;
+const handleClickSpeichern = async () => {
+  if (antrag.isUrl && !isAntragInPersonalservicesAktiv) return;
+  await updateKonfAntrag(buildKonfAntragWrite());
+  await queryClient.invalidateQueries({ queryKey: KonfigKeys.konfigAntraege });
+  navigateToPskKonfiguration(workflowService);
+};
+=============================================================
+// ❌ vorher – zwei separate States
+const [anzahlTageError, setAnzahlTageError] = useState<string | null>(null);
+const [urlError, setUrlError] = useState<string | null>(null);
+
+// ✅ nachher – ein State-Objekt
+const [errors, setErrors] = useState<{ anzahlTage: string | null; url: string | null }>({
+  anzahlTage: null,
+  url: null,
+});
+
+// Verwendung:
+setErrors((prev) => ({ ...prev, anzahlTage: 'Ganztägige Werte zwischen 0 und 180 möglich' }));
+setErrors((prev) => ({ ...prev, url: 'Kein gültiges Format' }));
+
+// Im JSX:
+error={!!errors.anzahlTage}
+helperText={errors.anzahlTage ?? 'max. 180 Tage'}
+
+error={!!errors.url}
+helperText={errors.url ?? undefined}
+====================================================================
+// ❌ vorher – Logik direkt im JSX
+onChange={(e) => {
+  const raw = e.target.value;
+  if (raw === '') { ... }
+  const parsed = parseInt(raw, 10);
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 180) { ... }
+  ...
+}}
+
+// ✅ nachher – eigene Funktion
+const handleAnzahlTageChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const raw = e.target.value;
+
+  if (raw === '') {
+    setErrors((prev) => ({ ...prev, anzahlTage: null }));
+    setKonfAntrag((prev) => ({ ...prev, anzahlTageRueckwirkenderKorrektur: '' }));
+    return;
   }
-  // 1. Negative Werte -> rotes Icon
-  if (label.startsWith("-")) {
-    return <Chip icon={<IcClockS />} label={label} color="error" />;
+
+  const parsed = parseInt(raw, 10);
+
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 180) {
+    setErrors((prev) => ({ ...prev, anzahlTage: 'Ganztägige Werte zwischen 0 und 180 möglich' }));
+    return;
   }
-  // 2. Positive Werte -> grünes Icon
-  if (label.startsWith("+")) {
-    return <Chip icon={<IcClockS />} label={label} color="success" />;
+
+  setErrors((prev) => ({ ...prev, anzahlTage: null }));
+  setKonfAntrag((prev) => ({ ...prev, anzahlTageRueckwirkenderKorrektur: parsed }));
+};
+===============================================================
+// ❌ vorher – im Modul-Scope aber könnte auch in utils
+const isValidUrl = (value: string): boolean => { ... };
+
+// ✅ nachher – in eigene utils-Datei auslagern
+// utils/urlUtils.ts
+export const isValidUrl = (value: string): boolean => {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
   }
-  // 3. Ganztägig
-  if (label.toLowerCase() === ZeitKontoStatusConstants.GANZTAEGIG) {
-    if (isAnwesenheit) {
-      return <Chip icon={<IcClockS />} label={label} color="success" />;
-    }
-    return <Chip label={label} variant="outlined" color="secondary" />;
-  }
-  // 4. Untertägige Abwesenheit -> kein Icon
-  return <Chip label={label} />;
-}
+};
+
+// Import in der Komponente:
+import { isValidUrl } from '../utils/urlUtils';
 =====================================================================
-function saldoToHHMM(value: number): string {
-  if (isNaN(value)) return "NaN";
-  const sign = value < 0 ? "-" : "+";
-  const abs = Math.abs(value);
-  const hours = Math.floor(abs);
-  const minutes = Math.round((abs - hours) * 60);
-  // Falls Rundung 60 ergibt
-  const adjHours = minutes === 60 ? hours + 1 : hours;
-  const adjMinutes = minutes === 60 ? 0 : minutes;
-  const hh = String(adjHours).padStart(2, "0");
-  const mm = String(adjMinutes).padStart(2, "0");
-  return sign + hh + ":" + mm;
-}
+// ❌ vorher – key ist bei direkten Children ohne Liste unnötig
+<AntragseigenschaftCheckbox
+  key={'isFuehrungskraftFreigabePflicht'}
+  ...
+/>
+
+// ✅ nachher – weglassen
+<AntragseigenschaftCheckbox
+  beschreibung="Genehmigung Führungskraft erforderlich"
+  ...
+/>
+================================================================
+
+
+
+
+
+
+
+
