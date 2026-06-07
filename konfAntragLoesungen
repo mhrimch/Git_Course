@@ -1,3 +1,7 @@
+Hier stellst du ein Textfeld bereits, in das der Nutzer eine URL eintragen kann. Im Textfeld zeigst du am Ende einen Linkbutton an. Wenn man auf diesen klickt und die URL ist in einem gültigen Format, dann soll sich die eingegebene URL in einem neuen Browserfenster bzw. Browsertab öffnen. Ist die URL in einem ungültigen Format, dann passiert nichts. Die Prüfung auf Gültigkeit erfolgt im Modus "onTouched". Bei ungültigem Format soll eine Fehlernachricht unterhalb des Textfeldes angezeigt werden: "Ungültiges Format".
+
+=============================
+
 interface CheckboxRowProps {
   beschreibung: string;
   status: boolean;
@@ -128,6 +132,7 @@ export const KonfAntragEigenschaftenPanel = ({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [konfAntrag, setKonfAntrag] = useState<KonfAntragRead>(antrag);
+  const [urlError, setUrlError] = useState(false);
   const { mutateAsync: updateKonfAntrag } = useUpdateKonfAntraege();
   const workflowService = useWorkflowService();
   const isZeitkorrektur = antragsgruppe.id === AntragsgruppenIds.zeitkorrektur;
@@ -147,6 +152,22 @@ export const KonfAntragEigenschaftenPanel = ({
     }
 
     setKonfAntrag((prev) => ({ ...prev, anzahlTageRueckwirkenderKorrektur: parsed }));
+  };
+
+  const handleUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+
+    if (value === '') {
+      setUrlError(false);
+      setKonfAntrag((prev) => ({ ...prev, url: '' }));
+    }
+
+    if (isValidUrl(value)) {
+      setUrlError(false);
+      setKonfAntrag((prev) => ({ ...prev, url: value }));
+    } else {
+      setUrlError(true);
+    }
   };
 
   const isValidUrl = (value: string): boolean => {
@@ -307,15 +328,18 @@ export const KonfAntragEigenschaftenPanel = ({
           type={'text'}
           value={konfAntrag.url}
           placeholder={'Geben Sie die Url an'}
-          helperText={'Kein gültiges Format'}
-          onChange={(e) => setKonfAntrag((prev) => ({ ...prev, url: e.target.value }))}
+          helperText={urlError ? 'Kein gültiges Format' : undefined}
+          onChange={handleUrlChange}
           slotProps={{
             input: {
               endAdornment: (
                 <InputAdornment position={'end'}>
                   <Button
                     onClick={() => {
-                      if (!isValidUrl(konfAntrag.url)) {
+                      if (isValidUrl(konfAntrag.url)) {
+                        console.log('isValidUrl --> gespeichert');
+                      } else {
+                        console.log('isNotValidUrl --> nicht gespeichert');
                       }
                     }}
                   >
