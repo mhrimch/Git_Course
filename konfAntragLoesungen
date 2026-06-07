@@ -363,3 +363,62 @@ export const KonfAntragEigenschaftenPanel = ({
     </TableContainer>
   );
 };
+=========================================
+tsx
+const [urlTouched, setUrlTouched] = useState(false);
+const [urlError, setUrlError] = useState(false);
+const handleUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const value = event.target.value;
+  // Wert setzen, Fehler noch nicht prüfen, da Validierung erst onTouched
+  setKonfAntrag((prev) => ({ ...prev, url: value }));
+};
+const handleUrlBlur = () => {
+  setUrlTouched(true);
+  if (konfAntrag.url.trim() === '') {
+    setUrlError(true);
+    return;
+  }
+  if (isValidUrl(konfAntrag.url)) {
+    setUrlError(false);
+  } else {
+    setUrlError(true);
+  }
+};
+const isValidUrl = (value: string): boolean => {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+=========================================================
+tsx
+<AntragseigenschaftTextfield
+  beschreibung={'Intranetlink'}
+  label={'Intranetlink'}
+  name={'url'}
+  type={'text'}
+  value={konfAntrag.url}
+  placeholder={'Geben Sie die URL an'}
+  helperText={urlTouched && urlError ? 'Ungültiges Format' : undefined}
+  onChange={handleUrlChange}
+  slotProps={{
+    input: {
+      onBlur: handleUrlBlur,
+      endAdornment: (
+        <InputAdornment position="end">
+          <Button
+            onClick={() => {
+              if (isValidUrl(konfAntrag.url)) {
+                window.open(konfAntrag.url, '_blank');
+              }
+            }}
+          >
+            Link öffnen
+          </Button>
+        </InputAdornment>
+      ),
+    },
+  }}
+/>
