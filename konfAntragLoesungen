@@ -1,8 +1,4 @@
-Hier stellst du ein Textfeld bereits, in das der Nutzer eine URL eintragen kann. Im Textfeld zeigst du am Ende einen Linkbutton an. Wenn man auf diesen klickt und die URL ist in einem gültigen Format, dann soll sich die eingegebene URL in einem neuen Browserfenster bzw. Browsertab öffnen. Ist die URL in einem ungültigen Format, dann passiert nichts. Die Prüfung auf Gültigkeit erfolgt im Modus "onTouched". Bei ungültigem Format soll eine Fehlernachricht unterhalb des Textfeldes angezeigt werden: "Ungültiges Format".
-
-=============================
-
-interface CheckboxRowProps {
+nterface CheckboxRowProps {
   beschreibung: string;
   status: boolean;
   name: string;
@@ -30,27 +26,27 @@ interface SelectRowProps {
   value: string;
   name: string;
   onChange: (event: SelectChangeEvent) => void;
-  dokumententype: string[];
+  epaAblageorte?: EpaAblageort[];
 }
 
-const AntragseigenschaftSelect = ({ beschreibung, label, onChange, value, name, dokumententype }: SelectRowProps) => {
+const AntragseigenschaftSelect = ({ beschreibung, label, onChange, value, name, epaAblageorte }: SelectRowProps) => {
   return (
     <TableRow>
-      <TableCell sx={{ width: '100%' }}>
+      <TableCell sx={{ width: ThemeConstants.WIDTH_100_PERCENT }}>
         <Stack direction={'row'} width="100%" alignItems={'center'} justifyContent={'space-between'}>
           <DynamicTypography noWrap={true}>{beschreibung}</DynamicTypography>
-          <FormControl size="small" sx={{ minWidth: '50%' }}>
+          <FormControl size={ThemeConstants.SMALL} sx={{ minWidth: '50%' }}>
             <InputLabel>{label}</InputLabel>
             <Select
               value={value}
               name={name}
               displayEmpty
               onChange={onChange}
-              renderValue={(currentValue) => (currentValue ? value : <em>Bitte Auswählen</em>)}
+              renderValue={(currentValue) => (currentValue ? value : <span>ZZZ! - Keine Archivierung</span>)}
             >
-              {dokumententype.map((dokumententyp) => (
-                <MenuItem key={dokumententyp} value={dokumententyp}>
-                  {dokumententyp}
+              {epaAblageorte?.map((ablageort) => (
+                <MenuItem key={ablageort.schluessel} value={ablageort.schluessel + ' ' + ablageort.beschreibung}>
+                  {ablageort.schluessel + ' - ' + ablageort.beschreibung}
                 </MenuItem>
               ))}
             </Select>
@@ -87,11 +83,16 @@ const AntragseigenschaftTextfield = ({
 }: TextfieldRowProps) => {
   return (
     <TableRow>
-      <TableCell sx={{ width: '100%' }}>
-        <Stack direction={'row'} width="100%" alignItems={'center'} justifyContent={'space-between'}>
+      <TableCell sx={{ width: ThemeConstants.WIDTH_100_PERCENT }}>
+        <Stack
+          direction={'row'}
+          width={ThemeConstants.WIDTH_100_PERCENT}
+          alignItems={'center'}
+          justifyContent={'space-between'}
+        >
           <Typography noWrap={true}>{beschreibung} </Typography>
           <TextField
-            size="small"
+            size={ThemeConstants.SMALL}
             sx={{ minWidth: '50%' }}
             label={label}
             value={value}
@@ -101,6 +102,7 @@ const AntragseigenschaftTextfield = ({
             helperText={helperText}
             onChange={onChange}
             slotProps={slotProps}
+            InputLabelProps={{ shrink: true }}
           />
         </Stack>
       </TableCell>
@@ -116,6 +118,7 @@ interface AntraegeKonfigCheckboxPanelProps {
   antrag: KonfAntragRead;
   antragAktiv: boolean;
   isAntragInPersonalservicesAktiv?: boolean;
+  epaAblageorte?: EpaAblageort[];
 }
 
 export const KonfAntragEigenschaftenPanel = ({
@@ -125,20 +128,51 @@ export const KonfAntragEigenschaftenPanel = ({
   antragsgruppe,
   antragAktiv,
   isAntragInPersonalservicesAktiv,
+  epaAblageorte,
 }: AntraegeKonfigCheckboxPanelProps) => {
-  console.log('5.antrag', antrag);
-  console.log('5.antragsgruppe', antragsgruppe);
-  const dokumentenTyp: string[] = ['"ZZZ!" - keine Archivierung"', 'Z950 Urlaub'];
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [konfAntrag, setKonfAntrag] = useState<KonfAntragRead>(antrag);
+  const [urlTouched, setUrlTouched] = useState(false);
   const [urlError, setUrlError] = useState(false);
+  const [uhrzeitChecked, setUhrzeitChecked] = useState(true);
+  const [ganztaegigiChecked, setGanztaegigChecked] = useState(true);
   const { mutateAsync: updateKonfAntrag } = useUpdateKonfAntraege();
   const workflowService = useWorkflowService();
+  const notificationStoreActions = useNotificationStoreActions();
   const isZeitkorrektur = antragsgruppe.id === AntragsgruppenIds.zeitkorrektur;
   const updateEigenschaft = (event: ChangeEvent<HTMLInputElement>) => {
     setKonfAntrag((prev) => ({ ...prev, [event.target.name]: event.target.checked }));
   };
+
+  const handleGanztaegigChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (!konfAntrag.isUhrzeit && konfAntrag.isGanztaegig) {
+      notificationStoreActions.addInfoNotification(
+        'Aktivieren Sie mindestens eine Aktion "Uhrzeit zulassen" oder "ganztägig zulassen'
+      );
+      return;
+    }
+
+    setKonfAntrag((prev) => ({ ...prev, isGanztaegig: event.target.checked }));
+  };
+
+  const handleUhrzeitChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (konfAntrag.isUhrzeit && !konfAntrag.isGanztaegig) {
+      notificationStoreActions.addInfoNotification(
+        'Aktivieren Sie mindestens eine Aktion "Uhrzeit zulassen" oder "ganztägig zulassen'
+      );
+      return;
+    }
+
+    setUhrzeitChecked(event.target.checked);
+    setKonfAntrag((prev) => ({ ...prev, isUhrzeit: event.target.checked }));
+  };
+
+  const handleAblageOrtSelect = (event: SelectChangeEvent) =>
+    setKonfAntrag((prev) => ({
+      ...prev,
+      epaArt: event.target.value,
+    }));
   const handleAnzahlTageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const raw = event.target.value;
     if (raw === '') {
@@ -156,15 +190,16 @@ export const KonfAntragEigenschaftenPanel = ({
 
   const handleUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
-
-    if (value === '') {
+    setKonfAntrag((prev) => ({ ...prev, url: value }));
+  };
+  const handleUrlBlur = () => {
+    setUrlTouched(true);
+    if (konfAntrag.url.trim() === '') {
       setUrlError(false);
-      setKonfAntrag((prev) => ({ ...prev, url: '' }));
+      return;
     }
-
-    if (isValidUrl(value)) {
+    if (isValidUrl(konfAntrag.url)) {
       setUrlError(false);
-      setKonfAntrag((prev) => ({ ...prev, url: value }));
     } else {
       setUrlError(true);
     }
@@ -172,8 +207,11 @@ export const KonfAntragEigenschaftenPanel = ({
 
   const isValidUrl = (value: string): boolean => {
     try {
-      const url = new URL(value);
-      return url.protocol === 'http:' || url.protocol === 'https:';
+      const normalisierteURL = value.startsWith('http') || value.startsWith('https') ? value : `https://${value}`;
+      const url = new URL(normalisierteURL);
+      const isHttp = url.protocol === 'http:' || url.protocol === 'https:';
+      const hasValidHost = url.hostname.includes('.');
+      return isHttp && hasValidHost;
     } catch {
       return false;
     }
@@ -210,6 +248,7 @@ export const KonfAntragEigenschaftenPanel = ({
       personalserviceBezeichnung: konfAntrag.personalserviceBezeichnung,
       personalserviceKommentar: konfAntrag.personalserviceKommentar,
     };
+    console.log('KonfAntragWrite', konfAntragWrite);
     updateKonfAntrag(konfAntragWrite).then(() => {
       queryClient.invalidateQueries({ queryKey: KonfigKeys.konfigAntraege }).then(() => {
         navigateToPskKonfiguration(workflowService);
@@ -230,7 +269,7 @@ export const KonfAntragEigenschaftenPanel = ({
       <TableBody>
         <AntragseigenschaftCheckbox
           key={'isFuehrungskraftFreigabePflicht'}
-          beschreibung="Genehmigung Führungskraft erforderlich"
+          beschreibung={t('GenehmigungFuehrungskraftErforderlich')}
           status={konfAntrag.isFuehrungskraftFreigabePflicht}
           name={'isFuehrungskraftFreigabePflicht'}
           onChange={updateEigenschaft}
@@ -238,118 +277,117 @@ export const KonfAntragEigenschaftenPanel = ({
         />
         <AntragseigenschaftCheckbox
           key={'isPersonalFreigabePflicht'}
-          beschreibung="Zentrale Genehmigung erforderlich"
+          beschreibung={t('ZentraleGenehmigungErforderlich')}
           status={konfAntrag.isPersonalFreigabePflicht}
           name={'isPersonalFreigabePflicht'}
           onChange={updateEigenschaft}
           disabled={false}
         />
 
-        <AntragseigenschaftCheckbox
-          key={'isKommentarPflicht'}
-          beschreibung={t('KommentarAlsPflichtfeld')}
-          status={konfAntrag.isFuehrungskraftFreigabePflicht ? konfAntrag.isKommentarPflicht : false}
-          name={'isKommentarPflicht'}
-          onChange={updateEigenschaft}
-          disabled={konfAntrag.isUrl}
-        />
-
-        <AntragseigenschaftCheckbox
-          key={'isUhrzeit'}
-          beschreibung={t('UhrzeitZulassen')}
-          status={konfAntrag.isUhrzeit}
-          name={'isUhrzeit'}
-          onChange={updateEigenschaft}
-          disabled={false}
-        />
-
-        <AntragseigenschaftCheckbox
-          key={'isGanztaegig'}
-          beschreibung={t('ganztaegigZulassen')}
-          status={konfAntrag.isGanztaegig}
-          name={'isGanztaegig'}
-          onChange={updateEigenschaft}
-          disabled={false}
-        />
-
-        <AntragseigenschaftCheckbox
-          key={'isDocumentUpload'}
-          beschreibung={t('DokumentenUploadMoeglich')}
-          status={konfAntrag.isDocumentUpload}
-          name={'isDocumentUpload'}
-          onChange={updateEigenschaft}
-          disabled={false}
-        />
-        {konfAntrag.isDocumentUpload && (
-          <TableRow>
-            <TableCell padding="checkbox">
-              <Stack direction={'row'} alignItems={'center'} spacing={2} sx={{ pl: 6 }}>
-                <Checkbox
-                  checked={konfAntrag.isDocumentUploadPflicht}
-                  onChange={updateEigenschaft}
-                  name={'isDocumentUploadPflicht'}
-                  disabled={false}
-                />
-                <Typography noWrap={true}>Upload als Pflicht</Typography>
-              </Stack>
-            </TableCell>
-            <TableCell width={ThemeConstants.WIDTH_100_PERCENT} />
-          </TableRow>
+        {!isZeitkorrektur && (
+          <AntragseigenschaftCheckbox
+            key={'isKommentarPflicht'}
+            beschreibung={t('KommentarAlsPflichtfeld')}
+            status={konfAntrag.isFuehrungskraftFreigabePflicht ? konfAntrag.isKommentarPflicht : false}
+            name={'isKommentarPflicht'}
+            onChange={updateEigenschaft}
+            disabled={konfAntrag.isUrl}
+          />
         )}
+
+        {!isZeitkorrektur && (
+          <AntragseigenschaftCheckbox
+            key={'isUhrzeit'}
+            beschreibung={t('UhrzeitZulassen')}
+            status={konfAntrag.isUhrzeit}
+            name={'isUhrzeit'}
+            onChange={handleUhrzeitChange}
+            disabled={false}
+          />
+        )}
+
+        {!isZeitkorrektur && uhrzeitChecked && (
+          <AntragseigenschaftCheckbox
+            key={'isGanztaegig'}
+            beschreibung={t('ganztaegigZulassen')}
+            status={konfAntrag.isGanztaegig}
+            name={'isGanztaegig'}
+            onChange={handleGanztaegigChange}
+            disabled={false}
+          />
+        )}
+
+        {!isZeitkorrektur && (
+          <AntragseigenschaftCheckbox
+            key={'isDocumentUpload'}
+            beschreibung={t('DokumentenUploadMoeglich')}
+            status={konfAntrag.isDocumentUpload}
+            name={'isDocumentUpload'}
+            onChange={updateEigenschaft}
+            disabled={false}
+          />
+        )}
+        {konfAntrag.isDocumentUpload && (
+          <Box sx={{ pl: 6 }}>
+            <AntragseigenschaftCheckbox
+              key={'isDocumentUploadPflicht'}
+              beschreibung={t('DokumentenUploadPflicht')}
+              status={konfAntrag.isDocumentUploadPflicht}
+              name={'isDocumentUploadPflicht'}
+              onChange={updateEigenschaft}
+              disabled={false}
+            />
+          </Box>
+        )}
+
         <AntragseigenschaftSelect
-          beschreibung={'Ablageort Epa'}
+          beschreibung={t('AblageortEpa')}
           label={'Dokumenententyp'}
           value={konfAntrag.epaArt}
           name={'epaArt'}
-          onChange={(event: SelectChangeEvent) =>
-            setKonfAntrag((prev) => ({
-              ...prev,
-              epaArt: event.target.value,
-            }))
-          }
-          dokumententype={['1', '2']}
+          onChange={handleAblageOrtSelect}
+          epaAblageorte={epaAblageorte}
         ></AntragseigenschaftSelect>
 
         <AntragseigenschaftTextfield
-          beschreibung={'Anzahl Tage rückwirkender Korrektur'}
-          label={'Anzahl Tage rückwirkender Korrektur'}
+          beschreibung={t('AnzahlTageRueckwirkenderKorrektur')}
+          label={t('AnzahlTageRueckwirkenderKorrektur')}
           name={'anzahlTageRueckwirkenderKorrektur'}
           value={konfAntrag.anzahlTageRueckwirkenderKorrektur}
-          type={'number'}
-          helperText={'max. 180 Tage'}
+          type={'text'}
+          helperText={t('Max180Tage')}
           onChange={handleAnzahlTageChange}
           slotProps={{ htmlInput: { min: 0, max: 180 } }}
         ></AntragseigenschaftTextfield>
 
         <AntragseigenschaftTextfield
-          beschreibung={'Intranetlink'}
-          label={'Interanetlink'}
+          beschreibung={t('Intranetlink')}
+          label={t('Intranetlink')}
           name={'url'}
           type={'text'}
           value={konfAntrag.url}
-          placeholder={'Geben Sie die Url an'}
-          helperText={urlError ? 'Kein gültiges Format' : undefined}
+          placeholder={t('UrlEingeben')}
+          helperText={urlTouched && urlError ? t('UngueltigesFormat') : undefined}
           onChange={handleUrlChange}
           slotProps={{
             input: {
+              onBlur: handleUrlBlur,
               endAdornment: (
-                <InputAdornment position={'end'}>
+                <InputAdornment position="end">
                   <Button
                     onClick={() => {
                       if (isValidUrl(konfAntrag.url)) {
-                        console.log('isValidUrl --> gespeichert');
-                      } else {
-                        console.log('isNotValidUrl --> nicht gespeichert');
+                        window.open(konfAntrag.url, '_blank');
                       }
                     }}
                   >
-                    Link Testen
+                    {t('linkOeffnen')}
                   </Button>
                 </InputAdornment>
               ),
             },
           }}
-        ></AntragseigenschaftTextfield>
+        />
 
         <TableRow>
           <TableCell>
@@ -363,62 +401,29 @@ export const KonfAntragEigenschaftenPanel = ({
     </TableContainer>
   );
 };
-=========================================
-tsx
-const [urlTouched, setUrlTouched] = useState(false);
-const [urlError, setUrlError] = useState(false);
-const handleUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
-  const value = event.target.value;
-  // Wert setzen, Fehler noch nicht prüfen, da Validierung erst onTouched
-  setKonfAntrag((prev) => ({ ...prev, url: value }));
-};
-const handleUrlBlur = () => {
-  setUrlTouched(true);
-  if (konfAntrag.url.trim() === '') {
-    setUrlError(true);
-    return;
-  }
-  if (isValidUrl(konfAntrag.url)) {
-    setUrlError(false);
-  } else {
-    setUrlError(true);
-  }
-};
-const isValidUrl = (value: string): boolean => {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
-    return false;
-  }
-};
-=========================================================
-tsx
-<AntragseigenschaftTextfield
-  beschreibung={'Intranetlink'}
-  label={'Intranetlink'}
-  name={'url'}
-  type={'text'}
-  value={konfAntrag.url}
-  placeholder={'Geben Sie die URL an'}
-  helperText={urlTouched && urlError ? 'Ungültiges Format' : undefined}
-  onChange={handleUrlChange}
-  slotProps={{
-    input: {
-      onBlur: handleUrlBlur,
-      endAdornment: (
-        <InputAdornment position="end">
-          <Button
-            onClick={() => {
-              if (isValidUrl(konfAntrag.url)) {
-                window.open(konfAntrag.url, '_blank');
-              }
-            }}
-          >
-            Link öffnen
-          </Button>
-        </InputAdornment>
-      ),
-    },
-  }}
-/>
+=============================
+Uhrzeit zulassen --> Die Voreinstellung ist aktiviert. 
+Aktivierung stundenweiser Beantragung mit Uhrzeit Beginn und Ende
+Bei den Antragsarten "Tagesbuchung hinzufügen", "Gutschrift Verfallzeit beantragen", "Zeitgutschrift/Zeitabzug Gleitzeit", "Zeitgutschrift Freizeit", "Mehrabeit bezahlt" und "Mehrarbeit in Freizeit" entfällt das Feld.
+Wenn der Schalter deaktiviert wird und der Schalter "ganztägig zulassen" ebenfalls deaktiviert ist, wird der Fehlerhinweis ausgegeben: "Aktivieren Sie mindestens eine Aktion "Uhrzeit zulassen" oder "ganztätig zulassen".
+
+Ganztägig zulassen --> Aktivierung zur Anzeige des Schalters "ganztägig" bei der Beantragung einer Abwesenheit.  
+Die Voreinstellung ist aktiviert. 
+Im Antrag wird der Schalter nur eingeblendet, wenn auch die Option „Uhrzeit zulassen“ aktiviert ist.
+Use Case für Verwendung: Ein Seminar findet über drei Tage statt. Eine Erfassung einer Uhrzeit von/bis ist vom Antragsteller nicht gewünscht. Der Schalter blendet für den User die Eingabefelder für Uhrzeiten aus.
+Bei einigen Abwesenheitsarten ist diese Funktion zum Ausblenden der Uhrzeiten nicht gewünscht, wie z.B. bei Arztbesuch und kann von daher vom Institut deaktiviert werden. Ist der Schalter in der Konfiguration nicht ausgewählt, müssen bei der Antragstellung vom User immer Uhrzeiten erfasst werden.
+Bei den Antragsarten "Tagesbuchung hinzufügen", "Gutschrift Verfallzeit beantragen", "Zeitgutschrift/Zeitabzug Gleitzeit", "Zeitgutschrift Freizeit", "Mehrabeit bezahlt" und "Mehrarbeit in Freizeit" entfällt das Feld.
+Wenn der Schalter deaktiviert wird und der Schalter "Uhrzeit zulassen" ebenfalls deaktiviert ist, wird der Fehlerhinweis ausgegeben: "Aktivieren Sie mindestens eine Aktion "Uhrzeit zulassen" oder "ganztägig zulassen".
+
+Ablageordner ePa --> Auswahlliste mit den Dokumententypen der elektronischen Personakte; 2spaltig mit Kürzel und Langbezeichnung des Dokumententyps 
+Anzahl Tage rückwirkende Korrektur --> maximale Anzahl der Tage für die der Mitarbeiter den Antrag rückwirkend stellen darf ausgehend vom Tagesdatum 
+Bei allen Anträgen sind 90 Tage voreingestellt. Es sind Werte zwischen 0 und 180 möglich.
+Wird ein abweichender Wert eingegeben, erscheint der Fehlerhinweis: "Es sind nur ganztägige Werte von 0 bis 180 Tagen zugelassen
+
+Intranetlink --> Option je Antragsart einen individuellen Link auf ein interne Seite des Instituts aufzunehmen. 
+Ist ein Link hinterlegt, wird ein Prüffeld zur Überprüfung des Links angeboten.
+Mit einem Klick auf dieses Prüffeld wird die Seite in einem separaten neuen Fenster des Browsers aufgerufen.
+Ist der Link nicht korrekt, wird im separaten Browser-Fenster ein entsprechender Hinweis angezeigt.
+Die Darstellung im Antrag ist im RQ 11341 "Maximalausprägung eines Antrags" beschrieben.
+
+
