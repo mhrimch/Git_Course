@@ -1,249 +1,462 @@
-import { useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
-import { IcClockS, IcNextS } from '@finanzinformatik/mcd-module-icons';
-import { Chip, IconButton, Stack, Typography } from '@mui/material';
-import dayjs, { Dayjs } from 'dayjs';
-import { t } from 'i18next';
-import { KalendertagRead } from '../../apl/pzw/kalenderUiModule/KalendertagRead';
-import { KalenderConstants } from '../../constants/KalenderConstants';
-import { useReadKalender } from '../../tanstack/kalender/useReadKalender';
-import { navigateToAntragAbwesenheitAnzeigen, navigateToZeitkorrekturOhneMeldung } from '../../utils/bookmarkUtil';
-import { convertDecimalToHHmm, convertISOTimestampToDate, dayjsToIdTimestamp } from '../../utils/DateUtils';
-import { ZeitKontoStatusConstants } from './ZeitereignisseConstants';
-import { FITabelle, FITabelleProps } from '@finanzinformatik/cpl-module-reactui';
-import { AnwesendIcon, IconConstants } from './EreignisIcons';
-import { ValueGetterParams } from '@finanzinformatik/cpl-module-reactui/build/esm/components/FITabelle';
-import { Grid } from '@mui/system';
-import { ThemeConstants } from '../../constants/ThemeConstants';
-import { GetRowIdParams } from 'ag-grid-community';
-import { ZeitereignisseTabelleProps } from '../../views/ZeitereignisseView';
-import { AntragIcon } from '../antraege/abwesenheit/AntragAbwesenheitItem';
-import { AnOderAbwesenheitsarten } from '../../constants/PzwConstants';
 
-type ZeitkontoRow = {
-  datum: Dayjs;
-  typ: string;
-  zeitraum?: string;
-  anfangTs?: string;
-  endeTs?: string;
-  iconId?: number;
-  status: string;
-};
+{beschreibung: "Keine Archivierung"
+schluessel: "!ZZZ"}
 
-export type ZeitkontoTabelleProps = {
-  items: ZeitkontoRow[];
-};
-
-function mapKalenderReadToZeitkontoRow(kalendertage: KalendertagRead[]) {
-  const rows: ZeitkontoRow[] = [];
-  for (const tag of kalendertage) {
-    const { datum, buchungspaare, tagesSaldo } = tag;
-    const dayjsDatum = dayjs(datum);
-    for (const abwesenheit of tag.antraege) {
-      if (abwesenheit.beginn && abwesenheit.ende && abwesenheit.art !== AnOderAbwesenheitsarten.anwesend) {
-        const start = dayjs(abwesenheit.beginn);
-        const ende = dayjs(abwesenheit.ende);
-        const startDate = start.format(KalenderConstants.DATUM_FORMAT_STRING);
-        const endDate = ende.format(KalenderConstants.DATUM_FORMAT_STRING);
-        const isSameDay = start.isSame(ende, 'day');
-        const isUntertaegig = isSameDay && (start.hour() !== 0 || ende.hour() !== 23);
-        let zeitraumAntrag;
-        if (isUntertaegig) {
-          zeitraumAntrag = `${startDate} ${start.format(KalenderConstants.DAY_JS_FORMAT_HH_MM)} - ${ende.format(KalenderConstants.DAY_JS_FORMAT_HH_MM)}`;
-        } else {
-          zeitraumAntrag = `${startDate} - ${endDate}`;
-        }
-        let statusAntrag: ZeitkontoStatusProps['label'];
-        if (isUntertaegig) {
-          const diffMinutes = ende.diff(start, 'minute');
-          const hours = Math.floor(diffMinutes / 60).toString();
-          const minutes = (diffMinutes % 60).toString().padStart(2, '0');
-          statusAntrag = `${hours}:${minutes}`;
-        } else {
-          statusAntrag = 'Ganztägig';
-        }
-        rows.push({
-          datum: dayjsDatum,
-          zeitraum: zeitraumAntrag,
-          anfangTs: dayjsToIdTimestamp(dayjs(abwesenheit.beginn)),
-          endeTs: dayjsToIdTimestamp(dayjs(abwesenheit.ende)),
-          iconId: abwesenheit.iconNr,
-          status: statusAntrag,
-          typ: abwesenheit.art,
-        });
-      }
-    }
-    if (tag.buchungspaare.length > 0) {
-      const convertedSaldo = convertDecimalToHHmm(tagesSaldo.toString());
-      console.log('convertedSaldo', convertedSaldo);
-      const statusBuchungen: ZeitkontoStatusProps['label'] =
-        convertedSaldo > 0 ? `+${convertedSaldo}` : `${convertedSaldo}`;
-      rows.push({
-        datum: dayjsDatum,
-        zeitraum: `${buchungspaare[0].beginn} - ${buchungspaare[buchungspaare.length - 1].ende}`,
-        typ: AnOderAbwesenheitsarten.anwesend,
-        status: statusBuchungen,
-      });
-    }
-  }
-  return rows;
+===================================
+interface SelectRowProps {
+  beschreibung: string;
+  label: string;
+  value: string;
+  name: string;
+  onChange: (event: SelectChangeEvent) => void;
+  dokumententype: Dokumententyp[];
 }
 
-export default function ZeitkontoTabelle({ hidden, anfangDatum, endeDatum }: ZeitereignisseTabelleProps) {
-  const data = useReadKalender(anfangDatum, endeDatum).data?.kalendertage;
-  const rows = data ? mapKalenderReadToZeitkontoRow(data) : [];
-
+const AntragseigenschaftSelect = ({ beschreibung, label, onChange, value, name, dokumententype }: SelectRowProps) => {
   return (
-    <Grid
-      container
-      spacing={ThemeConstants.GRID_CONTAINER_SPACING}
-      direction="column"
-      display={hidden ? 'none' : 'flex'}
-    >
-      <ZeitkontoFITabelle rows={rows} />
-    </Grid>
-  );
-}
-type ZeitkontoStatusProps = {
-  label: 'Ganztägig' | `${string}:${string}` | `+${string}` | `-${string}` | `aktiv seit${string}`;
-};
-
-function ZeitkontoStatus({ label }: ZeitkontoStatusProps) {
-  if (label.startsWith(ZeitKontoStatusConstants.MINUS)) {
-    return <Chip icon={<IcClockS />} label={label} color="error" />;
-  }
-  if (label.startsWith(ZeitKontoStatusConstants.PLUS)) {
-    return <Chip icon={<IcClockS />} label={label} color="success" />;
-  }
-  if (label.toLocaleLowerCase() === ZeitKontoStatusConstants.GANZTAEGIG) {
-    return <Chip label={label} variant="outlined" color="secondary" />;
-  }
-  return <Chip icon={<IcClockS />} label={label} />;
-}
-
-function ZeitkontoFITabelle({ rows }: { rows: ZeitkontoRow[] }) {
-  const workflowService = useWorkflowService();
-  const coldefs: FITabelleProps['colDefs'] = [
-    {
-      comparator: (valueA: Dayjs, valueB: Dayjs) => {
-        if (valueA.isBefore(valueB)) {
-          return -1;
-        }
-        if (valueA.isAfter(valueB)) {
-          return 1;
-        }
-        return 0;
-      },
-      sort: 'desc',
-      autoHeight: true,
-      headerName: t('datum'),
-      field: 'datum',
-      cellRenderer: (params: ValueGetterParams<ZeitkontoRow>) =>
-        params.data && (
-          <Typography width="100%">{params.data.datum.format(KalenderConstants.DATUM_FORMAT_STRING)}</Typography>
-        ),
-    },
-    {
-      autoHeight: true,
-      headerName: t('typ'),
-      field: 'typ',
-      cellStyle: () => ({ height: 'auto', justifyContent: 'center' }),
-      cellRenderer: ({ data }: ValueGetterParams<ZeitkontoRow>) =>
-        data && (
-          <Stack gap={2} alignItems="center" direction="row">
-            {data.iconId ? <AntragIcon iconId={data.iconId} size={IconConstants.ICON_36} /> : <AnwesendIcon />}
-            {data.typ}
-          </Stack>
-        ),
-    },
-    {
-      autoHeight: true,
-      headerName: t('zeitenZeitraum'),
-      field: 'zeitraum',
-    },
-    {
-      autoHeight: true,
-      headerName: t('statusZeitSaldo'),
-      field: 'status',
-      wrapText: true,
-      cellRenderer: ({ data }: ValueGetterParams<ZeitkontoRow>) => {
-        if (!data) {
-          return;
-        }
-        const { anfangTs, endeTs, datum } = data;
-        if (data.typ === AnOderAbwesenheitsarten.anwesend) {
-          return (
-            <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
-              <ZeitkontoStatus label={data.status} />
-              <IconButton
-                aria-label="next"
-                onClick={() =>
-                  navigateToZeitkorrekturOhneMeldung(
-                    workflowService,
-                    dayjs(datum).format(KalenderConstants.DATUM_ISO_FORMAT_STRING)
-                  )
-                }
-              >
-                <IcNextS />
-              </IconButton>
-            </Stack>
-          );
-        }
-        if (!anfangTs || !endeTs) {
-          return <ZeitkontoStatus label={data.status} />;
-        }
-        return (
-          <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
-            <ZeitkontoStatus label={data.status} />
-            <IconButton
-              aria-label="next"
-              onClick={() => navigateToAntragAbwesenheitAnzeigen(workflowService, { beginn: anfangTs, ende: endeTs })}
+    <TableRow>
+      <TableCell sx={{ width: ThemeConstants.WIDTH_100_PERCENT }}>
+        <Stack direction={'row'} width="100%" alignItems={'center'} justifyContent={'space-between'}>
+          <DynamicTypography noWrap={true}>{beschreibung}</DynamicTypography>
+          <FormControl size={ThemeConstants.SMALL} sx={{ minWidth: '50%' }}>
+            <InputLabel>{label}</InputLabel>
+            <Select
+              value={value}
+              name={name}
+              displayEmpty
+              onChange={onChange}
+              renderValue={() => {
+                return value;
+              }}
             >
-              <IcNextS />
-            </IconButton>
-          </Stack>
-        );
-      },
-    },
-  ];
-  return (
-    <FITabelle
-      selektionsVariante="NONE"
-      colDefs={coldefs}
-      rows={rows}
-      sideBar={false}
-      getRowId={(params: GetRowIdParams<ZeitkontoRow>) => `${params.data.datum} ${params.data.zeitraum}`}
-      disableSettingsSection={true}
-      statusBar={undefined}
-      minHeight={ThemeConstants.TABLE_MIN_HEIGHT}
-    ></FITabelle>
+              {dokumententype.map((dokumententyp) => (
+                <MenuItem key={dokumententyp.schluessel} value={dokumententyp.schluessel}>
+                  {dokumententyp.schluessel + ' - ' + dokumententyp.beschreibung}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Stack>
+      </TableCell>
+      <TableCell />
+    </TableRow>
   );
-}
-=====================================================
-export const convertDecimalToHHmm = (inputTime: string) => {
-  const split = inputTime.split('.');
-
-  const hours = Number(split[0]);
-  let industrieminuten = 0;
-  if (split.length > 1) {
-    industrieminuten = parseFloat(split[1].padEnd(2, '0'));
-  }
-  const minutes = `${Math.round(industrieminuten * 0.6)}`;
-  if (minutes.length < 2) {
-    return `${hours}:0${minutes}`;
-  }
-  return `${hours}:${minutes}`;
 };
-==================================================================
-export const convertDecimalToHHmm = (value: number) => {
-  if (value === 0) {
-    return "0:00";
-  }
-  const isNegative = value < 0;
-  const absValue = Math.abs(value);
-  const hours = Math.floor(absValue);
-  const decimal = absValue - hours;
-  const minutes = Math.round(decimal * 60);
-  const mm = minutes.toString().padStart(2, "0");
-  const hh = hours.toString();
-  return `${isNegative ? "-" : ""}${hh}:${mm}`;
+=============================================
+interface CheckboxRowProps {
+  beschreibung: string;
+  status: boolean;
+  name: string;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  disabled: boolean;
+}
+
+const AntragseigenschaftCheckbox = ({ beschreibung, onChange, status, name, disabled }: CheckboxRowProps) => {
+  return (
+    <TableRow>
+      <TableCell padding="checkbox">
+        <Stack direction={'row'} alignItems={'center'} spacing={2}>
+          <Checkbox checked={status} onChange={(e) => onChange(e)} name={name} disabled={disabled} />
+          <Typography noWrap={true}>{beschreibung}</Typography>
+        </Stack>
+      </TableCell>
+      <TableCell width={ThemeConstants.WIDTH_100_PERCENT} />
+    </TableRow>
+  );
+};
+
+interface SelectRowProps {
+  beschreibung: string;
+  label: string;
+  value: string;
+  name: string;
+  onChange: (event: SelectChangeEvent) => void;
+  dokumententype: Dokumententyp[];
+}
+
+const AntragseigenschaftSelect = ({ beschreibung, label, onChange, value, name, dokumententype }: SelectRowProps) => {
+  return (
+    <TableRow>
+      <TableCell sx={{ width: ThemeConstants.WIDTH_100_PERCENT }}>
+        <Stack direction={'row'} width="100%" alignItems={'center'} justifyContent={'space-between'}>
+          <DynamicTypography noWrap={true}>{beschreibung}</DynamicTypography>
+          <FormControl size={ThemeConstants.SMALL} sx={{ minWidth: '50%' }}>
+            <InputLabel>{label}</InputLabel>
+            <Select
+              value={value}
+              name={name}
+              displayEmpty
+              onChange={onChange}
+              renderValue={() => {
+                return value;
+              }}
+            >
+              {dokumententype.map((dokumententyp) => (
+                <MenuItem key={dokumententyp.schluessel} value={dokumententyp.schluessel}>
+                  {dokumententyp.schluessel + ' - ' + dokumententyp.beschreibung}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Stack>
+      </TableCell>
+      <TableCell />
+    </TableRow>
+  );
+};
+
+interface TextfieldRowProps {
+  beschreibung: string;
+  label: string;
+  name: string;
+  value: string | number;
+  type: string;
+  placeholder?: string;
+  error?: boolean;
+  helperText?: string;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  slotProps?: TextFieldProps['slotProps'] | undefined;
+}
+
+const AntragseigenschaftTextfield = ({
+  beschreibung,
+  label,
+  value,
+  name,
+  type,
+  onChange,
+  slotProps,
+  helperText,
+  placeholder,
+}: TextfieldRowProps) => {
+  return (
+    <TableRow>
+      <TableCell sx={{ width: ThemeConstants.WIDTH_100_PERCENT }}>
+        <Stack
+          direction={'row'}
+          width={ThemeConstants.WIDTH_100_PERCENT}
+          alignItems={'center'}
+          justifyContent={'space-between'}
+        >
+          <Typography noWrap={true}>{beschreibung} </Typography>
+          <TextField
+            size={ThemeConstants.SMALL}
+            sx={{ minWidth: '50%' }}
+            label={label}
+            value={value}
+            name={name}
+            type={type}
+            placeholder={placeholder}
+            helperText={helperText}
+            onChange={onChange}
+            slotProps={slotProps}
+            InputLabelProps={{ shrink: true }}
+          />
+        </Stack>
+      </TableCell>
+      <TableCell />
+    </TableRow>
+  );
+};
+
+interface AntraegeKonfigCheckboxPanelProps {
+  versionsnummer: string;
+  buchungskreis: string;
+  antragsgruppe: KonfAntragsgruppeRead;
+  antrag: KonfAntragRead;
+  antragAktiv: boolean;
+  isAntragInPersonalservicesAktiv?: boolean;
+  dokumententype: Dokumententyp[];
+}
+
+export const KonfAntragEigenschaftenPanel = ({
+  versionsnummer,
+  buchungskreis,
+  antrag,
+  antragsgruppe,
+  antragAktiv,
+  isAntragInPersonalservicesAktiv,
+  dokumententype,
+}: AntraegeKonfigCheckboxPanelProps) => {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [konfAntrag, setKonfAntrag] = useState<KonfAntragRead>(antrag);
+  const [urlTouched, setUrlTouched] = useState(false);
+  const [urlError, setUrlError] = useState(false);
+  const [anzahltageError, setAnzahlTageError] = useState(false);
+  const [uhrzeitChecked, setUhrzeitChecked] = useState(true);
+  const { mutateAsync: updateKonfAntrag } = useUpdateKonfAntraege();
+  const workflowService = useWorkflowService();
+  const notificationStoreActions = useNotificationStoreActions();
+  const isZeitkorrektur = antragsgruppe.id === AntragsgruppenIds.zeitkorrektur;
+  const updateEigenschaft = (event: ChangeEvent<HTMLInputElement>) => {
+    setKonfAntrag((prev) => ({ ...prev, [event.target.name]: event.target.checked }));
+  };
+
+  const handleGanztaegigChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (!konfAntrag.isUhrzeit && konfAntrag.isGanztaegig) {
+      notificationStoreActions.addInfoNotification(
+        'Aktivieren Sie mindestens eine Aktion "Uhrzeit zulassen" oder "ganztägig zulassen'
+      );
+      return;
+    }
+
+    setKonfAntrag((prev) => ({ ...prev, isGanztaegig: event.target.checked }));
+  };
+
+  const handleUhrzeitChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (konfAntrag.isUhrzeit && !konfAntrag.isGanztaegig) {
+      notificationStoreActions.addInfoNotification(
+        'Aktivieren Sie mindestens eine Aktion "Uhrzeit zulassen" oder "ganztägig zulassen'
+      );
+      return;
+    }
+
+    setUhrzeitChecked(event.target.checked);
+    setKonfAntrag((prev) => ({ ...prev, isUhrzeit: event.target.checked }));
+  };
+
+  const handleAblageOrtSelect = (event: SelectChangeEvent) => {
+    setKonfAntrag((prev) => ({
+      ...prev,
+      epaArt: event.target.value,
+    }));
+  };
+
+  const handleAnzahlTageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const raw = event.target.value;
+    if (raw === '') {
+      setKonfAntrag((prev) => ({
+        ...prev,
+        anzahlTageRueckwirkenderKorrektur: 0,
+      }));
+      return;
+    }
+
+    const parsed = parseInt(raw, 10);
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 180) {
+      setAnzahlTageError(true);
+      return;
+    }
+    setAnzahlTageError(false);
+    setKonfAntrag((prev) => ({ ...prev, anzahlTageRueckwirkenderKorrektur: parsed }));
+  };
+
+  const handleUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setKonfAntrag((prev) => ({ ...prev, url: value }));
+  };
+  const handleUrlBlur = () => {
+    setUrlTouched(true);
+    if (konfAntrag.url.trim() === '') {
+      setUrlError(false);
+      return;
+    }
+    if (isValidUrl(konfAntrag.url)) {
+      setUrlError(false);
+    } else {
+      setUrlError(true);
+    }
+  };
+
+  const isValidUrl = (value: string): boolean => {
+    try {
+      const normalisierteURL = value.startsWith('http') || value.startsWith('https') ? value : `https://${value}`;
+      const url = new URL(normalisierteURL);
+      const isHttp = url.protocol === 'http:' || url.protocol === 'https:';
+      const hasValidHost = url.hostname.includes('.');
+      return isHttp && hasValidHost;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleClickSpeichern = () => {
+    if (antrag.isUrl && !isAntragInPersonalservicesAktiv) {
+      return;
+    }
+    const konfAntragWrite: KonfAntragWrite = {
+      versionsnummer: versionsnummer,
+      buchungskreis: buchungskreis,
+      gruppenIconId: antragsgruppe.iconId,
+      antragId: konfAntrag.id,
+      hinweis: konfAntrag.hinweis,
+      isAktiv: antragAktiv,
+      isFavorit: konfAntrag.isFavorit,
+      isFuehrungskraftFreigabePflicht: konfAntrag.isFuehrungskraftFreigabePflicht,
+      isPersonalFreigabePflicht: konfAntrag.isPersonalFreigabePflicht,
+      isKommentarPflicht: konfAntrag.isKommentarPflicht,
+      isGanztaegig: konfAntrag.isGanztaegig,
+      isUhrzeit: konfAntrag.isUhrzeit,
+      isSerienelement: konfAntrag.isSerienelement,
+      isDocumentUpload: konfAntrag.isDocumentUpload,
+      isDocumentUploadPflicht: konfAntrag.isDocumentUploadPflicht,
+      epaArt: konfAntrag.epaArt,
+      maxAnzahlTage: konfAntrag.maxAnzahlTage,
+      maxAnzahlTageEinheit: konfAntrag.maxAnzahlTageEinheit,
+      anzahlTageRueckwirkenderKorrektur: konfAntrag.anzahlTageRueckwirkenderKorrektur,
+      url: konfAntrag.url,
+      isUrl: konfAntrag.isUrl,
+      verarbeitungsart: konfAntrag.verarbeitungsart,
+      personalserviceSchluessel: konfAntrag.personalserviceSchluessel,
+      personalserviceBezeichnung: konfAntrag.personalserviceBezeichnung,
+      personalserviceKommentar: konfAntrag.personalserviceKommentar,
+    };
+    updateKonfAntrag(konfAntragWrite).then(() => {
+      queryClient.invalidateQueries({ queryKey: KonfigKeys.konfigAntraege }).then(() => {
+        navigateToPskKonfiguration(workflowService);
+      });
+    });
+  };
+
+  return (
+    <TableContainer>
+      <TableHead>
+        <TableRow>
+          <TableCell>
+            <Typography noWrap={true}>{t('Einstellungen') + ' ' + antrag.bezeichnung}</Typography>
+          </TableCell>
+          <TableCell width={ThemeConstants.WIDTH_100_PERCENT} />
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        <AntragseigenschaftCheckbox
+          key={'isFuehrungskraftFreigabePflicht'}
+          beschreibung={t('GenehmigungFuehrungskraftErforderlich')}
+          status={konfAntrag.isFuehrungskraftFreigabePflicht}
+          name={'isFuehrungskraftFreigabePflicht'}
+          onChange={updateEigenschaft}
+          disabled={false}
+        />
+        <AntragseigenschaftCheckbox
+          key={'isPersonalFreigabePflicht'}
+          beschreibung={t('ZentraleGenehmigungErforderlich')}
+          status={konfAntrag.isPersonalFreigabePflicht}
+          name={'isPersonalFreigabePflicht'}
+          onChange={updateEigenschaft}
+          disabled={false}
+        />
+
+        {!isZeitkorrektur && (
+          <AntragseigenschaftCheckbox
+            key={'isKommentarPflicht'}
+            beschreibung={t('KommentarAlsPflichtfeld')}
+            status={konfAntrag.isFuehrungskraftFreigabePflicht ? konfAntrag.isKommentarPflicht : false}
+            name={'isKommentarPflicht'}
+            onChange={updateEigenschaft}
+            disabled={konfAntrag.isUrl}
+          />
+        )}
+
+        {!isZeitkorrektur && (
+          <AntragseigenschaftCheckbox
+            key={'isUhrzeit'}
+            beschreibung={t('UhrzeitZulassen')}
+            status={konfAntrag.isUhrzeit}
+            name={'isUhrzeit'}
+            onChange={handleUhrzeitChange}
+            disabled={false}
+          />
+        )}
+
+        {!isZeitkorrektur && uhrzeitChecked && (
+          <AntragseigenschaftCheckbox
+            key={'isGanztaegig'}
+            beschreibung={t('ganztaegigZulassen')}
+            status={konfAntrag.isGanztaegig}
+            name={'isGanztaegig'}
+            onChange={handleGanztaegigChange}
+            disabled={false}
+          />
+        )}
+
+        {!isZeitkorrektur && (
+          <AntragseigenschaftCheckbox
+            key={'isDocumentUpload'}
+            beschreibung={t('DokumentenUploadMoeglich')}
+            status={konfAntrag.isDocumentUpload}
+            name={'isDocumentUpload'}
+            onChange={updateEigenschaft}
+            disabled={false}
+          />
+        )}
+        {konfAntrag.isDocumentUpload && (
+          <Box sx={{ pl: 6 }}>
+            <AntragseigenschaftCheckbox
+              key={'isDocumentUploadPflicht'}
+              beschreibung={t('DokumentenUploadPflicht')}
+              status={konfAntrag.isDocumentUploadPflicht}
+              name={'isDocumentUploadPflicht'}
+              onChange={updateEigenschaft}
+              disabled={false}
+            />
+          </Box>
+        )}
+
+        <AntragseigenschaftSelect
+          beschreibung={t('AblageortEpa')}
+          label={'Dokumenententyp'}
+          value={konfAntrag.epaArt}
+          name={'epaArt'}
+          onChange={handleAblageOrtSelect}
+          dokumententype={dokumententype}
+        ></AntragseigenschaftSelect>
+
+        <AntragseigenschaftTextfield
+          beschreibung={t('AnzahlTageRueckwirkenderKorrektur')}
+          label={t('AnzahlTageRueckwirkenderKorrektur')}
+          name={'anzahlTageRueckwirkenderKorrektur'}
+          value={konfAntrag.anzahlTageRueckwirkenderKorrektur}
+          type={'text'}
+          helperText={anzahltageError ? t('ZugelasseneGenztaegigeWerte') : t('Max180Tage')}
+          error={anzahltageError}
+          onChange={handleAnzahlTageChange}
+          slotProps={{
+            input: {
+              error: anzahltageError,
+            },
+            htmlInput: { min: 0, max: 180 },
+          }}
+        ></AntragseigenschaftTextfield>
+
+        <AntragseigenschaftTextfield
+          beschreibung={t('Intranetlink')}
+          label={t('Intranetlink')}
+          name={'url'}
+          type={'text'}
+          value={konfAntrag.url}
+          placeholder={t('UrlEingeben')}
+          helperText={urlTouched && urlError ? t('UngueltigesFormat') : undefined}
+          onChange={handleUrlChange}
+          slotProps={{
+            input: {
+              onBlur: handleUrlBlur,
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Button
+                    onClick={() => {
+                      if (isValidUrl(konfAntrag.url)) {
+                        window.open(konfAntrag.url, '_blank');
+                      }
+                    }}
+                  >
+                    {t('linkOeffnen')}
+                  </Button>
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+
+        <TableRow>
+          <TableCell>
+            <Button variant="contained" size="large" onClick={handleClickSpeichern}>
+              {t('Speichern')}
+            </Button>
+          </TableCell>
+          <TableCell width={ThemeConstants.WIDTH_100_PERCENT} />
+        </TableRow>
+      </TableBody>
+    </TableContainer>
+  );
 };
