@@ -1,0 +1,61 @@
+1 PmgtPzwSchwellenwerteLesAusgabe 1 Ausgabe-Fachobjekt J
+
+2 PmgtPzwSchwellenwerteGltztSaldo	1	Fachobjekt	J	
+
+3	PZW_ANZ_MA_GLZT_SDO_R	1	Short	J
+3	PmgtPzwSchwellenwertGltztSaldoMa	1000	Fachobjekt	J	
+
+4	PCTL_PERS_SCHL	1	J	
+4	PZW_GLZT_SDO_SWLW	1	Short	J	
+
+									 	0  
+										Keine Auffälligkeiten
+
+										11310 & 11315	
+										Negativer Rotbereich (Gleitzeitsaldo)
+
+										11311 & 11316	
+										Negativer Gelbbereich (Gleitzeitsaldo)
+
+										11312 & 11317	
+										Positiver Gelbbereich (Gleitzeitsaldo)
+
+										11313 & 11318	
+										Positiver Rotbereich (Gleitzeitsaldo)
+
+2	PmgtPzwSchwellenwerteRestUrlaub	1	Fachobjekt	J	
+
+3	PZW_ANZ_MA_REST_URLB_R	1	Short	J	
+3	PmgtPzwSchwellenwertRestUrlaubMa	1000	Fachobjekt	J	
+
+4	PCTL_PERS_SCHL	1	J	
+4	PZW_REST_URLB_SWLW	1	Short J	
+
+										11320	Neutraler Bereich (Resturlaub)
+										11321
+
+										Gelbbereich (Resturlaub)
+										11322
+
+										Rotbereich (Resturlaub)
+										
+										
+================================================================================================
+
+    public ServiceResponse<AnzahlMitarbeiterRotbereich> readAnzahlMitarbeiterRotbereich() throws UiServiceException, OspeException {
+        System.out.println("readAnzahlMitarbeiterRotbereich --> called");
+        String fkPersSchluessel = userService.getPersonalnummer();
+        System.out.println("userService.getPersonalnummer() --> " + fkPersSchluessel);
+        List<MitarbeiterRead> listeMitarbeiterFuehrungskraft = this.mitarbeiterService.readMitarbeiterList(fkPersSchluessel);
+        listeMitarbeiterFuehrungskraft.forEach(ma -> System.out.println("mitarbeiterservice.readMitarbeiterList() --> " + ma.personalnummer()));
+        LiesPmgtPzwSchwellenwerteUeberFuehrungskraftEingabe eingabe = new LiesPmgtPzwSchwellenwerteUeberFuehrungskraftEingabe();
+        eingabe.setPctlPersSchl(fkPersSchluessel);
+        eingabe.setPzwKtag(new Date());
+        eingabe.setFrkrPctlPersSchl(fkPersSchluessel);
+        eingabe.setMaPctlPersSchl(listeMitarbeiterFuehrungskraft.get(0).personalnummer());
+        Optional<PmgtPzwSchwellenwerteLesAusgabe> ausgabe = this.schwellenwerteLesRepository.liesPmgtPzwSchwellenwerteUeberFuehrungskraft(eingabe);
+        System.out.println("ausgabe.get() --> " + ausgabe.get().getPmgtPzwSchwellenwerteGltztSaldo().getPmgtPzwSchwellenwertGltztSaldoMa().get(0).getPzwGlztSdoSwlw() + "  " + ausgabe.get().getPmgtPzwSchwellenwerteRestUrlaub().getPmgtPzwSchwellenwertRestUrlaubMa().get(0).getPzwRestUrlbSwlw());
+        return new ServiceResponse<>(HttpStatus.OK.value(), new AnzahlMitarbeiterRotbereich(10L, 20L));
+    }
+	
+==================================================================================================================
