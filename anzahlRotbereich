@@ -111,3 +111,63 @@ public ServiceResponse<AnzahlMitarbeiterRotbereich> readAnzahlMitarbeiterRotbere
     );
 }
 =========================================
+public ServiceResponse<AnzahlMitarbeiterRotbereich> readAnzahlMitarbeiterRotbereich() throws UiServiceException, OspeException {
+
+    // 1. Personalschlüssel der Führungskraft ermitteln
+    String fkPersSchluessel = userService.getPersonalnummer();
+
+    // 2. Mitarbeiterliste der Führungskraft ermitteln
+    List<MitarbeiterRead> listeMitarbeiterFuehrungskraft =
+        this.mitarbeiterService.readMitarbeiterList(fkPersSchluessel);
+
+    // 3. Rotbereich-Codes definieren
+    Set<Short> rotbereichGlzts = Set.of(
+        (short) 11310, (short) 11315,
+        (short) 11313, (short) 11318
+    );
+
+    long anzahlRotbereichSaldo = 0L;
+    long anzahlRotbereichResturlaub = 0L;
+
+    // 4. Für jeden Mitarbeiter einen API-Call machen und auswerten
+    for (MitarbeiterRead ma : listeMitarbeiterFuehrungskraft) {
+
+        LiesPmgtPzwSchwellenwerteUeberFuehrungskraftEingabe eingabe =
+            new LiesPmgtPzwSchwellenwerteUeberFuehrungskraftEingabe();
+        eingabe.setPctlPersSchl(fkPersSchluessel);
+        eingabe.setPzwKtag(new Date());
+        eingabe.setFrkrPctlPersSchl(fkPersSchluessel);
+        eingabe.setMaPctlPersSchl(ma.personalnummer()); // <-- pro MA
+
+        Optional<PmgtPzwSchwellenwerteLesAusgabe> ausgabe =
+            this.schwellenwerteLesRepository.liesPmgtPzwSchwellenwerteUeberFuehrungskraft(eingabe);
+
+        if (ausgabe.isEmpty()) continue;
+
+        PmgtPzwSchwellenwerteLesAusgabe result = ausgabe.get();
+
+        // Gleitzeitssaldo Rotbereich prüfen
+        boolean saldoRot = result
+            .getPmgtPzwSchwellenwerteGltztSaldo()
+            .getPmgtPzwSchwellenwertGltztSaldoMa()
+            .stream()
+            .anyMatch(eintrag -> rotbereichGlzts.contains(eintrag.getPzwGlztSdoSwlw()));
+
+        if (saldoRot) anzahlRotbereichSaldo++;
+
+        // Resturlaub Rotbereich prüfen
+        boolean urlaubRot = result
+            .getPmgtPzwSchwellenwerteRestUrlaub()
+            .getPmgtPzwSchwellenwertRestUrlaubMa()
+            .stream()
+            .anyMatch(eintrag -> (short) 11322 == eintrag.getPzwRestUrlbSwlw());
+
+        if (urlaubRot) anzahlRotbereichResturlaub++;
+    }
+
+    // 5. Ergebnis zurückgeben
+    return new ServiceResponse<>(
+        HttpStatus.OK.value(),
+        new AnzahlMitarbeiterRotbereich(anzahlRotbereichSaldo, anzahlRotbereichResturlaub)
+    );
+}
