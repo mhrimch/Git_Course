@@ -171,3 +171,137 @@ public ServiceResponse<AnzahlMitarbeiterRotbereich> readAnzahlMitarbeiterRotbere
         new AnzahlMitarbeiterRotbereich(anzahlRotbereichSaldo, anzahlRotbereichResturlaub)
     );
 }
+
+===================================================================@XmlAccessorType(XmlAccessType.FIELD)
+@XmlType(
+    name = "LiesPmgtPzwSchwellenwerteUeberFuehrungskraftEingabe",
+    namespace = "http://fo.zeitwirtschaft.dynssee.osplus/",
+    propOrder = {"pctlPersSchl", "pzwKtag", "frkrPctlPersSchl", "maPctlPersSchl"}
+)
+@jakarta.xml.bind.annotation.XmlAccessorType(jakarta.xml.bind.annotation.XmlAccessType.FIELD)
+@jakarta.xml.bind.annotation.XmlType(
+    name = "LiesPmgtPzwSchwellenwerteUeberFuehrungskraftEingabe",
+    namespace = "http://fo.zeitwirtschaft.dynssee.osplus/",
+    propOrder = {"pctlPersSchl", "pzwKtag", "frkrPctlPersSchl", "maPctlPersSchl"}
+)
+public class LiesPmgtPzwSchwellenwerteUeberFuehrungskraftEingabe extends FachobjektOoBase {
+    @XmlElement(
+        name = "PctlPersSchl",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PCTL_PERS_SCHL",
+        dpTypNummer = 1,
+        dpMaxLaenge = 8,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PctlPersSchl",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pctlPersSchl;
+    @XmlElement(
+        name = "PzwKtag",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @XmlSchemaType(
+        name = "date"
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_KTAG",
+        dpTypNummer = 1,
+        dpMaxLaenge = 10,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterDate.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwKtag",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.XmlSchemaType(
+        name = "date"
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterDate.class)
+    protected Date pzwKtag;
+    @XmlElement(
+        name = "FrkrPctlPersSchl",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "FRKR_PCTL_PERS_SCHL",
+        dpTypNummer = 1,
+        dpMaxLaenge = 8,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "FrkrPctlPersSchl",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String frkrPctlPersSchl;
+    @XmlElement(
+        name = "MaPctlPersSchl",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "MA_PCTL_PERS_SCHL",
+        dpTypNummer = 1,
+        dpMaxLaenge = 8
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "MaPctlPersSchl",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String maPctlPersSchl;
+    private static final long serialVersionUID = 20260611120327L;
+
+    public LiesPmgtPzwSchwellenwerteUeberFuehrungskraftEingabe() {
+    }
+
+    public String getPctlPersSchl() {
+        return this.pctlPersSchl;
+    }
+
+    public void setPctlPersSchl(String value) {
+        this.pctlPersSchl = value;
+    }
+
+    public Date getPzwKtag() {
+        return this.pzwKtag;
+    }
+
+    public void setPzwKtag(Date value) {
+        this.pzwKtag = value;
+    }
+
+    public String getFrkrPctlPersSchl() {
+        return this.frkrPctlPersSchl;
+    }
+
+    public void setFrkrPctlPersSchl(String value) {
+        this.frkrPctlPersSchl = value;
+    }
+
+    public String getMaPctlPersSchl() {
+        return this.maPctlPersSchl;
+    }
+
+    public void setMaPctlPersSchl(String value) {
+        this.maPctlPersSchl = value;
+    }
+}
