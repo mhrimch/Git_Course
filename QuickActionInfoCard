@@ -83,3 +83,143 @@ export const QuickActionInfoCardSkeleton = () => {
     </Card>
   );
 };
+
+==================================================================
+import { IcInfoCircleS } from '@finanzinformatik/mcd-module-icons';
+import { useMcdPalette } from '@finanzinformatik/mcd-module-theme-provider';
+import {
+  Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  Icon,
+  Skeleton,
+  Stack,
+  SvgIconProps,
+  Typography,
+  useMediaQuery,
+} from '@mui/material';
+import { useTheme } from '@mui/system';
+import { ThemeConstants } from '@personalsysteme/core';
+
+interface QuickActionInfoCardProps {
+  HeaderIcon: (props: SvgIconProps) => React.ReactElement;
+  title?: string;
+  subtitle?: string;
+  buttonLabel?: string;
+  onClick?: () => void;
+  aktionVerfuegbar: boolean;
+}
+
+export const QuickActionInfoCard = ({
+  HeaderIcon,
+  title,
+  subtitle,
+  buttonLabel,
+  onClick,
+  aktionVerfuegbar,
+}: QuickActionInfoCardProps) => {
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('sm'));
+  const { ColorTokens } = useMcdPalette();
+  return (
+    <Card
+      sx={{
+        border: isDesktop ? 0 : 1,
+        borderColor: 'divider',
+        boxShadow: 'none',
+      }}
+    >
+      <Box display={'flex'} justifyContent={'center'}>
+        <HeaderIcon color={'primary'} sx={{ fontSize: ThemeConstants.ICON_SIZE_LG }} />
+      </Box>
+      <CardContent sx={{ flexGrow: 1 }}>
+        <Stack display={'flex'} direction="column" alignItems="center">
+          <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02}>{title}</Typography>
+          <Stack display={'flex'} direction="row" alignItems="center">
+            <Typography
+              variant={ThemeConstants.TYPOGRAPHY_MULTILINE_02}
+              color={ColorTokens[ThemeConstants.COLOR_TOKEN_READABLE_02]}
+            >
+              {subtitle}
+            </Typography>
+            <Icon sx={{ display: 'flex', alignItems: 'center', ml: 0.5 }}>
+              <IcInfoCircleS fontSize={'small'} />
+            </Icon>
+          </Stack>
+        </Stack>
+      </CardContent>
+      <CardActions sx={{ justifyContent: 'center' }}>
+        {aktionVerfuegbar && (
+          <Button onClick={onClick} variant={'outlined'}>
+            {buttonLabel}
+          </Button>
+        )}
+      </CardActions>
+    </Card>
+  );
+};
+export const QuickActionInfoCardSkeleton = () => {
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('sm'));
+  return (
+    <Card
+      sx={{
+        border: isDesktop ? 0 : 1,
+        borderColor: 'divider',
+        boxShadow: 'none',
+      }}
+    >
+      <Box display={'flex'} justifyContent={'center'}>
+        <Skeleton animation={ThemeConstants.ANIMATION_WAVE} variant={ThemeConstants.VARIANT_CIRCULAR}></Skeleton>
+      </Box>
+      <CardContent>
+        <Stack display={'flex'} direction="column" alignItems="center">
+          <Skeleton animation={ThemeConstants.ANIMATION_WAVE}></Skeleton>
+          <Skeleton animation={ThemeConstants.ANIMATION_WAVE}></Skeleton>
+        </Stack>
+      </CardContent>
+      <CardActions>
+        <Skeleton>
+          <Button />
+        </Skeleton>
+      </CardActions>
+    </Card>
+  );
+};
+
+================================================================================
+return (
+    <Stack display={'flex'} direction={'row'} justifyContent={'space-evenly'} alignItems={'stretch'}>
+      {isSaldoLoading ? (
+        <QuickActionInfoCardSkeleton />
+      ) : (
+        benutzerSaldo?.isRollout && (
+          <QuickActionInfoCard
+            HeaderIcon={IcClockPiggyM}
+            title={titleSaldo}
+            subtitle={subtitleSaldo}
+            buttonLabel={t('GleitzeitabbauBeantragen')}
+            onClick={handleClickAusgleich}
+            aktionVerfuegbar={isAbbauZeitguthabenVerfuegbar}
+          ></QuickActionInfoCard>
+        )
+      )}
+      {isUrlaubLoading ? (
+        <QuickActionInfoCardSkeleton />
+      ) : (
+        benutzerUrlaub?.isRollout && (
+          <QuickActionInfoCard
+            HeaderIcon={IcPlaneM}
+            title={titleUrlaub}
+            subtitle={t('verfuegbareUrlaubstage')}
+            buttonLabel={t('UrlaubEinreichen')}
+            onClick={handleClickUrlaubsantrag}
+            aktionVerfuegbar={isUrlaubsantragVerfuegbar}
+          ></QuickActionInfoCard>
+        )
+      )}
+    </Stack>
+  );
+};
