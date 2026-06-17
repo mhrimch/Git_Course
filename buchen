@@ -1,0 +1,313 @@
+import { useMcdPalette } from '@finanzinformatik/mcd-module-theme-provider';
+import { Button, Chip, Skeleton, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { Stack } from '@mui/system';
+import { ThemeConstants, useNotificationStoreActions } from '@personalsysteme/core';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
+import { I18nextProvider, useTranslation } from 'react-i18next';
+import { ArbeitsortMenu } from './components/ArbeitsortMenu';
+import { useCreateBuchung } from './hooks/useCreateBuchung';
+import { useReadBenutzerStatus } from './hooks/useReadBenutzerStatus';
+import { useReadKonfArbeitsorte } from './hooks/useReadKonfArbeitsorte';
+import i18n, { ZEITWIRTSCHAFT_BUCHEN_NAMESPACE } from './i18n';
+import { TanstackConstants } from './TanstackConstants';
+
+export const Arbeitsorte = {
+  buero: 'Im Büro',
+  mobileArbeit: 'Mobile Arbeit',
+} as const;
+
+export type Arbeitsort = (typeof Arbeitsorte)[keyof typeof Arbeitsorte];
+
+export const BuchungAnlegenConstants: Record<Arbeitsort, number> = {
+  [Arbeitsorte.buero]: 11200,
+  [Arbeitsorte.mobileArbeit]: 11201,
+};
+
+// QueryClient Setup (oder global aus Context nutzen)
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      gcTime: TanstackConstants.STD_GC_TIME,
+      staleTime: TanstackConstants.STD_STALE_TIME,
+      refetchOnWindowFocus: false,
+    },
+    mutations: { retry: false },
+  },
+});
+
+export const ZeitwirtschaftBuchen = () => {
+  const { t } = useTranslation(ZEITWIRTSCHAFT_BUCHEN_NAMESPACE);
+  const { ColorTokens } = useMcdPalette();
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('sm'));
+
+  const CHIP_MIN_WIDTH = 64;
+  const CHIP_HEIGHT = 32;
+  const BUTTON_BUCHEN_MIN_WIDTH = '119px';
+
+  // State
+  const [selectedArbeitsort, setSelectedArbeitsort] = useState<Arbeitsort>(Arbeitsorte.buero);
+
+  // Custom Hooks
+  const { mutate: createBuchung } = useCreateBuchung();
+  const { data: benutzerStatus, isLoading: isStatusLoading } = useReadBenutzerStatus();
+  console.log('benutzerStatus', benutzerStatus);
+  const { data: konfigBenutzer } = useReadKonfArbeitsorte();
+  console.log('konfigBenutzer', konfigBenutzer);
+
+  const notificationStoreActions = useNotificationStoreActions();
+
+  // Konfiguration State
+  const [visibleArbeitsorte, setVisibleArbeitsorte] = useState({
+    isBuero: true,
+    isMobileArbeit: false,
+  });
+
+  useEffect(() => {
+    if (benutzerStatus?.aktiverArbeitsort) {
+      setSelectedArbeitsort(benutzerStatus.aktiverArbeitsort);
+    }
+  }, [benutzerStatus]);
+
+  useEffect(() => {
+    if (konfigBenutzer) {
+      setVisibleArbeitsorte(konfigBenutzer);
+    }
+  }, [konfigBenutzer]);
+
+  /**
+   * Berechnet Label und Farbe für den Chip.
+   */
+  const chipData = useMemo(() => {
+    // 1. Fall: Inaktiv
+    if (!benutzerStatus?.aktiv) {
+      return {
+        label: t('BuchenStatusInaktiv'),
+        color: ColorTokens[ThemeConstants.COLOR_TOKEN_INFORMATION_01], // Grau/Blau
+      };
+    }
+
+    // 2. Fall: Aktiv
+    const labelMap: Record<string, string> = {
+      [Arbeitsorte.buero]: t('AktivImBuero'),
+      [Arbeitsorte.mobileArbeit]: t('AktivMobileArbeit'),
+    };
+
+    // Text ermitteln (mit Fallback)
+    const statusText = benutzerStatus.aktiverArbeitsort
+      ? labelMap[benutzerStatus.aktiverArbeitsort]
+      : t('BuchenStatusAktiv');
+    return {
+      label: `${statusText} ${benutzerStatus.buchungBeginn}`,
+      color: ColorTokens[ThemeConstants.COLOR_TOKEN_SUCCESS_01], // Grün
+    };
+  }, [benutzerStatus, t, ColorTokens]);
+
+  const handleBuchung = () => {
+    // Der Hook kümmert sich um den Toggle-Status (Optimistic Update).
+
+    const buchungEigsNr = BuchungAnlegenConstants[selectedArbeitsort];
+    createBuchung({ buchungEigsNr: buchungEigsNr });
+  };
+  const mobileStylesStickiness = {
+    ...(!isDesktop && {
+      position: 'fixed',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: 5,
+      zIndex: 3,
+      backgroundColor: ColorTokens[ThemeConstants.COLOR_TOKEN_UI_BACKGROUND_01],
+    }),
+  };
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <I18nextProvider i18n={i18n}>
+        <Stack
+          direction="row"
+          display="flex"
+          width={ThemeConstants.WIDTH_100_PERCENT}
+          spacing={ThemeConstants.GRID_CONTAINER_SPACING}
+          alignItems={ThemeConstants.ALIGNMENT_CENTER}
+          justifyContent={isDesktop ? ThemeConstants.CONTENT_ALIGN_FLEX_END : ThemeConstants.ALIGNMENT_CENTER}
+          sx={mobileStylesStickiness}
+        >
+          {isStatusLoading ? (
+            <Skeleton
+              variant={ThemeConstants.VARIANT_ROUNDED}
+              animation={ThemeConstants.ANIMATION_PULSE}
+              width={CHIP_MIN_WIDTH}
+              height={CHIP_HEIGHT}
+            />
+          ) : (
+            <Chip
+              label={
+                <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_06} color={chipData.color}>
+                  {chipData.label}
+                </Typography>
+              }
+              color={benutzerStatus?.aktiv ? ThemeConstants.SUCCESS : ThemeConstants.INFO}
+              sx={{ minWidth: CHIP_MIN_WIDTH, height: CHIP_HEIGHT }}
+            />
+          )}
+
+          <Button
+            variant={ThemeConstants.BUTTON_VARIANT_CONTAINED}
+            size={ThemeConstants.LARGE}
+            onClick={handleBuchung}
+            sx={{ minWidth: BUTTON_BUCHEN_MIN_WIDTH }}
+          >
+            {t('BuchenButtonLabel')}
+          </Button>
+
+          <ArbeitsortMenu
+            isMobileArbeit={visibleArbeitsorte.isMobileArbeit}
+            selectedArbeitsort={selectedArbeitsort}
+            setSelectedArbeitsort={setSelectedArbeitsort}
+          />
+        </Stack>
+      </I18nextProvider>
+    </QueryClientProvider>
+  );
+};
+=================================================
+import { IcCompanyS, IcDownS, IcHouseS } from '@finanzinformatik/mcd-module-icons';
+/*
+ * import SvgIcCompanyS from '@finanzinformatik/mcd-module-icons/build/esm/icons/IcCompanyS';
+ * import SvgIcHouseS from '@finanzinformatik/mcd-module-icons/build/esm/icons/IcHouseS';
+ */
+import { useMcdPalette } from '@finanzinformatik/mcd-module-theme-provider';
+import { Button, ListItemIcon, ListItemText, Menu, MenuItem } from '@mui/material';
+import { ThemeConstants } from '@personalsysteme/core';
+import { Dispatch, MouseEvent, SetStateAction, useState } from 'react';
+import { Arbeitsort, Arbeitsorte } from '../ZeitwirtschaftBuchen';
+
+interface ArbeitsortMenuProps {
+  isMobileArbeit: boolean;
+  selectedArbeitsort: Arbeitsort;
+  setSelectedArbeitsort: Dispatch<SetStateAction<Arbeitsort>>;
+}
+
+export const ArbeitsortMenu = ({ isMobileArbeit, selectedArbeitsort, setSelectedArbeitsort }: ArbeitsortMenuProps) => {
+  const { ColorTokens } = useMcdPalette();
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    console.log('clicked...', event.target);
+
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = (arbeitsort?: Arbeitsort) => {
+    if (arbeitsort) {
+      setSelectedArbeitsort(arbeitsort);
+    }
+    setAnchorEl(null);
+  };
+
+  if (!isMobileArbeit) {
+    return (
+      <Button size={ThemeConstants.LARGE} startIcon={<IcCompanyS />}>
+        {selectedArbeitsort}
+      </Button>
+    );
+  }
+
+  return (
+    <>
+      <Button
+        size={ThemeConstants.LARGE}
+        startIcon={selectedArbeitsort === Arbeitsorte.mobileArbeit ? <IcHouseS /> : <IcCompanyS />}
+        endIcon={<IcDownS />}
+        onClick={handleClick}
+      >
+        {selectedArbeitsort}
+      </Button>
+      <Menu anchorEl={anchorEl} open={open} onClose={() => handleClose()} disableScrollLock={true}>
+        <MenuItem
+          value={Arbeitsorte.buero}
+          key={Arbeitsorte.buero}
+          selected={selectedArbeitsort === Arbeitsorte.buero}
+          onClick={() => handleClose(Arbeitsorte.buero)}
+        >
+          <ListItemIcon>
+            {/*<SvgIcCompanyS sx={{ color: ColorTokens[ThemeConstants.COLOR_TOKEN_READABLE_02] }} />*/}
+          </ListItemIcon>
+          <ListItemText>{Arbeitsorte.buero}</ListItemText>
+        </MenuItem>
+        <MenuItem
+          value={Arbeitsorte.mobileArbeit}
+          key={Arbeitsorte.mobileArbeit}
+          selected={selectedArbeitsort === Arbeitsorte.mobileArbeit}
+          onClick={() => handleClose(Arbeitsorte.mobileArbeit)}
+        >
+          <ListItemIcon>
+            {/*<SvgIcHouseS sx={{ color: ColorTokens[ThemeConstants.COLOR_TOKEN_READABLE_02] }} />*/}
+          </ListItemIcon>
+          <ListItemText>{Arbeitsorte.mobileArbeit}</ListItemText>
+        </MenuItem>
+      </Menu>
+    </>
+  );
+};
+
+===============================
+
+Stephanie Klein bucht "Im Büro" um 8:00 Uhr. 
+Mittags fährt sie nach Hause und vergisst den Einsatz "Im Büro" durch eine Buchung zu beenden. 
+Sie bucht "Mobile Arbeit" um 13:00 Uhr. Diese Buchung wird als "Kommen" mobile Arbeit verarbeitet. 
+Sie erhält eine Fehlermeldung, dass sie den Einsatzort nicht korrekt beendet hat und nachträglich eine Zeitkorrektur vornehmen muss. 
+
+Die Fehlermeldung unterscheidet sich hinsichtlich des bisherigen Einsatzortes.
+
+Bisheriger Einsatzort war "Im Büro":
+
+"Sie haben die Arbeit im Büro nicht beendet. Wollen Sie jetzt eine Zeitkorrektur beantragen?" 
+
+Ja > Aufruf der Maske Zeitkorrektur (siehe RQ 11319); Nein > zurück zur Aktion Buchen 
+
+Bisheriger Einsatzort war "Mobile Arbeit":
+
+"Sie haben die Mobile Arbeit nicht beendet. Wollen Sie jetzt eine Zeitkorrektur beantragen?" 
+
+Ja > Aufruf der Maske Zeitkorrektur; Nein > zurück zur Aktion Buchen 
+  
+Die folgende Tabelle beschreibt den Wechsel des Aktivitätsstatus
+
+Variante 1 -  Arbeitstag ohne Wechsel des Einsatzortes
+
+			
+aktueller Anwesenheitsstatus 	angezeigter Einsatzort	Auswahl Einsatzort	neuer Status bzw. Hinweis 
+Inaktiv	Büro	keine, da "im Büro" vorbelegt	Aktiv im Büro seit hh:mm 
+Aktiv im Büro seit hh:mm	Büro	keine, da "im Büro" vorbelegt	Inaktiv
+
+Variante 2 - Wechsel Einsatzort von Büro auf Mobile Arbeit
+
+	
+aktueller Anwesenheitsstatus 	angezeigter Einsatzort	Auswahl Einsatzort	neuer Status bzw. Hinweis 
+Inaktiv	Büro	keine, da "im Büro" vorbelegt	Aktiv im Büro seit hh:mm 
+Aktiv im Büro seit hh:mm	Büro		Inaktiv
+Inaktiv 	Büro	Mobile Arbeit	Aktiv Mobile Arbeit seit hh:mm
+Aktiv Mobile Arbeit seit hh:mm	Mobile Arbeit	keine, da Mobile Arbeit vorbelegt	Inaktiv
+
+Variante 3 - Wechsel Einsatzort von Büro auf Mobile Arbeit ohne Beendigung des vorherigen Einsatzortes
+
+aktueller Anwesenheitsstatus 	angezeigter Einsatzort	Auswahl Einsatzort	neuer Status bzw. Hinweis 
+Inaktiv	Büro	keine, da "im Büro" vorbelegt	Aktiv im Büro seit hh:mm 
+Aktiv im Büro seit hh:mm	Büro 	Mobile Arbeit	Aktiv in Mobile Arbeit seit mm:hh zusätzlich Fehlermeldung
+Aktiv Mobile Arbeit	Mobile Arbeit	keine, da Mobile Arbeit vorbegelegt	Inaktiv
+
+
+Die Variante 4 - Wechsel Einsatzort von Mobile Arbeit auf Büro ohne Beendigung des vorherigen Einsatzortes
+
+aktueller Anwesenheitsstatus 	angezeigter Einsatzort	Auswahl Einsatzort	neuer Status bzw. Hinweis 
+Inaktiv	Büro 	Mobile Arbeit	Aktiv in Mobile Arbeit seit hh:mm 
+Aktiv Mobile Arbeit seit hh:mm	Mobile Arbeit 	Im Büro 	Aktiv in Mobile Arbeit seit mm:hh zusätzlich Fehlermeldung
+Aktiv im Büro seit hh:mm	Büro		Inaktiv
+ 
+
+
+
