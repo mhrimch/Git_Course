@@ -1,0 +1,1291 @@
+public record KonfAntraegeRead(
+        String versionsnummer,
+        String buchungskreis,
+        List<KonfAntragskategorieRead> antragskategorien,
+        List<SvzSapEintragRead> epaAblageorte) {
+}
+
+public record KonfAntragskategorieRead(String id,
+                                       String bezeichnung,
+                                       String beschreibung,
+                                       Boolean isAktiv,
+                                       Short rang,
+                                       List<KonfAntragsgruppeRead> antragsgruppen) {
+}
+
+
+
+public record KonfAntragsgruppeRead(String id,
+                                    String bezeichnung,
+                                    String beschreibung,
+                                    Short iconId,
+                                    Boolean isAktiv,
+                                    Short rang,
+                                    List<KonfAntragRead> antraege) {
+}
+
+public record KonfAntragRead(String id,
+                             String schluessel,
+                             String bezeichnung,
+                             String beschreibung,
+                             String hinweis,
+                             Boolean isAktiv,
+                             Boolean isFavorit,
+                             Boolean isFuehrungskraftFreigabePflicht,
+                             Boolean isPersonalFreigabePflicht,
+                             Boolean isKommentarPflicht,
+                             Boolean isGanztaegig,
+                             Boolean isUhrzeit,
+                             Boolean isSerienelement,
+                             Boolean isDocumentUpload,
+                             Boolean isDocumentUploadPflicht,
+                             String epaArt,
+                             BigDecimal maxAnzahlTage,
+                             String maxAnzahlTageEinheit,
+                             Short anzahlTageRueckwirkenderKorrektur,
+                             String url,
+                             Boolean isUrl,
+                             String verarbeitungsart,
+                             String personalserviceSchluessel,
+                             String personalserviceBezeichnung,
+                             String personalserviceKommentar,
+                             Short rang
+) {
+}
+===============================================
+public class PmgtPzwKonfLesenAusgabe extends FachobjektOoBase {
+    @XmlElement(
+        name = "PmgtPzwAbwtKonfiguration"
+    )
+    @DynsFachobjektTyp(
+        maximaleKardinalitaet = 1
+    )
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PmgtPzwAbwtKonfiguration"
+    )
+    protected PmgtPzwAbwtKonfiguration pmgtPzwAbwtKonfiguration;
+    private static final long serialVersionUID = 20260615121207L;
+
+    public PmgtPzwKonfLesenAusgabe() {
+    }
+
+    public PmgtPzwAbwtKonfiguration getPmgtPzwAbwtKonfiguration() {
+        return this.pmgtPzwAbwtKonfiguration;
+    }
+
+    public void setPmgtPzwAbwtKonfiguration(PmgtPzwAbwtKonfiguration value) {
+        this.pmgtPzwAbwtKonfiguration = value;
+    }
+}
+
+========================================================================00
+public class PmgtPzwAbwtKonfiguration extends FachobjektOoBase {
+    @XmlElement(
+        name = "PmgtBuchKreis",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PMGT_BUCH_KREIS",
+        dpTypNummer = 1,
+        dpMaxLaenge = 4,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PmgtBuchKreis",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pmgtBuchKreis;
+    @XmlElement(
+        name = "PzwVersNr",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_VERS_NR",
+        dpTypNummer = 1,
+        dpMaxLaenge = 5,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwVersNr",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwVersNr;
+    @XmlElement(
+        name = "PmgtPzwAbwtKategorie",
+        required = true
+    )
+    @DynsFachobjektTyp(
+        typ = PmgtPzwAbwtKategorie.class,
+        isMandatory = true,
+        maximaleKardinalitaet = 100
+    )
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PmgtPzwAbwtKategorie",
+        required = true
+    )
+    protected List<PmgtPzwAbwtKategorie> pmgtPzwAbwtKategorie;
+    private static final long serialVersionUID = 20260615121207L;
+
+    public PmgtPzwAbwtKonfiguration() {
+    }
+
+    public String getPmgtBuchKreis() {
+        return this.pmgtBuchKreis;
+    }
+
+    public void setPmgtBuchKreis(String value) {
+        this.pmgtBuchKreis = value;
+    }
+
+    public String getPzwVersNr() {
+        return this.pzwVersNr;
+    }
+
+    public void setPzwVersNr(String value) {
+        this.pzwVersNr = value;
+    }
+
+    public List<PmgtPzwAbwtKategorie> getPmgtPzwAbwtKategorie() {
+        if (this.pmgtPzwAbwtKategorie == null) {
+            this.pmgtPzwAbwtKategorie = new ArrayList();
+        }
+
+        return this.pmgtPzwAbwtKategorie;
+    }
+}
+
+=================================================================================
+public class PmgtPzwAbwtKategorie extends FachobjektOoBase {
+    @XmlElement(
+        name = "PzwAbwtKtgrId",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_KTGR_ID",
+        dpTypNummer = 1,
+        dpMaxLaenge = 2,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtKtgrId",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtKtgrId;
+    @XmlElement(
+        name = "PzwAbwtKtgrBzng",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_KTGR_BZNG",
+        dpTypNummer = 13,
+        dpMaxLaenge = 200,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtKtgrBzng",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtKtgrBzng;
+    @XmlElement(
+        name = "PzwAbwtKtgrBsbg",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_KTGR_BSBG",
+        dpTypNummer = 13,
+        dpMaxLaenge = 1000,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtKtgrBsbg",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtKtgrBsbg;
+    @XmlElement(
+        name = "PzwAbwtKtgrRang",
+        required = true,
+        type = Short.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_KTGR_RANG",
+        dpTypNummer = 5,
+        dpMaxLaenge = 2,
+        isMussParameter = true
+    )
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtKtgrRang",
+        required = true,
+        type = Short.class,
+        nillable = true
+    )
+    protected Short pzwAbwtKtgrRang;
+    @XmlElement(
+        name = "PzwAbwtKtgrAktvKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_KTGR_AKTV_KZ",
+        dpTypNummer = 14,
+        dpMaxLaenge = 1,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterCharacter.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtKtgrAktvKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterCharacter.class)
+    protected Character pzwAbwtKtgrAktvKz;
+    @XmlElement(
+        name = "PmgtPzwAbwtGruppe",
+        required = true
+    )
+    @DynsFachobjektTyp(
+        typ = PmgtPzwAbwtGruppe.class,
+        isMandatory = true,
+        maximaleKardinalitaet = 100
+    )
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PmgtPzwAbwtGruppe",
+        required = true
+    )
+    protected List<PmgtPzwAbwtGruppe> pmgtPzwAbwtGruppe;
+    private static final long serialVersionUID = 20260615121207L;
+
+    public PmgtPzwAbwtKategorie() {
+    }
+
+    public String getPzwAbwtKtgrId() {
+        return this.pzwAbwtKtgrId;
+    }
+
+    public void setPzwAbwtKtgrId(String value) {
+        this.pzwAbwtKtgrId = value;
+    }
+
+    public String getPzwAbwtKtgrBzng() {
+        return this.pzwAbwtKtgrBzng;
+    }
+
+    public void setPzwAbwtKtgrBzng(String value) {
+        this.pzwAbwtKtgrBzng = value;
+    }
+
+    public String getPzwAbwtKtgrBsbg() {
+        return this.pzwAbwtKtgrBsbg;
+    }
+
+    public void setPzwAbwtKtgrBsbg(String value) {
+        this.pzwAbwtKtgrBsbg = value;
+    }
+
+    public Short getPzwAbwtKtgrRang() {
+        return this.pzwAbwtKtgrRang;
+    }
+
+    public void setPzwAbwtKtgrRang(Short value) {
+        this.pzwAbwtKtgrRang = value;
+    }
+
+    public Character getPzwAbwtKtgrAktvKz() {
+        return this.pzwAbwtKtgrAktvKz;
+    }
+
+    public void setPzwAbwtKtgrAktvKz(Character value) {
+        this.pzwAbwtKtgrAktvKz = value;
+    }
+
+    public List<PmgtPzwAbwtGruppe> getPmgtPzwAbwtGruppe() {
+        if (this.pmgtPzwAbwtGruppe == null) {
+            this.pmgtPzwAbwtGruppe = new ArrayList();
+        }
+
+        return this.pmgtPzwAbwtGruppe;
+    }
+}
+===================================================================================
+public class PmgtPzwAbwtGruppe extends FachobjektOoBase {
+    @XmlElement(
+        name = "PzwAbwtGrpId",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_GRP_ID",
+        dpTypNummer = 1,
+        dpMaxLaenge = 2,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtGrpId",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtGrpId;
+    @XmlElement(
+        name = "PzwAbwtGrpBzng",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_GRP_BZNG",
+        dpTypNummer = 13,
+        dpMaxLaenge = 200,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtGrpBzng",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtGrpBzng;
+    @XmlElement(
+        name = "PzwAbwtGrpBsbg",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_GRP_BSBG",
+        dpTypNummer = 13,
+        dpMaxLaenge = 1000,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtGrpBsbg",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtGrpBsbg;
+    @XmlElement(
+        name = "PzwAbwtGrpHnws",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_GRP_HNWS",
+        dpTypNummer = 13,
+        dpMaxLaenge = 2000,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtGrpHnws",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtGrpHnws;
+    @XmlElement(
+        name = "PzwAbwtGrpIconId",
+        required = true,
+        type = Short.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_GRP_ICON_ID",
+        dpTypNummer = 5,
+        dpMaxLaenge = 2,
+        isMussParameter = true
+    )
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtGrpIconId",
+        required = true,
+        type = Short.class,
+        nillable = true
+    )
+    protected Short pzwAbwtGrpIconId;
+    @XmlElement(
+        name = "PzwAbwtGrpRang",
+        required = true,
+        type = Short.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_GRP_RANG",
+        dpTypNummer = 5,
+        dpMaxLaenge = 2,
+        isMussParameter = true
+    )
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtGrpRang",
+        required = true,
+        type = Short.class,
+        nillable = true
+    )
+    protected Short pzwAbwtGrpRang;
+    @XmlElement(
+        name = "PzwAbwtGrpAktvKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_GRP_AKTV_KZ",
+        dpTypNummer = 14,
+        dpMaxLaenge = 1,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterCharacter.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtGrpAktvKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterCharacter.class)
+    protected Character pzwAbwtGrpAktvKz;
+    @XmlElement(
+        name = "PmgtPzwAbwtSchluessel",
+        required = true
+    )
+    @DynsFachobjektTyp(
+        typ = PmgtPzwAbwtSchluessel.class,
+        isMandatory = true,
+        maximaleKardinalitaet = 100
+    )
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PmgtPzwAbwtSchluessel",
+        required = true
+    )
+    protected List<PmgtPzwAbwtSchluessel> pmgtPzwAbwtSchluessel;
+    private static final long serialVersionUID = 20260615121207L;
+
+    public PmgtPzwAbwtGruppe() {
+    }
+
+    public String getPzwAbwtGrpId() {
+        return this.pzwAbwtGrpId;
+    }
+
+    public void setPzwAbwtGrpId(String value) {
+        this.pzwAbwtGrpId = value;
+    }
+
+    public String getPzwAbwtGrpBzng() {
+        return this.pzwAbwtGrpBzng;
+    }
+
+    public void setPzwAbwtGrpBzng(String value) {
+        this.pzwAbwtGrpBzng = value;
+    }
+
+    public String getPzwAbwtGrpBsbg() {
+        return this.pzwAbwtGrpBsbg;
+    }
+
+    public void setPzwAbwtGrpBsbg(String value) {
+        this.pzwAbwtGrpBsbg = value;
+    }
+
+    public String getPzwAbwtGrpHnws() {
+        return this.pzwAbwtGrpHnws;
+    }
+
+    public void setPzwAbwtGrpHnws(String value) {
+        this.pzwAbwtGrpHnws = value;
+    }
+
+    public Short getPzwAbwtGrpIconId() {
+        return this.pzwAbwtGrpIconId;
+    }
+
+    public void setPzwAbwtGrpIconId(Short value) {
+        this.pzwAbwtGrpIconId = value;
+    }
+
+    public Short getPzwAbwtGrpRang() {
+        return this.pzwAbwtGrpRang;
+    }
+
+    public void setPzwAbwtGrpRang(Short value) {
+        this.pzwAbwtGrpRang = value;
+    }
+
+    public Character getPzwAbwtGrpAktvKz() {
+        return this.pzwAbwtGrpAktvKz;
+    }
+
+    public void setPzwAbwtGrpAktvKz(Character value) {
+        this.pzwAbwtGrpAktvKz = value;
+    }
+
+    public List<PmgtPzwAbwtSchluessel> getPmgtPzwAbwtSchluessel() {
+        if (this.pmgtPzwAbwtSchluessel == null) {
+            this.pmgtPzwAbwtSchluessel = new ArrayList();
+        }
+
+        return this.pmgtPzwAbwtSchluessel;
+    }
+}
+=========================================
+public class PmgtPzwAbwtSchluessel extends FachobjektOoBase {
+    @XmlElement(
+        name = "PzwAbwtSchlId",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_ID",
+        dpTypNummer = 13,
+        dpMaxLaenge = 50,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlId",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtSchlId;
+    @XmlElement(
+        name = "PzwAbwtSchl",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL",
+        dpTypNummer = 1,
+        dpMaxLaenge = 4,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchl",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtSchl;
+    @XmlElement(
+        name = "PzwAbwtSchlBzng",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_BZNG",
+        dpTypNummer = 13,
+        dpMaxLaenge = 200,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlBzng",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtSchlBzng;
+    @XmlElement(
+        name = "PzwAbwtSchlBsbg",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_BSBG",
+        dpTypNummer = 13,
+        dpMaxLaenge = 1000,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlBsbg",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtSchlBsbg;
+    @XmlElement(
+        name = "PzwAbwtSchlHnws",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_HNWS",
+        dpTypNummer = 13,
+        dpMaxLaenge = 255,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlHnws",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtSchlHnws;
+    @XmlElement(
+        name = "PzwAbwtSchlRang",
+        required = true,
+        type = Short.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_RANG",
+        dpTypNummer = 5,
+        dpMaxLaenge = 2,
+        isMussParameter = true
+    )
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlRang",
+        required = true,
+        type = Short.class,
+        nillable = true
+    )
+    protected Short pzwAbwtSchlRang;
+    @XmlElement(
+        name = "PzwAbwtSchlAktvKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_AKTV_KZ",
+        dpTypNummer = 14,
+        dpMaxLaenge = 1,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterCharacter.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlAktvKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterCharacter.class)
+    protected Character pzwAbwtSchlAktvKz;
+    @XmlElement(
+        name = "PzwAbwtSchlAnzTRkw",
+        required = true,
+        type = Short.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_ANZ_T_RKW",
+        dpTypNummer = 5,
+        dpMaxLaenge = 2,
+        isMussParameter = true
+    )
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlAnzTRkw",
+        required = true,
+        type = Short.class,
+        nillable = true
+    )
+    protected Short pzwAbwtSchlAnzTRkw;
+    @XmlElement(
+        name = "PzwAbwtSchlDkupKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_DKUP_KZ",
+        dpTypNummer = 14,
+        dpMaxLaenge = 1,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterCharacter.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlDkupKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterCharacter.class)
+    protected Character pzwAbwtSchlDkupKz;
+    @XmlElement(
+        name = "PzwAbwtSchlDkupPKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_DKUP_P_KZ",
+        dpTypNummer = 14,
+        dpMaxLaenge = 1,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterCharacter.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlDkupPKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterCharacter.class)
+    protected Character pzwAbwtSchlDkupPKz;
+    @XmlElement(
+        name = "PzwAbwtSchlEpaArt",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_EPA_ART",
+        dpTypNummer = 13,
+        dpMaxLaenge = 12,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlEpaArt",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtSchlEpaArt;
+    @XmlElement(
+        name = "PzwAbwtSchlFrgbKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_FRGB_KZ",
+        dpTypNummer = 14,
+        dpMaxLaenge = 1,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterCharacter.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlFrgbKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterCharacter.class)
+    protected Character pzwAbwtSchlFrgbKz;
+    @XmlElement(
+        name = "PzwAbwtSchlFrgb2Kz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_FRGB_2_KZ",
+        dpTypNummer = 14,
+        dpMaxLaenge = 1,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterCharacter.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlFrgb2Kz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterCharacter.class)
+    protected Character pzwAbwtSchlFrgb2Kz;
+    @XmlElement(
+        name = "PzwAbwtSchlFvrtKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_FVRT_KZ",
+        dpTypNummer = 14,
+        dpMaxLaenge = 1,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterCharacter.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlFvrtKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterCharacter.class)
+    protected Character pzwAbwtSchlFvrtKz;
+    @XmlElement(
+        name = "PzwAbwtSchlGtagKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_GTAG_KZ",
+        dpTypNummer = 14,
+        dpMaxLaenge = 1,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterCharacter.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlGtagKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterCharacter.class)
+    protected Character pzwAbwtSchlGtagKz;
+    @XmlElement(
+        name = "PzwAbwtSchlKmtrKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_KMTR_KZ",
+        dpTypNummer = 14,
+        dpMaxLaenge = 1,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterCharacter.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlKmtrKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterCharacter.class)
+    protected Character pzwAbwtSchlKmtrKz;
+    @XmlElement(
+        name = "PzwAbwtSchlMaxAnz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @XmlSchemaType(
+        name = "decimal"
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_MAX_ANZ",
+        dpTypNummer = 1,
+        dpMaxLaenge = 9,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterBigDecimal.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlMaxAnz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.XmlSchemaType(
+        name = "decimal"
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterBigDecimal.class)
+    protected BigDecimal pzwAbwtSchlMaxAnz;
+    @XmlElement(
+        name = "PzwAbwtSchlMxazEnh",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_MXAZ_ENH",
+        dpTypNummer = 13,
+        dpMaxLaenge = 5,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlMxazEnh",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtSchlMxazEnh;
+    @XmlElement(
+        name = "PzwAbwtSchlUrl",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_URL",
+        dpTypNummer = 13,
+        dpMaxLaenge = 255,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlUrl",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtSchlUrl;
+    @XmlElement(
+        name = "PzwAbwtSchlUrlKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_URL_KZ",
+        dpTypNummer = 14,
+        dpMaxLaenge = 1,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterCharacter.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlUrlKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterCharacter.class)
+    protected Character pzwAbwtSchlUrlKz;
+    @XmlElement(
+        name = "PzwAbwtSchlUztKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_UZT_KZ",
+        dpTypNummer = 14,
+        dpMaxLaenge = 1,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterCharacter.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlUztKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterCharacter.class)
+    protected Character pzwAbwtSchlUztKz;
+    @XmlElement(
+        name = "PzwAbwtSchlSeriKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_SERI_KZ",
+        dpTypNummer = 14,
+        dpMaxLaenge = 1,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterCharacter.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlSeriKz",
+        required = true,
+        type = String.class,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterCharacter.class)
+    protected Character pzwAbwtSchlSeriKz;
+    @XmlElement(
+        name = "PzwAbwtSchlVaArt",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_VA_ART",
+        dpTypNummer = 13,
+        dpMaxLaenge = 2,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlVaArt",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtSchlVaArt;
+    @XmlElement(
+        name = "PzwAbwtSchlPsBzng",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_PS_BZNG",
+        dpTypNummer = 13,
+        dpMaxLaenge = 100,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlPsBzng",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtSchlPsBzng;
+    @XmlElement(
+        name = "PzwAbwtSchlPsKmtr",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_PS_KMTR",
+        dpTypNummer = 13,
+        dpMaxLaenge = 50,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlPsKmtr",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtSchlPsKmtr;
+    @XmlElement(
+        name = "PzwAbwtSchlPsSchl",
+        required = true,
+        nillable = true
+    )
+    @DynsFeldUdm(
+        feldUdmName = "PZW_ABWT_SCHL_PS_SCHL",
+        dpTypNummer = 13,
+        dpMaxLaenge = 25,
+        isMussParameter = true
+    )
+    @XmlJavaTypeAdapter(XmlAdapterString.class)
+    @jakarta.xml.bind.annotation.XmlElement(
+        name = "PzwAbwtSchlPsSchl",
+        required = true,
+        nillable = true
+    )
+    @jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter(JakartaXmlAdapterString.class)
+    protected String pzwAbwtSchlPsSchl;
+    private static final long serialVersionUID = 20260615121207L;
+
+    public PmgtPzwAbwtSchluessel() {
+    }
+
+    public String getPzwAbwtSchlId() {
+        return this.pzwAbwtSchlId;
+    }
+
+    public void setPzwAbwtSchlId(String value) {
+        this.pzwAbwtSchlId = value;
+    }
+
+    public String getPzwAbwtSchl() {
+        return this.pzwAbwtSchl;
+    }
+
+    public void setPzwAbwtSchl(String value) {
+        this.pzwAbwtSchl = value;
+    }
+
+    public String getPzwAbwtSchlBzng() {
+        return this.pzwAbwtSchlBzng;
+    }
+
+    public void setPzwAbwtSchlBzng(String value) {
+        this.pzwAbwtSchlBzng = value;
+    }
+
+    public String getPzwAbwtSchlBsbg() {
+        return this.pzwAbwtSchlBsbg;
+    }
+
+    public void setPzwAbwtSchlBsbg(String value) {
+        this.pzwAbwtSchlBsbg = value;
+    }
+
+    public String getPzwAbwtSchlHnws() {
+        return this.pzwAbwtSchlHnws;
+    }
+
+    public void setPzwAbwtSchlHnws(String value) {
+        this.pzwAbwtSchlHnws = value;
+    }
+
+    public Short getPzwAbwtSchlRang() {
+        return this.pzwAbwtSchlRang;
+    }
+
+    public void setPzwAbwtSchlRang(Short value) {
+        this.pzwAbwtSchlRang = value;
+    }
+
+    public Character getPzwAbwtSchlAktvKz() {
+        return this.pzwAbwtSchlAktvKz;
+    }
+
+    public void setPzwAbwtSchlAktvKz(Character value) {
+        this.pzwAbwtSchlAktvKz = value;
+    }
+
+    public Short getPzwAbwtSchlAnzTRkw() {
+        return this.pzwAbwtSchlAnzTRkw;
+    }
+
+    public void setPzwAbwtSchlAnzTRkw(Short value) {
+        this.pzwAbwtSchlAnzTRkw = value;
+    }
+
+    public Character getPzwAbwtSchlDkupKz() {
+        return this.pzwAbwtSchlDkupKz;
+    }
+
+    public void setPzwAbwtSchlDkupKz(Character value) {
+        this.pzwAbwtSchlDkupKz = value;
+    }
+
+    public Character getPzwAbwtSchlDkupPKz() {
+        return this.pzwAbwtSchlDkupPKz;
+    }
+
+    public void setPzwAbwtSchlDkupPKz(Character value) {
+        this.pzwAbwtSchlDkupPKz = value;
+    }
+
+    public String getPzwAbwtSchlEpaArt() {
+        return this.pzwAbwtSchlEpaArt;
+    }
+
+    public void setPzwAbwtSchlEpaArt(String value) {
+        this.pzwAbwtSchlEpaArt = value;
+    }
+
+    public Character getPzwAbwtSchlFrgbKz() {
+        return this.pzwAbwtSchlFrgbKz;
+    }
+
+    public void setPzwAbwtSchlFrgbKz(Character value) {
+        this.pzwAbwtSchlFrgbKz = value;
+    }
+
+    public Character getPzwAbwtSchlFrgb2Kz() {
+        return this.pzwAbwtSchlFrgb2Kz;
+    }
+
+    public void setPzwAbwtSchlFrgb2Kz(Character value) {
+        this.pzwAbwtSchlFrgb2Kz = value;
+    }
+
+    public Character getPzwAbwtSchlFvrtKz() {
+        return this.pzwAbwtSchlFvrtKz;
+    }
+
+    public void setPzwAbwtSchlFvrtKz(Character value) {
+        this.pzwAbwtSchlFvrtKz = value;
+    }
+
+    public Character getPzwAbwtSchlGtagKz() {
+        return this.pzwAbwtSchlGtagKz;
+    }
+
+    public void setPzwAbwtSchlGtagKz(Character value) {
+        this.pzwAbwtSchlGtagKz = value;
+    }
+
+    public Character getPzwAbwtSchlKmtrKz() {
+        return this.pzwAbwtSchlKmtrKz;
+    }
+
+    public void setPzwAbwtSchlKmtrKz(Character value) {
+        this.pzwAbwtSchlKmtrKz = value;
+    }
+
+    public BigDecimal getPzwAbwtSchlMaxAnz() {
+        return this.pzwAbwtSchlMaxAnz;
+    }
+
+    public void setPzwAbwtSchlMaxAnz(BigDecimal value) {
+        this.pzwAbwtSchlMaxAnz = value;
+    }
+
+    public String getPzwAbwtSchlMxazEnh() {
+        return this.pzwAbwtSchlMxazEnh;
+    }
+
+    public void setPzwAbwtSchlMxazEnh(String value) {
+        this.pzwAbwtSchlMxazEnh = value;
+    }
+
+    public String getPzwAbwtSchlUrl() {
+        return this.pzwAbwtSchlUrl;
+    }
+
+    public void setPzwAbwtSchlUrl(String value) {
+        this.pzwAbwtSchlUrl = value;
+    }
+
+    public Character getPzwAbwtSchlUrlKz() {
+        return this.pzwAbwtSchlUrlKz;
+    }
+
+    public void setPzwAbwtSchlUrlKz(Character value) {
+        this.pzwAbwtSchlUrlKz = value;
+    }
+
+    public Character getPzwAbwtSchlUztKz() {
+        return this.pzwAbwtSchlUztKz;
+    }
+
+    public void setPzwAbwtSchlUztKz(Character value) {
+        this.pzwAbwtSchlUztKz = value;
+    }
+
+    public Character getPzwAbwtSchlSeriKz() {
+        return this.pzwAbwtSchlSeriKz;
+    }
+
+    public void setPzwAbwtSchlSeriKz(Character value) {
+        this.pzwAbwtSchlSeriKz = value;
+    }
+
+    public String getPzwAbwtSchlVaArt() {
+        return this.pzwAbwtSchlVaArt;
+    }
+
+    public void setPzwAbwtSchlVaArt(String value) {
+        this.pzwAbwtSchlVaArt = value;
+    }
+
+    public String getPzwAbwtSchlPsBzng() {
+        return this.pzwAbwtSchlPsBzng;
+    }
+
+    public void setPzwAbwtSchlPsBzng(String value) {
+        this.pzwAbwtSchlPsBzng = value;
+    }
+
+    public String getPzwAbwtSchlPsKmtr() {
+        return this.pzwAbwtSchlPsKmtr;
+    }
+
+    public void setPzwAbwtSchlPsKmtr(String value) {
+        this.pzwAbwtSchlPsKmtr = value;
+    }
+
+    public String getPzwAbwtSchlPsSchl() {
+        return this.pzwAbwtSchlPsSchl;
+    }
+
+    public void setPzwAbwtSchlPsSchl(String value) {
+        this.pzwAbwtSchlPsSchl = value;
+    }
+}
+
+
