@@ -1,0 +1,15 @@
+  private static boolean isAktionVerfuegbarGleitzeit(List<KonfAntragskategorieRead> kategorien) {
+
+
+        List<KonfAntragRead> antraege = kategorien.stream()
+                .flatMap(konfAntragskategorieRead -> konfAntragskategorieRead.antragsgruppen().stream())
+                .flatMap(konfAntragsgruppeRead -> konfAntragsgruppeRead.antraege().stream()).toList();
+
+        antraege.stream().forEach(antrag -> System.out.println("schlüessel " + antrag.schluessel() + " persoServ " + antrag.personalserviceSchluessel()));
+        KonfAntragRead antrag = antraege.stream().filter(konfAntragRead -> konfAntragRead.schluessel() == PzwConstants.URLAUB_SCHLUESSEL).collect();
+        return kategorien.stream()
+                .flatMap(konfAntragskategorieRead -> konfAntragskategorieRead.antragsgruppen().stream())
+                .flatMap(konfAntragsgruppeRead -> konfAntragsgruppeRead.antraege().stream())
+                .filter(konfAntragRead -> PzwConstants.ABBAU_GLEITZEITSALDO_SCHLUESSEL.equals(konfAntragRead.schluessel()))
+                .noneMatch(konfAntragRead -> Objects.nonNull(konfAntragRead.personalserviceSchluessel()));
+    }
