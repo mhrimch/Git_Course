@@ -1,0 +1,96 @@
+import { useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import { IcClockPiggyM, IcPlaneM } from '@finanzinformatik/mcd-module-icons';
+import { Stack } from '@mui/material';
+import { formatDate } from '@personalsysteme/core';
+import { useTranslation } from 'react-i18next';
+import { useReadBenutzerEinstellungen } from '../../tanstack/benutzer/useReadBenutzerEinstellungen';
+import { useReadBenutzerSaldo } from '../../tanstack/benutzer/useReadBenutzerSaldo';
+import { useReadBenutzerStatus } from '../../tanstack/benutzer/useReadBenutzerStatus';
+import { useReadBenutzerUrlaub } from '../../tanstack/benutzer/useReadBenutzerUrlaub';
+import { useReadKonfAntraege } from '../../tanstack/konfiguration/useReadKonfAntraege';
+import { navigateToAntragAnlegen } from '../../utils/bookmarkUtil';
+import { convertDecimalToHHmm } from '../../utils/DateUtils';
+import { QuickActionInfoCard, QuickActionInfoCardSkeleton } from './QuickActionInfoCard';
+import { AntragsgruppenIds, AntragskategorieIds, Antragsschluessel } from './ZeitwirtschaftConstants';
+
+export const AllgemeineUebersicht = () => {
+  const { t } = useTranslation();
+  const workflowService = useWorkflowService();
+  const { data: benutzerSaldo, isFetching: isSaldoLoading } = useReadBenutzerSaldo();
+  const { data: benutzerUrlaub, isFetching: isUrlaubLoading } = useReadBenutzerUrlaub();
+  const { data: konfAntraege, isFetching: isKonfAntraegeLoading } = useReadKonfAntraege();
+  const { data: benutzerEinstellungen, isFetching: isBenutzerEinstellungenLoading } = useReadBenutzerEinstellungen();
+  const { data: benutzerStatus, isFetching: isBenutzerStatusLoading } = useReadBenutzerStatus();
+  console.log('benutzerEinstellungen', benutzerEinstellungen);
+  console.log('benutzerSaldo', benutzerSaldo);
+  console.log('benutzerUrlaub', benutzerUrlaub);
+  console.log('benutzerStatus', benutzerStatus);
+  const subtitleSaldo =
+    !isSaldoLoading && benutzerSaldo?.saldoDatum
+      ? t('SaldoVom') + ' ' + formatDate(benutzerSaldo.saldoDatum)
+      : t('KeinSaldoVerfuegbar');
+  const titleSaldo =
+    !isSaldoLoading && benutzerSaldo?.saldoWert
+      ? convertDecimalToHHmm(benutzerSaldo.saldoWert.toString()) + ' ' + t('StdMin')
+      : ':';
+
+  const titleUrlaub =
+    !isBenutzerStatusLoading && benutzerStatus?.resturlaubsTage
+      ? benutzerStatus.resturlaubsTage.toString() + ' ' + t('von') + ' '
+      : 'keine';
+  const isUrlaubsantragVerfuegbar = Boolean(
+    !isKonfAntraegeLoading &&
+    konfAntraege?.antragskategorien
+      ?.find((kategorie) => kategorie.id === AntragskategorieIds.urlaub)
+      ?.antragsgruppen.find((gruppe) => gruppe.id === AntragsgruppenIds.urlaubsantrag)
+      ?.antraege.find((antrag) => antrag.schluessel === Antragsschluessel.urlaubsantrag)?.isAktiv
+  );
+  const isAbbauZeitguthabenVerfuegbar = Boolean(
+    !isKonfAntraegeLoading &&
+    konfAntraege?.antragskategorien
+      ?.find((kategorie) => kategorie.id === AntragskategorieIds.urlaub)
+      ?.antragsgruppen.find((gruppe) => gruppe.id === AntragsgruppenIds.kontenabbauGleitzeit)
+      ?.antraege.find((antrag) => antrag.schluessel === Antragsschluessel.kontenAbbauGleitzeit)?.isAktiv
+  );
+  const handleClickAusgleich = () => {
+    navigateToAntragAnlegen(workflowService, { antragGruppeId: AntragsgruppenIds.kontenabbauGleitzeit });
+  };
+  const handleClickUrlaubsantrag = () => {
+    navigateToAntragAnlegen(workflowService, { antragGruppeId: AntragsgruppenIds.urlaubsantrag });
+  };
+
+  return (
+    <Stack display={'flex'} direction={'row'} justifyContent={'space-evenly'} alignItems={'stretch'}>
+      {isSaldoLoading ? (
+        <QuickActionInfoCardSkeleton />
+      ) : (
+        (benutzerEinstellungen?.canShowSaldo ?? benutzerSaldo?.isRollout) && (
+          <QuickActionInfoCard
+            HeaderIcon={IcClockPiggyM}
+            title={titleSaldo}
+            subtitle={subtitleSaldo}
+            buttonLabel={t('GleitzeitabbauBeantragen')}
+            onClick={handleClickAusgleich}
+            aktionVerfuegbar={isAbbauZeitguthabenVerfuegbar}
+            hasInfoIcon={false}
+          ></QuickActionInfoCard>
+        )
+      )}
+      {isUrlaubLoading ? (
+        <QuickActionInfoCardSkeleton />
+      ) : (
+        benutzerUrlaub?.isRollout && (
+          <QuickActionInfoCard
+            HeaderIcon={IcPlaneM}
+            title={titleUrlaub}
+            subtitle={t('verfuegbareUrlaubstage')}
+            buttonLabel={t('UrlaubEinreichen')}
+            onClick={handleClickUrlaubsantrag}
+            aktionVerfuegbar={isUrlaubsantragVerfuegbar}
+            hasInfoIcon={true}
+          ></QuickActionInfoCard>
+        )
+      )}
+    </Stack>
+  );
+};
