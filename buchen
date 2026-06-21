@@ -307,7 +307,112 @@ aktueller Anwesenheitsstatus 	angezeigter Einsatzort	Auswahl Einsatzort	neuer St
 Inaktiv	Büro 	Mobile Arbeit	Aktiv in Mobile Arbeit seit hh:mm 
 Aktiv Mobile Arbeit seit hh:mm	Mobile Arbeit 	Im Büro 	Aktiv in Mobile Arbeit seit mm:hh zusätzlich Fehlermeldung
 Aktiv im Büro seit hh:mm	Büro		Inaktiv
- 
+ =========================================0
 
+import { HttpError, useUuiService, UuiServiceResponse } from '@finanzinformatik/cpl-module-reactlib';
+import { ExtendedUuiServiceMessage, useNotificationStoreActions } from '@personalsysteme/core';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { BenutzerStatusRead } from '../apl/pzw/benutzerUiModule/BenutzerStatusRead';
+import { callCreateBuchung } from '../apl/pzw/buchungUiModule/BuchungUiModule.api';
+import { BuchungWrite } from '../apl/pzw/buchungUiModule/BuchungWrite';
+import { Arbeitsort, Arbeitsorte, BuchungAnlegenConstants } from '../ZeitwirtschaftBuchen';
+import { BenutzerKeys } from './Benutzer.keys';
+import { KalenderKeys } from './Kalender.keys';
 
+/**
+ * Hook zum Absetzen einer Zeitbuchung mit Optimistic Update.
+ * Der Hook liest den aktuellen Status aus dem Cache und "toggelt" ihn optimistisch,
+ * bevor die Antwort vom Server kommt.
+ * - Ist User aktiv? -> UI wird sofort inaktiv (grau).
+ * - Ist User inaktiv? -> UI wird sofort aktiv (grün).
+ */
+export function useCreateBuchung() {
+  const uuiService = useUuiService();
+  const notificationStoreActions = useNotificationStoreActions();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (buchungWrite: BuchungWrite) => {
+      return (
+        callCreateBuchung(uuiService, buchungWrite)
+          .then((response: UuiServiceResponse<void>) => {
+            notificationStoreActions.handleMessages(response.messages as ExtendedUuiServiceMessage[], false);
+            return response;
+          })
+          // Hier werden Http 502 behandelt.
+          .catch(notificationStoreActions.handleError)
+      );
+    },
+
+    /**
+     * Optimistic Update: Wird ausgeführt, SOBALD `mutate` aufgerufen wird.
+     */
+    onMutate: async (newBuchung: BuchungWrite) => {
+      const queryKey = BenutzerKeys.status;
+
+      // 1. Laufende Refetches abbrechen, damit sie den optimistischen State nicht überschreiben
+      await queryClient.cancelQueries({ queryKey });
+
+      // 2. Snapshot des aktuellen Status speichern (für Rollback bei Fehler)
+      const previousStatus = queryClient.getQueryData<BenutzerStatusRead>(queryKey);
+
+      /*
+       * 3. Toggle-Logik berechnen
+       * Wenn `aktiv` true ist, wird es false und umgekehrt.
+       */
+      const warAktiv = previousStatus?.aktiv ?? false;
+      const wirdAktiv = !warAktiv;
+
+      // 4. Zeitstempel für sofortiges UI-Feedback generieren
+      const now = new Date();
+      const zeitString = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+      /*
+       * 5. Neuen Arbeitsort ermitteln (falls wir aktiv werden)
+       * Wir suchen den Namen (z.B. "Im Büro") passend zum Code (z.B. "P01")
+       */
+      const neuerOrtName = (Object.keys(BuchungAnlegenConstants) as Arbeitsort[]).find(
+        (key) => BuchungAnlegenConstants[key] === newBuchung.buchungEigsNr
+      );
+
+      // 6. Den Cache patchen
+      queryClient.setQueryData<BenutzerStatusRead>(queryKey, (old): BenutzerStatusRead => {
+        // Fallback, falls Cache leer war
+        const base = old ?? ({} as BenutzerStatusRead);
+
+        return {
+          ...base,
+          aktiv: wirdAktiv, // Toggle
+          aktiverArbeitsort: wirdAktiv ? (neuerOrtName ?? Arbeitsorte.buero) : base.aktiverArbeitsort, // Wenn wir aktiv werden: Neuen Ort setzen. Wenn inaktiv: Alten Ort behalten (oder leeren)
+          buchungBeginn: zeitString, // Zeit aktualisieren
+        };
+      });
+
+      // Context zurückgeben (für onError)
+      return { previousStatus };
+    },
+
+    /**
+     * Fehlerfall: Rollback auf den alten Stand.
+     */
+    onError: (err, _variables, context) => {
+      // Wird m.E. aktuell nicht ausgeführt.
+      notificationStoreActions.handleError(err as HttpError<UuiServiceResponse<unknown>> | null | undefined);
+      if (context?.previousStatus) {
+        queryClient.setQueryData(BenutzerKeys.status, context.previousStatus);
+      }
+    },
+
+    /**
+     * Abschluss: Immer valide Daten vom Server holen.
+     */
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: BenutzerKeys.status }).then();
+      queryClient.invalidateQueries({ queryKey: KalenderKeys.all }).then();
+    },
+
+    retry: false,
+  });
+}
+===============================================
 
