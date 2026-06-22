@@ -1,0 +1,122 @@
+import { Grid, MenuItem, Select, Typography } from '@mui/material';
+import { ThemeConstants } from '@personalsysteme/core';
+import { t } from 'i18next';
+import { useState } from 'react';
+import { KonfAntragskategorieRead } from '../../../apl/pzw/konfigUiModule/KonfAntragskategorieRead';
+import { AntragAbwesenheitConstants } from '../../../constants/AntragAbwesenheitConstants';
+import { useReadKonfAntraege } from '../../../tanstack/konfiguration/useReadKonfAntraege';
+import { parseAntraegeListFromKonfig } from '../AntragUtils';
+import { AntragAbwesenheitItem } from './AntragAbwesenheitItem';
+
+export const AntraegeAbwesenheitUebersicht = () => {
+  const stringHaeufigGenutzteAntraege = t('haeufigGenutzteAntraege'); //"Häufig genutzte Anträge";
+  const [selectedKategorie, setSelectedKategorie] = useState(stringHaeufigGenutzteAntraege);
+  const { data, isFetching } = useReadKonfAntraege();
+  const { antragGruppen, favorite } = parseAntraegeListFromKonfig(useReadKonfAntraege().data?.antragskategorien ?? []);
+
+  const antragsKategorien: string[] = [
+    stringHaeufigGenutzteAntraege,
+    ...new Set(
+      antragGruppen
+        .filter((antrag) => antrag.kategorieId !== AntragAbwesenheitConstants.ZeitkorrekturKategorieId)
+        .map((antrag) => antrag.kategorie)
+    ),
+  ];
+
+  type ParsedAntraegeUebersichtItem = {
+    bezeichnung: string;
+    kategorie: string;
+    kategorieId: string;
+    gruppeId: string;
+    schluessel?: string;
+    isExtern?: boolean;
+    iconId: number;
+    personalserviceSchluessel: string;
+  };
+
+  const getHaeufigBenutzteAntraege = (
+    kategorien: KonfAntragskategorieRead[] | undefined
+  ): ParsedAntraegeUebersichtItem[] => {
+    return [...kategorien]
+      .sort((a, b) => a.rang - b.rang)
+      .flatMap((kat) => kat.antragsgruppen.flatMap((antragsgruppe) => antragsgruppe.antraege))
+      .filter((antrag) => antrag.isFavorit)
+      .map((antrag: ParsedAntraegeUebersichtItem) => ({
+        bezeichnung: antrag.bezeichnung,
+        kategorie: '',
+        gruppeId: antrag.gruppeId,
+        schluessel: antrag.schluessel,
+        isExtern: antrag.isExtern,
+        iconId: antrag.iconId,
+        personalserviceSchluessel: antrag.personalserviceSchluessel,
+      }));
+  };
+  const haufig = getHaeufigBenutzteAntraege(data?.antragskategorien);
+  if (!isFetching) {
+    console.log('getHaeufigBenutzteAntraege', haufig);
+  }
+  const dataToShow =
+    selectedKategorie === stringHaeufigGenutzteAntraege
+      ? favorite
+      : antragGruppen.filter((item) => item.kategorie.toLocaleLowerCase() === selectedKategorie.toLocaleLowerCase());
+
+  return (
+    <Grid
+      container
+      justifyContent="center"
+      spacing={10}
+      flexDirection="column"
+      width={ThemeConstants.WIDTH_100_PERCENT}
+      gap={0}
+    >
+      <Grid
+        container
+        justifyContent={ThemeConstants.CONTENT_ALIGN_SPACE_BETWEEN}
+        alignItems="center"
+        spacing={1}
+        margin={3}
+      >
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02}>{t('antragStellen')}</Typography>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 3 }}>
+          <Select
+            data-variant="rounded"
+            fullWidth
+            value={selectedKategorie}
+            onChange={(event) => setSelectedKategorie(event.target.value)}
+          >
+            {antragsKategorien.map((kategorie) => (
+              <MenuItem value={kategorie} key={kategorie}>
+                {kategorie}
+              </MenuItem>
+            ))}
+          </Select>
+        </Grid>
+      </Grid>
+      <Grid
+        container
+        size={12}
+        justifyContent={ThemeConstants.CONTENT_ALIGN_FLEX_START}
+        alignItems="center"
+        spacing={3}
+      >
+        {!isFetching &&
+          getHaeufigBenutzteAntraege(data?.antragskategorien).map((antrag) => {
+            return (
+              <Grid size={{ xs: 12, md: 6 }} key={antrag.bezeichnung + antrag.gruppeId + antrag.schluessel}>
+                <AntragAbwesenheitItem
+                  antragGruppeId={antrag.gruppeId}
+                  iconId={antrag.iconId}
+                  bezeichnung={antrag.bezeichnung}
+                  antragSchluessel={antrag.schluessel}
+                  isExtern={antrag.isExtern}
+                  personalserviceSchluessel={antrag.personalserviceSchluessel}
+                />
+              </Grid>
+            );
+          })}
+      </Grid>
+    </Grid>
+  );
+};
