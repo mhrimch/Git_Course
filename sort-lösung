@@ -151,3 +151,87 @@ const aktiveAntraege = alleAntraege.filter(
 const favoriten = alleAntraege.filter(
   (antrag) => antrag.isAktiv && antrag.isFavorit
 );
+
+=====================================
+type ParsedAntraegeUebersichtItem = {
+  bezeichnung: string;
+  kategorie: string;
+  kategorieId: string;
+  kategorieRang: number;
+  gruppeId: string;
+  gruppeRang: number;
+  schluessel?: string;
+  isExtern?: boolean;
+  iconId: number;
+  personalserviceSchluessel: string;
+};
+
+export function parseAntraegeListFromKonfig(antragskategorien: KonfAntragskategorieRead[]): {
+  antragGruppen: ParsedAntraegeUebersichtItem[];
+  favorite: ParsedAntraegeUebersichtItem[];
+} {
+  const antragsGruppe: ParsedAntraegeUebersichtItem[] = [];
+  const favorite: ParsedAntraegeUebersichtItem[] = [];
+  //antragskategorie = Abwesenheiten / Gesundheit / Bildung
+  for (const {
+    bezeichnung: kategorieBezeichnung,
+    antragsgruppen,
+    id: kategorieId,
+    rang: kategorieRang,
+  } of antragskategorien) {
+    //antragsgruppe = Ausbildung / Berufsschule / Fortbildung
+    for (const {
+      bezeichnung: gruppenBezeichnung,
+      id: gruppenId,
+      antraege: abwesenheitsschluessel,
+      iconId: gruppenIconId,
+      rang: gruppeRang,
+    } of antragsgruppen) {
+      const aktiveSchluessel = abwesenheitsschluessel.filter((schuessel) => schuessel.isAktiv);
+      if (aktiveSchluessel.length > 0) {
+        antragsGruppe.push({
+          bezeichnung: gruppenBezeichnung,
+          kategorie: kategorieBezeichnung,
+          kategorieId: kategorieId,
+          kategorieRang: kategorieRang,
+          gruppeId: gruppenId,
+          gruppeRang: gruppeRang,
+          iconId: gruppenIconId,
+          isExtern: false,
+          personalserviceSchluessel: '',
+        });
+      }
+      //antragsSchluessel = Forbildung intern / extern / allgemein
+      for (const {
+        schluessel,
+        bezeichnung: schluesselBezeichnung,
+        isFavorit: isSchluesselFavorit,
+        personalserviceSchluessel,
+      } of aktiveSchluessel) {
+        const lastAntragGruppe = antragsGruppe[antragsGruppe.length - 1];
+        if (personalserviceSchluessel.length > 0) {
+          lastAntragGruppe.isExtern = true;
+          lastAntragGruppe.personalserviceSchluessel = personalserviceSchluessel;
+        }
+        if (isSchluesselFavorit) {
+          favorite.push({
+            bezeichnung: schluesselBezeichnung,
+            schluessel: schluessel,
+            gruppeId: lastAntragGruppe.gruppeId,
+            gruppeRang: gruppeRang,
+            iconId: gruppenIconId,
+            isExtern: lastAntragGruppe.isExtern,
+            kategorie: kategorieBezeichnung,
+            kategorieId: kategorieId,
+            kategorieRang: kategorieRang,
+            personalserviceSchluessel,
+          });
+        }
+      }
+    }
+  }
+  return {
+    antragGruppen: antragsGruppe,
+    favorite: favorite,
+  };
+}
