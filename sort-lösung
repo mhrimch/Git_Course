@@ -235,3 +235,68 @@ export function parseAntraegeListFromKonfig(antragskategorien: KonfAntragskatego
     favorite: favorite,
   };
 }
+===============================================================
+export function parseAntraegeListFromKonfig(antragskategorien: KonfAntragskategorieRead[]): {
+  antragGruppen: ParsedAntraegeUebersichtItem[];
+  favorite: ParsedAntraegeUebersichtItem[];
+} {
+  const antragGruppen: ParsedAntraegeUebersichtItem[] = antragskategorien.flatMap(
+    ({ bezeichnung: kategorieBezeichnung, antragsgruppen, id: kategorieId, rang: kategorieRang }) =>
+      antragsgruppen.flatMap(
+        ({ bezeichnung: gruppenBezeichnung, id: gruppenId, antraege, iconId: gruppenIconId, rang: gruppeRang }) => {
+          const aktiveSchluessel = antraege.filter(({ isAktiv }) => isAktiv);
+          if (aktiveSchluessel.length === 0) return [];
+
+          const isExtern = aktiveSchluessel.some(({ personalserviceSchluessel }) => personalserviceSchluessel.length > 0);
+          const personalserviceSchluessel =
+            aktiveSchluessel.find(({ personalserviceSchluessel }) => personalserviceSchluessel.length > 0)
+              ?.personalserviceSchluessel ?? '';
+
+          return [
+            {
+              bezeichnung: gruppenBezeichnung,
+              kategorie: kategorieBezeichnung,
+              kategorieId,
+              kategorieRang,
+              gruppeId: gruppenId,
+              gruppeRang,
+              iconId: gruppenIconId,
+              isExtern,
+              personalserviceSchluessel,
+            } satisfies ParsedAntraegeUebersichtItem,
+          ];
+        }
+      )
+  );
+
+  const favorite: ParsedAntraegeUebersichtItem[] = antragskategorien.flatMap(
+    ({ bezeichnung: kategorieBezeichnung, antragsgruppen, id: kategorieId, rang: kategorieRang }) =>
+      antragsgruppen.flatMap(
+        ({ id: gruppenId, antraege, iconId: gruppenIconId, rang: gruppeRang }) => {
+          const aktiveSchluessel = antraege.filter(({ isAktiv }) => isAktiv);
+
+          const isExtern = aktiveSchluessel.some(({ personalserviceSchluessel }) => personalserviceSchluessel.length > 0);
+
+          return aktiveSchluessel
+            .filter(({ isFavorit }) => isFavorit)
+            .map(
+              ({ schluessel, bezeichnung: schluesselBezeichnung, personalserviceSchluessel }) =>
+                ({
+                  bezeichnung: schluesselBezeichnung,
+                  schluessel,
+                  gruppeId: gruppenId,
+                  gruppeRang,
+                  iconId: gruppenIconId,
+                  isExtern,
+                  kategorie: kategorieBezeichnung,
+                  kategorieId,
+                  kategorieRang,
+                  personalserviceSchluessel,
+                }) satisfies ParsedAntraegeUebersichtItem
+            );
+        }
+      )
+  );
+
+  return { antragGruppen, favorite };
+}
