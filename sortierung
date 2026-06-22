@@ -1,0 +1,86 @@
+import { useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import { Box, Button, Grid, Stack, Typography } from '@mui/material';
+import { MenuCard, MenuItem, ThemeConstants } from '@personalsysteme/core';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { KonfAntragskategorieRead } from '../../../apl/pzw/konfigUiModule/KonfAntragskategorieRead';
+import { Dokumententyp } from '../../../apl/pzw/konfigUiModule/SvzSapEintragRead';
+import { useReadKonfAntraege } from '../../../tanstack/konfiguration/useReadKonfAntraege';
+import { navigateToPskKonfiguration } from '../../../utils/bookmarkUtil';
+import { AntragAvatar } from '../../common/AntragAvatar';
+import { KonfAntragsgruppen } from './KonfAntragsgruppen';
+
+export const KonfAntraege = () => {
+  const { t } = useTranslation();
+  const workflowService = useWorkflowService();
+  const [kategorieAuswahl, setKategorieAuswahl] = useState<KonfAntragskategorieRead | null>(null);
+  const { data: konfAntraege, isFetching: isKonfAntraegeLoading } = useReadKonfAntraege();
+  const dokumenententype: Dokumententyp[] = konfAntraege?.epaAblageorte
+    ? [...konfAntraege.epaAblageorte]
+        .sort((a, b) => a.rang - b.rang)
+        .map(({ schluessel, beschreibung }) => ({ schluessel, beschreibung }))
+    : [];
+  const handleClickAntragKategorie = (kategorie: KonfAntragskategorieRead) => {
+    setKategorieAuswahl(kategorie);
+  };
+  const handleClickZurueckZuKonfiguration = () => {
+    navigateToPskKonfiguration(workflowService);
+  };
+  const handleClickZurueckZuAntraege = () => {
+    setKategorieAuswahl(null);
+  };
+  if (!konfAntraege?.isRollout) {
+    return <></>;
+  }
+  if (kategorieAuswahl) {
+    return (
+      <KonfAntragsgruppen
+        antragskategorie={kategorieAuswahl}
+        versionsnummer={konfAntraege.versionsnummer}
+        buchungskreis={konfAntraege.buchungskreis}
+        dokumententype={dokumenententype}
+        handleClickZurueckZuAntraege={handleClickZurueckZuAntraege}
+      />
+    );
+  }
+  return (
+    <Stack spacing={ThemeConstants.STACK_SPACING} width={ThemeConstants.WIDTH_100_PERCENT}>
+      <Box>
+        <Button size="small" onClick={handleClickZurueckZuKonfiguration}>
+          {t('ZurueckZurKonfiguration')}
+        </Button>
+      </Box>
+      <Grid container justifyContent={ThemeConstants.ALIGNMENT_CENTER}>
+        <Grid size={12} pb={3}>
+          <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02}>{t('Antraege')}</Typography>
+        </Grid>
+        {!isKonfAntraegeLoading &&
+          konfAntraege.antragskategorien
+            ?.slice()
+            .sort((a, b) => a.rang - b.rang)
+            .map((kategorie) => {
+              return (
+                <Grid key={kategorie.id} size={12}>
+                  <MenuCard
+                    menuItem={
+                      {
+                        avatarIcon: (
+                          <AntragAvatar
+                            id={kategorie.antragsgruppen.}
+                            groesse={ThemeConstants.AVATAR_SIZE_LG}
+                          />
+                        ),
+                        title: kategorie.bezeichnung,
+                        description: kategorie.beschreibung,
+                        onClick: () => handleClickAntragKategorie(kategorie),
+                        isVisible: true,
+                      } as MenuItem
+                    }
+                  />
+                </Grid>
+              );
+            })}
+      </Grid>
+    </Stack>
+  );
+};
