@@ -127,3 +127,27 @@ export const AntraegeAbwesenheitUebersicht = () => {
     </Grid>
   );
 };
+==============================const alleAntraege =
+  data?.antragskategorien
+    .flatMap((kategorie) =>
+      kategorie.antragsgruppen.flatMap((gruppe) =>
+        gruppe.antraege.map((antrag) => ({
+          ...antrag,
+          kategorieRang: kategorie.rang,
+          gruppenRang: gruppe.rang,
+        }))
+      )
+    )
+    .sort(
+      (a, b) =>
+        a.kategorieRang - b.kategorieRang ||
+        a.gruppenRang - b.gruppenRang
+    ) ?? [];
+
+const aktiveAntraege = alleAntraege.filter(
+  (antrag) => antrag.isAktiv
+);
+
+const favoriten = alleAntraege.filter(
+  (antrag) => antrag.isAktiv && antrag.isFavorit
+);
