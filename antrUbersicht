@@ -120,3 +120,28 @@ export const AntraegeAbwesenheitUebersicht = () => {
     </Grid>
   );
 };
+===========================================
+const getHaeufigBenutzteAntraege = (
+  kategorien: KonfAntragskategorieRead[] | undefined
+): ParsedAntraegeUebersichtItem[] => {
+  if (!kategorien) return [];
+
+  return [...kategorien]
+    .sort((a, b) => a.rang - b.rang)
+    .flatMap((kat) =>
+      kat.antragsgruppen.flatMap((gruppe) =>
+        gruppe.antraege
+          .filter((antrag) => antrag.isFavorit)
+          .map((antrag) => ({
+            bezeichnung: antrag.bezeichnung,
+            kategorie: kat.bezeichnung,
+            kategorieId: kat.id,
+            gruppeId: gruppe.id,
+            schluessel: antrag.schluessel,
+            isExtern: antrag.isUrl,
+            iconId: gruppe.iconId,
+            personalserviceSchluessel: antrag.personalserviceSchluessel,
+          }))
+      )
+    );
+};
