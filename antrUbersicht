@@ -120,7 +120,259 @@ export const AntraegeAbwesenheitUebersicht = () => {
     </Grid>
   );
 };
-===========================================
+
+=========================================== 
+import { DateTimeConstants, IdTimestamp, LocalDate, LocalDateTime } from '@personalsysteme/core';
+import dayjs, { Dayjs } from 'dayjs';
+import { t } from 'i18next';
+import z from 'zod';
+import { $RefinementCtx } from 'zod/v4/core';
+import { AntraegeRead } from '../../apl/pzw/antragUiModule/AntraegeRead';
+import { AntragAbwesenheitRead } from '../../apl/pzw/antragUiModule/AntragAbwesenheitRead';
+import { AntragAbwesenheitWrite } from '../../apl/pzw/antragUiModule/AntragAbwesenheitWrite';
+import { AntragGutschriftRead } from '../../apl/pzw/antragUiModule/AntragGutschriftRead';
+import { AntragVerfallszeitRead } from '../../apl/pzw/antragUiModule/AntragVerfallszeitRead';
+import { AntragZeitgutschriftWrite } from '../../apl/pzw/antragUiModule/AntragZeitgutschriftWrite';
+import { AntragZeitkorrekturRead } from '../../apl/pzw/antragUiModule/AntragZeitkorrekturRead';
+import { DokumentRead } from '../../apl/pzw/dokumenteUiModule/DokumentRead';
+import { KonfAntragRead } from '../../apl/pzw/konfigUiModule/KonfAntragRead';
+import { KonfAntragskategorieRead } from '../../apl/pzw/konfigUiModule/KonfAntragskategorieRead';
+import { Abwesenheitszyklus, AntragGruppeId, AntragStatus, GuthabenVerrechnung } from '../../constants/AntragConstants';
+import { IdTimestampConstants } from '../../constants/IDTimestampConstants';
+import { PzwRegEx } from '../../constants/PzwConstants';
+import {
+  combineDateAndTime,
+  DayjsZeitraum,
+  formatIsoDateToIsoDateTimeBegin,
+  formatIsoDateToIsoDateTimeEnd,
+  formatToIsoDateString,
+} from '../../utils/DateUtils';
+import { formatToIndustriestunden } from '../../utils/NumberUtils';
+
+// TODO j798990 (ZW-503): Aufrauemen.
+
+type ParsedAntraegeUebersichtItem = {
+  bezeichnung: string;
+  kategorie: string;
+  kategorieId: string;
+  gruppeId: string;
+  schluessel?: string;
+  isExtern?: boolean;
+  iconId: number;
+  personalserviceSchluessel: string;
+};
+
+export function parseAntraegeListFromKonfig(antragskategorien: KonfAntragskategorieRead[]): {
+  antragGruppen: ParsedAntraegeUebersichtItem[];
+  favorite: ParsedAntraegeUebersichtItem[];
+} {
+  const antragsGruppe: ParsedAntraegeUebersichtItem[] = [];
+  const favorite: ParsedAntraegeUebersichtItem[] = [];
+  //antragskategorie = Abwesenheiten / Gesundheit / Bildung
+  for (const { bezeichnung: kategorieBezeichnung, antragsgruppen, id: kategorieId } of antragskategorien) {
+    //antragsgruppe = Ausbildung / Berufsschule / Fortbildung
+    for (const {
+      bezeichnung: gruppenBezeichnung,
+      id: gruppenId,
+      antraege: abwesenheitsschluessel,
+      iconId: gruppenIconId,
+    } of antragsgruppen) {
+      const aktiveSchluessel = abwesenheitsschluessel.filter((schuessel) => schuessel.isAktiv);
+      if (aktiveSchluessel.length > 0) {
+        antragsGruppe.push({
+          bezeichnung: gruppenBezeichnung,
+          kategorie: kategorieBezeichnung,
+          kategorieId: kategorieId,
+          gruppeId: gruppenId,
+          iconId: gruppenIconId,
+          isExtern: false,
+          personalserviceSchluessel: '',
+        });
+      }
+      //antragsSchluessel = Forbildung intern / extern / allgemein
+      for (const {
+        schluessel,
+        bezeichnung: schluesselBezeichnung,
+        isFavorit: isSchluesselFavorit,
+        personalserviceSchluessel,
+      } of aktiveSchluessel) {
+        const lastAntragGruppe = antragsGruppe[antragsGruppe.length - 1];
+        if (personalserviceSchluessel.length > 0) {
+          lastAntragGruppe.isExtern = true;
+          lastAntragGruppe.personalserviceSchluessel = personalserviceSchluessel;
+        }
+        if (isSchluesselFavorit) {
+          favorite.push({
+            bezeichnung: schluesselBezeichnung,
+            schluessel: schluessel,
+            gruppeId: lastAntragGruppe.gruppeId,
+            iconId: gruppenIconId,
+            isExtern: lastAntragGruppe.isExtern,
+            kategorie: kategorieBezeichnung,
+            kategorieId: kategorieId,
+            personalserviceSchluessel,
+          });
+        }
+      }
+    }
+  }
+  return {
+    antragGruppen: antragsGruppe,
+    favorite: favorite,
+  };
+}
+
+======================================================
+type AntragItemProps = {
+  iconId: number;
+  bezeichnung: string;
+  antragGruppeId: string;
+  antragSchluessel?: string;
+  isExtern?: boolean;
+  personalserviceSchluessel: string;
+};
+
+type CategoryIconConfig = {
+  Icon: (props: SvgIconProps) => ReactElement;
+  color: string;
+  backgroundColor: string;
+};
+
+export function getIconConfiguration(iconId: number) {
+  const colors = useMcdPalette().ColorCategoryTokens;
+  const categoryConfigs: Record<number, CategoryIconConfig> = {
+    //Zeitkorrektur
+    0: {
+      color: colors['category-garden-01'],
+      backgroundColor: colors['category-garden-02'],
+      Icon: IcClockS,
+    },
+    //Urlaub
+    1: {
+      color: colors['category-travel-01'],
+      backgroundColor: colors['category-travel-02'],
+      Icon: IcPlaneS,
+    },
+    //Sonstiges
+    2: {
+      color: colors['category-mobility-01'],
+      backgroundColor: colors['category-mobility-02'],
+      Icon: IcRoomS,
+    },
+    //Bildung
+    3: {
+      color: colors['category-education-01'],
+      backgroundColor: colors['category-education-02'],
+      Icon: IcBachelorCapS,
+    },
+    //Gesundheit
+    4: {
+      color: colors['category-health-01'],
+      backgroundColor: colors['category-health-02'],
+      Icon: IcHeartDiagramS,
+    },
+    //Persoenlich
+    5: {
+      color: colors['category-protection-01'],
+      backgroundColor: colors['category-protection-02'],
+      Icon: IcUserS,
+    },
+  };
+  return (
+    categoryConfigs[iconId] ?? {
+      color: colors['category-mobility-01'],
+      backgroundColor: colors['category-mobility-02'],
+      Icon: IcRoomS,
+    }
+  );
+}
+
+export function AntragIconDeprecated({
+  iconId,
+  size = ThemeConstants.AVATAR_SIZE_MD,
+  iconSize = 'auto',
+}: {
+  iconId: number;
+  size?: number | string;
+  iconSize?: number | string;
+}) {
+  const { color, backgroundColor, Icon } = getIconConfiguration(iconId);
+  return (
+    <Avatar
+      sx={{
+        height: size,
+        width: size,
+        bgcolor: backgroundColor,
+      }}
+    >
+      <Icon sx={{ fill: color, height: iconSize, width: iconSize }} />
+    </Avatar>
+  );
+}
+
+export const AntragAbwesenheitItem = ({
+  iconId,
+  bezeichnung,
+  antragGruppeId,
+  antragSchluessel,
+  isExtern,
+  personalserviceSchluessel,
+}: AntragItemProps) => {
+  const workflowService = useWorkflowService();
+  const notificationStoreActions = useNotificationStoreActions();
+  const actionDisallowed: boolean = isPersonalserviceAktiv(personalserviceSchluessel, Boolean(isExtern)).data === false;
+
+  function onClick() {
+    if (actionDisallowed) {
+      notificationStoreActions.addErrorNotification(t('AntraegeUebersicht.Fehler.PersonalServiceInaktiv'));
+      return;
+    }
+    const host = window.location.hostname.toLowerCase();
+    const prefix = host.substring(0, 2);
+
+    let dynamicProcessId: string;
+
+    switch (prefix) {
+      case 'en':
+        dynamicProcessId = 'fi-ps-en';
+        break;
+      case 'in':
+        dynamicProcessId = 'fi-ps-in';
+        break;
+      case 'an':
+        dynamicProcessId = 'fi-ps-an';
+        break;
+      default:
+        dynamicProcessId = 'fi-ps-prod';
+    }
+
+    if (isExtern) {
+      //https://wiki.intern/spaces/pem/pages/646271824/Design+Aufruf+Personalservice
+      workflowService.startWorkflow('dynprocpl', 'interpreter', 1, {
+        input: {
+          language: 'de-DE',
+          processData: {
+            processId: dynamicProcessId,
+            processParameters: {
+              mkpParameter: personalserviceSchluessel,
+            },
+          },
+        },
+      });
+    }
+
+    if (!isExtern) {
+      navigateToAntragAnlegen(workflowService, {
+        antragGruppeId,
+        antragSchluessel,
+      });
+    }
+  }
+
+  return <InfoCard isExternal={isExtern} title={bezeichnung} onClick={onClick} iconId={iconId} />;
+};
+
+=====================================================
 const getHaeufigBenutzteAntraege = (
   kategorien: KonfAntragskategorieRead[] | undefined
 ): ParsedAntraegeUebersichtItem[] => {
