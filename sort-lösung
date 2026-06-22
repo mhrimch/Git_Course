@@ -20,3 +20,110 @@ const alleAntraege = data.antragskategorien
 const favoriten = alleAntraege.filter(
   antrag => antrag.isAktiv && antrag.isFavorit,
 );
+========================================
+import { Grid, MenuItem, Select, Typography } from '@mui/material';
+import { ThemeConstants } from '@personalsysteme/core';
+import { t } from 'i18next';
+import { useState } from 'react';
+import { KonfAntragRead } from '../../../apl/pzw/konfigUiModule/KonfAntragRead';
+import { AntragAbwesenheitConstants } from '../../../constants/AntragAbwesenheitConstants';
+import { useReadKonfAntraege } from '../../../tanstack/konfiguration/useReadKonfAntraege';
+import { parseAntraegeListFromKonfig } from '../AntragUtils';
+import { AntragAbwesenheitItem } from './AntragAbwesenheitItem';
+
+export const AntraegeAbwesenheitUebersicht = () => {
+  const stringHaeufigGenutzteAntraege = t('haeufigGenutzteAntraege'); //"Häufig genutzte Anträge";
+  const [selectedKategorie, setSelectedKategorie] = useState(stringHaeufigGenutzteAntraege);
+  const { antragGruppen, favorite } = parseAntraegeListFromKonfig(useReadKonfAntraege().data?.antragskategorien ?? []);
+  const { data, isFetching } = useReadKonfAntraege();
+  if (isFetching) {
+    const alleAntraege: KonfAntragRead[] = data?.antragskategorien
+      .flatMap((kategorie) =>
+        kategorie.antragsgruppen.map((gruppe) => ({
+          kategorieRang: kategorie.rang,
+          gruppenRang: gruppe.rang,
+          antraege: gruppe.antraege,
+        }))
+      )
+      .sort((a, b) => a.kategorieRang - b.kategorieRang || a.gruppenRang - b.gruppenRang)
+      .flatMap((item) => item.antraege);
+  }
+  
+  const aktiveAntraege: KonfAntragRead[] = alleAntraege?.filter((antrag) => antrag.isAktiv);
+  const favoriten: KonfAntragRead[] = alleAntraege?.filter((antrag) => antrag.isAktiv && antrag.isFavorit);
+
+  const antragsKategorien: string[] = [
+    stringHaeufigGenutzteAntraege,
+    ...new Set(
+      antragGruppen
+        .filter((antrag) => antrag.kategorieId !== AntragAbwesenheitConstants.ZeitkorrekturKategorieId)
+        .map((antrag) => antrag.kategorie)
+    ),
+  ];
+
+  const dataToShow =
+    selectedKategorie === stringHaeufigGenutzteAntraege
+      ? favorite
+      : antragGruppen.filter((item) => item.kategorie.toLocaleLowerCase() === selectedKategorie.toLocaleLowerCase());
+  return (
+    <Grid
+      container
+      justifyContent="center"
+      spacing={10}
+      flexDirection="column"
+      width={ThemeConstants.WIDTH_100_PERCENT}
+      gap={0}
+    >
+      <Grid
+        container
+        justifyContent={ThemeConstants.CONTENT_ALIGN_SPACE_BETWEEN}
+        alignItems="center"
+        spacing={1}
+        margin={3}
+      >
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02}>{t('antragStellen')}</Typography>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 3 }}>
+          <Select
+            data-variant="rounded"
+            fullWidth
+            value={selectedKategorie}
+            onChange={(event) => setSelectedKategorie(event.target.value)}
+          >
+            {antragsKategorien.map((kategorie) => (
+              <MenuItem value={kategorie} key={kategorie}>
+                {kategorie}
+              </MenuItem>
+            ))}
+          </Select>
+        </Grid>
+      </Grid>
+      <Grid
+        container
+        size={12}
+        justifyContent={ThemeConstants.CONTENT_ALIGN_FLEX_START}
+        alignItems="center"
+        spacing={3}
+      >
+        {dataToShow
+          .sort((a, b) => a.kategorieRang - b.kategorieRang)
+          .sort((a, b) => a.gruppeRang - b.gruppeRang)
+          .map((antrag) => {
+            return (
+              <Grid size={{ xs: 12, md: 6 }} key={antrag.bezeichnung + antrag.gruppeId + antrag.schluessel}>
+                <AntragAbwesenheitItem
+                  antragGruppeId={antrag.gruppeId}
+                  iconId={antrag.iconId}
+                  bezeichnung={antrag.bezeichnung}
+                  antragSchluessel={antrag.schluessel}
+                  isExtern={antrag.isExtern}
+                  personalserviceSchluessel={antrag.personalserviceSchluessel}
+                />
+              </Grid>
+            );
+          })}
+      </Grid>
+    </Grid>
+  );
+};
