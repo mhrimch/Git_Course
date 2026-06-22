@@ -1,0 +1,22 @@
+const alleAntraege = data.antragskategorien
+  .flatMap(kategorie =>
+    kategorie.antragsgruppen.map(gruppe => ({
+      kategorieRang: kategorie.rang,
+      gruppenRang: gruppe.rang,
+      antraege: gruppe.antraege,
+    })),
+  )
+  .sort((a, b) =>
+    a.kategorieRang - b.kategorieRang ||
+    a.gruppenRang - b.gruppenRang,
+  )
+  .flatMap(item => item.antraege);
+
+  =========================
+  const aktiveAntraege = alleAntraege.filter(
+  antrag => antrag.isAktiv,
+);
+====================
+const favoriten = alleAntraege.filter(
+  antrag => antrag.isAktiv && antrag.isFavorit,
+);
