@@ -9,3 +9,12 @@
         }
         return null;
     }
+================================
+ return pmgtPzwSaldoDaten.stream()
+            .filter(saldo -> BenutzerSaldoArt.GLZ_SALDO.toString().equals(saldo.getPzwSdoArtBzng()))
+            .findFirst()
+            .map(saldo -> new FreizeitSaldoRead(
+                    LocalDate.ofInstant(saldo.getPzwSdoDtm().toInstant(), ZoneId.systemDefault()),
+                    saldo.getPzwSdoWert()
+            ))
+            .orElse(null)
