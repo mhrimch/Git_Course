@@ -107,4 +107,24 @@ function AnzahlMitarbeiterRotbereich({
   );
 }
 
+============================
+    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
+    public AnzahlMitarbeiterRotbereich readAnzahlMitarbeiterRotbereich() throws UiServiceException {
+
+        try {
+            LiesPmgtPzwSchwellenwerteUeberFuehrungskraftEingabe eingabe = new LiesPmgtPzwSchwellenwerteUeberFuehrungskraftEingabe();
+            eingabe.setPctlPersSchl(userService.getPersonalnummer());
+            eingabe.setPzwKtag(new Date());
+            eingabe.setFrkrPctlPersSchl(userService.getPersonalnummer());
+            return schwellenwerteLesRepository.liesPmgtPzwSchwellenwerteUeberFuehrungskraft(eingabe).map(AnzahlMitarbeiterRotbereichMapper::convertToAnzahlMitarbeiterRotbereich).get();
+
+        } catch (OspeException e) {
+            throw new UiServiceException(MessageType.ERROR, MessageCode.ERROR,
+                    "Zeitkonto.AnzahlMitarbeitRotbereich.Read.HttpStatus.502",
+                    MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
+        }
+    }
+
+============================================
+
 
