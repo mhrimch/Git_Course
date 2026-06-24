@@ -159,3 +159,31 @@ export function AmpelkontoUebersicht() {
     </Stack>
   );
 }
+===============
+  return (
+    <Stack spacing={3} sx={{ width: ThemeConstants.WIDTH_100_PERCENT }}>
+      <DynamicTypography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02}>Ampelkonto</DynamicTypography>
+      {!isPending && anzahlMitarbeiterRotbereich !== undefined && (
+        <Stack
+          direction={{ xs: ThemeConstants.DIRECTION_COLUMN, md: ThemeConstants.DIRECTION_ROW }}
+          spacing={ThemeConstants.GRID_CONTAINER_SPACING}
+        >
+          <InfoCardRotbereich
+            title={t('Gleitzeitsaldo')}
+            anzahlMitarbeiterRotbereich={anzahlMitarbeiterRotbereich.anzahlMitarbeiterGleitzeitsaldoRotbereich}
+            isInteraktiv={isInteraktiv}
+            isPending={isPending}
+            onClick={() => navigateToZeitereignisse(workflowservice, { reiter: ZeitereignisseTab.Salden })}
+          />
+          <InfoCardRotbereich
+            title={t('Resturlaub')}
+            anzahlMitarbeiterRotbereich={anzahlMitarbeiterRotbereich.anzahlMitarbeiterResturlaubRotbereich}
+            isInteraktiv={isInteraktiv}
+            isPending={isPending}
+            onClick={() => navigateToZeitereignisse(workflowservice, { reiter: ZeitereignisseTab.Resturlaub })}
+          />
+        </Stack>
+      )}
+    </Stack>
+  );
+}
