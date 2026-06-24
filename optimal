@@ -1,0 +1,11 @@
+    public static FreizeitSaldoRead ospeToFreitzeitSaldoRead(final List<PmgtPzwSaldoDaten> pmgtPzwSaldoDaten) {
+        if (!pmgtPzwSaldoDaten.isEmpty()) {
+            //!BenutzerSaldoArt.GLZ_SALDO.toString().equals(pmgtPzwSaldoDaten.getFirst().getPzwSdoArtBzng())
+            pmgtPzwSaldoDaten.stream().filter(pmgtPzwSaldoDaten1 -> BenutzerSaldoArt.GLZ_SALDO.toString().equals(pmgtPzwSaldoDaten.getFirst().getPzwSdoArtBzng())).findFirst().get().getPzwSdoArtBzng().equals(BenutzerSaldoArt.GLZ_SALDO.toString());
+            return new FreizeitSaldoRead(
+                    LocalDate.ofInstant(pmgtPzwSaldoDaten.getFirst().getPzwSdoDtm().toInstant(), ZoneId.systemDefault()),
+                    pmgtPzwSaldoDaten.getFirst().getPzwSdoWert()
+            );
+        }
+        return null;
+    }
