@@ -18,3 +18,71 @@
                     saldo.getPzwSdoWert()
             ))
             .orElse(null)
+============================================
+public enum KonfAntragId {
+    URLAUB("0501U20002"),
+    ABBAU_GLEITZEITSALDO("09_102");
+
+    final String name;
+
+    KonfAntragId(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return this.name;
+    }
+}
+===================================================
+
+package osplus.pzw.mapper;
+
+import osplus.pzw.model.konfiguration.KonfAntragId;
+import osplus.pzw.model.konfiguration.KonfAntragRead;
+import osplus.pzw.model.konfiguration.KonfAntragskategorieRead;
+
+import java.util.List;
+
+public class AntragsVerfuegbarkeitsMapper {
+
+
+    /**
+     * Die Hilfsfunktion isAktionVerfuegbarUrlaub liest den personalserviceSchluessel für den Urlaubsantrag des angemeldeten Benutzers.
+     * Wenn kein personalserviceSchluessel vorhanden ist true sonst false
+     *
+     * @return isAktionVerfuebar für den Urlaubsantrag des angemeldeten Benutzers
+     */
+
+    public static boolean isAktionVerfuegbarUrlaub(List<KonfAntragskategorieRead> kategorien, KonfAntragId konfAntragId) {
+        return kategorien.stream()
+                .flatMap(konfAntragskategorieRead -> konfAntragskategorieRead.antragsgruppen().stream())
+                .flatMap(konfAntragsgruppeRead -> konfAntragsgruppeRead.antraege().stream())
+                .filter(konfAntragRead -> KonfAntragId.URLAUB.toString().equals(konfAntragRead.id())
+                ).findFirst()
+                .map(KonfAntragRead::isAktiv)
+                .orElse(false);
+    }
+
+    /**
+     * Die Hilfsfunktion isAktionVerfuegbarGleitzeitSaldo liest den personalserviceSchluessel für den Abbau Gleitzeit Antrag des angemeldeten Benutzers.
+     * Wenn kein personalserviceSchluessel vorhanden ist true sonst false
+     *
+     * @return isAktionVerfuebar GleitzeitSaldoRead für den Abbau Gleitzeit Antrag des angemeldeten Benutzers
+     */
+
+    public static boolean isAktionVerfuegbarGleitzeitSaldo(List<KonfAntragskategorieRead> kategorien) {
+        return kategorien.stream()
+                .flatMap(konfAntragskategorieRead -> konfAntragskategorieRead.antragsgruppen().stream())
+                .flatMap(konfAntragsgruppeRead -> konfAntragsgruppeRead.antraege().stream())
+                .filter(konfAntragRead -> KonfAntragId.ABBAU_GLEITZEITSALDO.toString().equals(konfAntragRead.id())).findFirst()
+                .map(KonfAntragRead::isAktiv)
+                .orElse(false);
+    }
+
+
+}
+
+
+
+
