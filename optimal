@@ -82,7 +82,46 @@ public class AntragsVerfuegbarkeitsMapper {
 
 
 }
+====================================================================
+package osplus.pzw.mapper;
 
+import osplus.pzw.model.konfiguration.KonfAntragId;
+import osplus.pzw.model.konfiguration.KonfAntragRead;
+import osplus.pzw.model.konfiguration.KonfAntragskategorieRead;
 
+import java.util.List;
 
+public class AntragsVerfuegbarkeitsMapper {
 
+    /**
+     * Prüft, ob der Urlaubsantrag für den angemeldeten Benutzer verfügbar ist.
+     *
+     * @return true, wenn kein personalserviceSchlüssel vorhanden ist, sonst false
+     */
+    public static boolean isAktionVerfuegbarUrlaub(List<KonfAntragskategorieRead> kategorien) {
+        return isAktionVerfuegbar(kategorien, KonfAntragId.URLAUB);
+    }
+
+    /**
+     * Prüft, ob der Abbau-Gleitzeitsaldo-Antrag für den angemeldeten Benutzer verfügbar ist.
+     *
+     * @return true, wenn kein personalserviceSchlüssel vorhanden ist, sonst false
+     */
+    public static boolean isAktionVerfuegbarGleitzeitSaldo(List<KonfAntragskategorieRead> kategorien) {
+        return isAktionVerfuegbar(kategorien, KonfAntragId.ABBAU_GLEITZEITSALDO);
+    }
+
+    /**
+     * Generische Hilfsmethode: Durchsucht alle Anträge aller Kategorien und Gruppen
+     * und prüft, ob der Antrag mit der gegebenen ID aktiv ist.
+     */
+    private static boolean isAktionVerfuegbar(List<KonfAntragskategorieRead> kategorien, KonfAntragId konfAntragId) {
+        return kategorien.stream()
+                .flatMap(kategorie -> kategorie.antragsgruppen().stream())
+                .flatMap(gruppe -> gruppe.antraege().stream())
+                .filter(antrag -> konfAntragId.toString().equals(antrag.id()))
+                .findFirst()
+                .map(KonfAntragRead::isAktiv)
+                .orElse(false);
+    }
+}
