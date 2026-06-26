@@ -1,132 +1,3 @@
-import { ButtonBase, Card, CardContent } from '@mui/material';
-import { ThemeConstants } from '@personalsysteme/core';
-import { InfoCardContent } from './InfoCardContent';
-
-interface InfoCardRotbereichProps {
-  title: string;
-  anzahlMitarbeiterRotbereich: number | undefined;
-  interaktiv: boolean;
-  onClick: () => void;
-}
-
-export function InfoCardRotbereich({
-  title,
-  anzahlMitarbeiterRotbereich,
-  interaktiv,
-  onClick,
-}: InfoCardRotbereichProps) {
-  return (
-    <ButtonBase disabled={interaktiv} sx={{ minWidth: 275, width: ThemeConstants.WIDTH_100_PERCENT }} onClick={onClick}>
-      <Card sx={{ width: ThemeConstants.WIDTH_100_PERCENT }}>
-        <CardContent>
-          <InfoCardContent title={title} anzahlMitarbeiterRotbereich={anzahlMitarbeiterRotbereich}></InfoCardContent>
-        </CardContent>
-      </Card>
-    </ButtonBase>
-  );
-}
-================================================
-import { DynamicTypography } from '@finanzinformatik/cpl-module-reactlib';
-import { Avatar } from '@mui/material';
-import { Stack } from '@mui/system';
-import { ThemeConstants } from '@personalsysteme/core';
-
-function AnzahlMitarbeiterRotbereich({
-  anzahlMitarbeiterRotbereich,
-}: {
-  anzahlMitarbeiterRotbereich: number | undefined;
-}) {
-  return (
-    <>
-      <Avatar
-        data-size={ThemeConstants.SMALL}
-        variant={ThemeConstants.VARIANT_CIRCULAR}
-        data-color={ThemeConstants.WARNING}
-      >
-        {anzahlMitarbeiterRotbereich}
-      </Avatar>
-    </>
-  );
-}
-
-interface InfoCardContentProps {
-  title: string;
-  anzahlMitarbeiterRotbereich: number | undefined;
-}
-
-export function InfoCardContent({ title, anzahlMitarbeiterRotbereich }: InfoCardContentProps) {
-  return (
-    <Stack
-      direction="row"
-      alignItems={ThemeConstants.DIALOG_CONTENT_CENTER.justifyContent}
-      justifyContent={ThemeConstants.CONTENT_ALIGN_SPACE_BETWEEN}
-    >
-      <Stack direction="column" alignItems="start">
-        <DynamicTypography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_03}>{title}</DynamicTypography>
-        <DynamicTypography>Mitarbeiter im roten Bereich</DynamicTypography>
-      </Stack>
-      <AnzahlMitarbeiterRotbereich
-        anzahlMitarbeiterRotbereich={anzahlMitarbeiterRotbereich}
-      ></AnzahlMitarbeiterRotbereich>
-    </Stack>
-  );
-}
-===============================================import { DynamicTypography } from '@finanzinformatik/cpl-module-reactlib';
-import PersonIcon from '@mui/icons-material/Person';
-import { Avatar, Skeleton } from '@mui/material';
-import { Stack } from '@mui/system';
-import { ThemeConstants } from '@personalsysteme/core';
-
-function AnzahlMitarbeiterRotbereich({
-  anzahlMitarbeiterRotbereich,
-}: {
-  anzahlMitarbeiterRotbereich: number | undefined;
-}) {
-  if (anzahlMitarbeiterRotbereich === undefined) {
-    return (
-      <Skeleton variant="circular" width={40} height={40}>
-        <Avatar
-          data-size={ThemeConstants.SMALL}
-          variant={ThemeConstants.VARIANT_CIRCULAR}
-          data-color={ThemeConstants.WARNING}
-        >
-          <PersonIcon />
-        </Avatar>
-      </Skeleton>
-    );
-  }
-
-  return (
-    <Avatar
-      data-size={ThemeConstants.SMALL}
-      variant={ThemeConstants.VARIANT_CIRCULAR}
-      data-color={ThemeConstants.WARNING}
-    >
-      {anzahlMitarbeiterRotbereich}
-    </Avatar>
-  );
-}
-
-============================
-    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
-    public AnzahlMitarbeiterRotbereich readAnzahlMitarbeiterRotbereich() throws UiServiceException {
-
-        try {
-            LiesPmgtPzwSchwellenwerteUeberFuehrungskraftEingabe eingabe = new LiesPmgtPzwSchwellenwerteUeberFuehrungskraftEingabe();
-            eingabe.setPctlPersSchl(userService.getPersonalnummer());
-            eingabe.setPzwKtag(new Date());
-            eingabe.setFrkrPctlPersSchl(userService.getPersonalnummer());
-            return schwellenwerteLesRepository.liesPmgtPzwSchwellenwerteUeberFuehrungskraft(eingabe).map(AnzahlMitarbeiterRotbereichMapper::convertToAnzahlMitarbeiterRotbereich).get();
-
-        } catch (OspeException e) {
-            throw new UiServiceException(MessageType.ERROR, MessageCode.ERROR,
-                    "Zeitkonto.AnzahlMitarbeitRotbereich.Read.HttpStatus.502",
-                    MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
-        }
-    }
-
-============================================
-
 export function AmpelkontoUebersicht() {
   const { t } = useTranslation();
   const isInteraktiv = false;
@@ -134,7 +5,6 @@ export function AmpelkontoUebersicht() {
   const { data: anzahlMitarbeiterRotbereich, isPending } = useReadAnzahlMitarbeiterRotbereich();
   return (
     <Stack spacing={3} sx={{ width: ThemeConstants.WIDTH_100_PERCENT }}>
-      {!isPending && anzahlMitarbeiterRotbereich === undefined && <></>}
       <DynamicTypography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02}>Ampelkonto</DynamicTypography>
       <Stack
         direction={{ xs: ThemeConstants.DIRECTION_COLUMN, md: ThemeConstants.DIRECTION_ROW }}
@@ -159,31 +29,107 @@ export function AmpelkontoUebersicht() {
     </Stack>
   );
 }
-===============
+==============================================
+import { ButtonBase, Card, CardContent } from '@mui/material';
+import { ThemeConstants } from '@personalsysteme/core';
+import { InfoCardContent } from './InfoCardContent';
+
+interface InfoCardRotbereichProps {
+  title: string;
+  anzahlMitarbeiterRotbereich: number | undefined;
+  isInteraktiv?: boolean;
+  isPending: boolean;
+  onClick?: () => void;
+}
+
+export function InfoCardRotbereich({
+  title,
+  anzahlMitarbeiterRotbereich,
+  isInteraktiv,
+  isPending,
+  onClick,
+}: InfoCardRotbereichProps) {
   return (
-    <Stack spacing={3} sx={{ width: ThemeConstants.WIDTH_100_PERCENT }}>
-      <DynamicTypography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02}>Ampelkonto</DynamicTypography>
-      {!isPending && anzahlMitarbeiterRotbereich !== undefined && (
-        <Stack
-          direction={{ xs: ThemeConstants.DIRECTION_COLUMN, md: ThemeConstants.DIRECTION_ROW }}
-          spacing={ThemeConstants.GRID_CONTAINER_SPACING}
-        >
-          <InfoCardRotbereich
-            title={t('Gleitzeitsaldo')}
-            anzahlMitarbeiterRotbereich={anzahlMitarbeiterRotbereich.anzahlMitarbeiterGleitzeitsaldoRotbereich}
-            isInteraktiv={isInteraktiv}
+    <ButtonBase
+      disabled={isInteraktiv}
+      sx={{ minWidth: 275, width: ThemeConstants.WIDTH_100_PERCENT }}
+      onClick={onClick}
+    >
+      <Card sx={{ width: ThemeConstants.WIDTH_100_PERCENT }}>
+        <CardContent>
+          <InfoCardContent
+            title={title}
             isPending={isPending}
-            onClick={() => navigateToZeitereignisse(workflowservice, { reiter: ZeitereignisseTab.Salden })}
-          />
-          <InfoCardRotbereich
-            title={t('Resturlaub')}
-            anzahlMitarbeiterRotbereich={anzahlMitarbeiterRotbereich.anzahlMitarbeiterResturlaubRotbereich}
-            isInteraktiv={isInteraktiv}
-            isPending={isPending}
-            onClick={() => navigateToZeitereignisse(workflowservice, { reiter: ZeitereignisseTab.Resturlaub })}
-          />
-        </Stack>
-      )}
+            anzahlMitarbeiterRotbereich={anzahlMitarbeiterRotbereich}
+          ></InfoCardContent>
+        </CardContent>
+      </Card>
+    </ButtonBase>
+  );
+}
+============================================================================
+import { DynamicTypography } from '@finanzinformatik/cpl-module-reactlib';
+import { Avatar, Skeleton } from '@mui/material';
+import { Stack } from '@mui/system';
+import { ThemeConstants } from '@personalsysteme/core';
+import { useTranslation } from 'react-i18next';
+
+function AnzahlMitarbeiterRotbereich({
+  isPending,
+  anzahlMitarbeiterRotbereich,
+}: {
+  isPending: boolean;
+  anzahlMitarbeiterRotbereich: number | undefined;
+}) {
+  if (isPending) {
+    return (
+      <Skeleton
+        variant={ThemeConstants.VARIANT_CIRCULAR}
+        width={ThemeConstants.AVATAR_SIZE_SM}
+        height={ThemeConstants.AVATAR_SIZE_SM}
+        animation={ThemeConstants.ANIMATION_WAVE}
+      ></Skeleton>
+    );
+  }
+
+  return (
+    <>
+      <Avatar
+        data-size={ThemeConstants.SMALL}
+        variant={ThemeConstants.VARIANT_CIRCULAR}
+        data-color={ThemeConstants.WARNING}
+      >
+        {anzahlMitarbeiterRotbereich}
+      </Avatar>
+    </>
+  );
+}
+
+interface InfoCardContentProps {
+  title: string;
+  isPending: boolean;
+  anzahlMitarbeiterRotbereich: number | undefined;
+}
+
+export function InfoCardContent({ title, isPending, anzahlMitarbeiterRotbereich }: InfoCardContentProps) {
+  const { t } = useTranslation();
+  return (
+    <Stack
+      direction={ThemeConstants.DIRECTION_ROW}
+      alignItems={'justifyContent'}
+      justifyContent={ThemeConstants.CONTENT_ALIGN_SPACE_BETWEEN}
+    >
+      <Stack direction={ThemeConstants.DIRECTION_COLUMN} alignItems="start">
+        <DynamicTypography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_04}>{title}</DynamicTypography>
+        <DynamicTypography variant={ThemeConstants.TYPOGRAPHY_MULTILINE_02}>
+          {t('MitarbeiterRotBereich')}
+        </DynamicTypography>
+      </Stack>
+      <AnzahlMitarbeiterRotbereich
+        isPending={isPending}
+        anzahlMitarbeiterRotbereich={anzahlMitarbeiterRotbereich}
+      ></AnzahlMitarbeiterRotbereich>
     </Stack>
   );
 }
+
