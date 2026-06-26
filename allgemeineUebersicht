@@ -94,3 +94,38 @@ export const AllgemeineUebersicht = () => {
     </Stack>
   );
 };
+====================================
+export type InfoCardProps = {
+  title: string;
+  onClick: () => void;
+  iconId: number;
+  isExternal?: boolean;
+};
+export const InfoCard = ({ title, onClick, iconId, isExternal }: InfoCardProps) => {
+  return (
+    <ButtonBase sx={{ minWidth: 275, width: ThemeConstants.WIDTH_100_PERCENT }} onClick={onClick}>
+      <Card sx={{ minWidth: 275, width: ThemeConstants.WIDTH_100_PERCENT }}>
+        <CardContent>
+          <Stack justifyContent={ThemeConstants.CONTENT_ALIGN_SPACE_BETWEEN} direction="row">
+            <Stack alignItems="center" direction="row" gap={4}>
+              <AntragAvatar id={iconId} groesse={ThemeConstants.AVATAR_SIZE_SM} />
+              <Stack
+                direction={'row'}
+                justifyContent={'space-between'}
+                alignItems={ThemeConstants.CONTENT_ALIGN_FLEX_START}
+                textAlign="left"
+              >
+                <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_04}>{title}</Typography>
+                {isExternal && (
+                  <Icon fontSize={'medium'}>
+                    <IcArrowUpRightS />
+                  </Icon>
+                )}
+              </Stack>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
+    </ButtonBase>
+  );
+};
