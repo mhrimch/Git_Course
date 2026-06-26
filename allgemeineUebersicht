@@ -129,3 +129,35 @@ export const InfoCard = ({ title, onClick, iconId, isExternal }: InfoCardProps) 
     </ButtonBase>
   );
 };
+===================================
+export const InfoCard = ({ title, onClick, iconId, isExternal }: InfoCardProps) => {
+  return (
+    <ButtonBase sx={{ minWidth: 275, width: ThemeConstants.WIDTH_100_PERCENT }} onClick={onClick}>
+      <Card sx={{ minWidth: 275, width: ThemeConstants.WIDTH_100_PERCENT }}>
+        <CardContent>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            width="100%"
+          >
+            {/* LEFT SIDE */}
+            <Stack direction="row" alignItems="center" gap={2}>
+              <AntragAvatar id={iconId} groesse={ThemeConstants.AVATAR_SIZE_SM} />
+              <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_04}>
+                {title}
+              </Typography>
+            </Stack>
+
+            {/* RIGHT SIDE */}
+            {isExternal && (
+              <Icon fontSize="medium">
+                <IcArrowUpRightS />
+              </Icon>
+            )}
+          </Stack>
+        </CardContent>
+      </Card>
+    </ButtonBase>
+  );
+};
