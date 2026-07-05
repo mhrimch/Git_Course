@@ -1,0 +1,152 @@
+import { useUuiService } from '@finanzinformatik/cpl-module-reactlib';
+import { ExtendedUuiServiceMessage, useNotificationStoreActions } from '@personalsysteme/core';
+import { callUploadFileByBase64 } from '../../apl/pzw/dokumenteUiModule/dokumenteUiModuleApi';
+import { DokumentRead } from '../../apl/pzw/dokumenteUiModule/DokumentRead';
+import { DokumentWrite } from '../../apl/pzw/dokumenteUiModule/DokumentWrite';
+import { DokumentConstants } from '../../constants/PzwConstants';
+import { DokumentUploadZone } from './DokumentUploadZone';
+
+interface DokumenteZuListeHochladenDialogProps {
+  addDokumente: (dokument: DokumentRead) => void;
+}
+
+export const DokumentUpload = ({ addDokumente }: DokumenteZuListeHochladenDialogProps) => {
+  const uuiService = useUuiService();
+  const { handleMessages } = useNotificationStoreActions();
+  const uploadFile = (base64Str: string, file: File): void => {
+    const dokumentWrite: DokumentWrite = {
+      dokumentName: file.name,
+      base64: base64Str,
+    };
+    callUploadFileByBase64(uuiService, dokumentWrite)
+      .then((response) => {
+        if (response.payload) {
+          const dokument: DokumentRead = {
+            dokumentName: file.name,
+            undDownloadToken: response.payload.undDownloadToken,
+          };
+          addDokumente(dokument);
+        }
+      })
+      .catch(
+        ({
+          httpResponse: {
+            payload: { messages },
+          },
+        }) => handleMessages(messages as ExtendedUuiServiceMessage[], true)
+      );
+  };
+  const onHandleSubmit = (dateien: File[]): void => {
+    let index: number = 0;
+    dateien.forEach((file: File) => {
+      index = index + 1;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (reader.result !== null && typeof reader.result === 'string') {
+          uploadFile(reader.result, file);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+=======================================
+  import { IcUploadM } from '@finanzinformatik/mcd-module-icons';
+import { Card, CardContent, Typography } from '@mui/material';
+import { useNotificationStoreActions } from '@personalsysteme/core';
+import { useCallback } from 'react';
+import { ErrorCode, FileRejection, useDropzone } from 'react-dropzone';
+import { useTranslation } from 'react-i18next';
+import { DokumentConstants } from '../../constants/PzwConstants';
+
+interface DokumenteHochladenDialogProps {
+  maxFiles?: number;
+  onSubmit: (dateien: File[]) => void;
+}
+
+export const DokumentUploadZone = ({ maxFiles, onSubmit }: DokumenteHochladenDialogProps) => {
+  const { t } = useTranslation();
+  const { addWarningNotification } = useNotificationStoreActions();
+  const onDropAccepted = useCallback((files: File[]) => {
+    onSubmit(files);
+  }, []);
+  const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
+    fileRejections.forEach((fileRejection) => {
+      fileRejection.errors.forEach((fileError) => {
+        if (ErrorCode.FileInvalidType === fileError.code) {
+          addWarningNotification(t('Dokumente.Upload.InvalidFile', { filename: fileRejection.file.name }));
+        } else if (ErrorCode.FileTooLarge === fileError.code) {
+          addWarningNotification(t('Dokumente.Upload.FileToLarge', { filename: fileRejection.file.name }));
+        } else if (ErrorCode.TooManyFiles === fileError.code) {
+          addWarningNotification(t('Dokumente.Upload.MaxFiles', { filename: fileRejection.file.name }));
+          return false;
+        } else {
+          addWarningNotification(t('Dokumente.Upload.Fehler', { filename: fileRejection.file.name }));
+        }
+      });
+    });
+  }, []);
+  const { getRootProps, getInputProps } = useDropzone({
+    accept: {
+      'image/jpeg': [],
+      'application/pdf': [],
+    },
+    maxFiles: maxFiles,
+    maxSize: DokumentConstants.MAX_FILE_SIZE,
+    onDropAccepted: onDropAccepted,
+    onDropRejected: onDropRejected,
+  });
+
+  return (
+    <>
+      <Card>
+        <CardContent>
+          <div
+            /*
+             * @SI:REVIEWED: (hoch 602) Nutzung des Spread-Operators in React
+             * LFNR=1 SIQAID=602
+             * Pruefer: David Mueller, 18.07.2025 11:43
+             *
+             * Nutzung des Spread-Operators in React
+             *
+             * Begründung der Einplanung: Nutzung von Spread-Operator wird bewusst genutzt und bietet keine Möglichkeit externen Code auszuführen.
+             */
+            //eslint-disable-next-line @finanzinformatik/fiqa-eslint/spread-operator-in-react_602
+            {...getRootProps()}
+            style={{
+              display: 'flex',
+              padding: '16px',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '16px',
+            }}
+          >
+            <input
+              /*
+               * @SI:REVIEWED: (hoch 602) Nutzung des Spread-Operators in React
+               * LFNR=2 SIQAID=602
+               * Pruefer: David Mueller, 18.07.2025 11:43
+               *
+               * Nutzung des Spread-Operators in React
+               *
+               * Begründung der Einplanung: Nutzung von Spread-Operator wird bewusst genutzt und bietet keine Möglichkeit externen Code auszuführen.
+               */
+              //eslint-disable-next-line @finanzinformatik/fiqa-eslint/spread-operator-in-react_602
+              {...getInputProps()}
+            />
+            <IcUploadM
+              style={{
+                height: '40px',
+                width: '40px',
+              }}
+            />
+            <Typography style={{ cursor: 'pointer' }}>{t('Dokumente.Upload.DateienAuswaehlen')}</Typography>
+            <Typography>{t('Dokumente.Upload.Hinweis')}</Typography>
+          </div>
+        </CardContent>
+      </Card>
+    </>
+  );
+};
+
+  return <DokumentUploadZone maxFiles={DokumentConstants.MAX_FILES} onSubmit={onHandleSubmit} />;
+};
