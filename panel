@@ -544,3 +544,24 @@ export const KonfAntragEigenschaftenPanel = ({
     </TableContainer>
   );
 };
+=================================
+uhrzeit: Die Voreinstellung ist aktiviert. 
+Aktivierung stundenweiser Beantragung mit Uhrzeit Beginn und Ende
+
+Bei den Antragsarten Tagesbuchung hinzufügen, Verfallzeitgutschrift und Zeitgutschrift entfällt das Feld.
+===========================
+ganztägig: Aktivierung zur Anzeige des Schalters "ganztägig" bei der Beantragung einer Abwesenheit.
+Die Voreinstellung ist aktiviert. 
+
+Ist der Schalter in der Konfiguration nicht ausgewählt, müssen bei der Antragstellung vom User immer Uhrzeiten erfasst werden.
+
+Bei den Antragsarten Tagesbuchung hinzufügen, Verfallzeitgutschrift und Zeitgutschrift entfällt das Feld.
+
+Bei einem Urlaubsantrag muss die Checkbox angehakt und änderungsgeschützt (disabled) sein
+==================================
+dokumentupload möglich: Ist diese Checkbox aktiviert, wird die Option zum Dateiupload optional angeboten 
+Ist die Option "Dokumentenupload aktivieren" nicht ausgewählt, wird beim Antrag kein Upload angeboten.
+
+Bei den Antragsarten Tagesbuchung hinzufügen, Verfallzeitgutschrift und Zeitgutschrift entfällt das Feld.
+======================================
+Upload als Pflicht : Eingerückt unter 4.6. Über diese Checkbox kann definiert werden, dass der Upload verpflichtend ist. Wenn 4.6 aktiv ist. 
