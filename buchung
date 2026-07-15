@@ -1,0 +1,169 @@
+import { Grid, MenuItem, Select, Typography } from '@mui/material';
+import { ThemeConstants } from '@personalsysteme/core';
+import { t } from 'i18next';
+import { useState } from 'react';
+import { AntragAbwesenheitConstants } from '../../../constants/AntragAbwesenheitConstants';
+import { useReadKonfAntraege } from '../../../tanstack/konfiguration/useReadKonfAntraege';
+import { parseAntraegeListFromKonfig } from '../AntragUtils';
+import { AntragAbwesenheitItem } from './AntragAbwesenheitItem';
+
+interface AntraegeAbwesenheitUebersichtProps {
+  absVgngPrzId?: string;
+}
+
+export const AntraegeAbwesenheitUebersicht = ({ absVgngPrzId }: AntraegeAbwesenheitUebersichtProps) => {
+  const stringHaeufigGenutzteAntraege = t('haeufigGenutzteAntraege'); //"Häufig genutzte Anträge";
+  const [selectedKategorie, setSelectedKategorie] = useState(stringHaeufigGenutzteAntraege);
+  const { antragGruppen, favorite } = parseAntraegeListFromKonfig(useReadKonfAntraege().data?.antragskategorien ?? []);
+
+  const antragsKategorien: string[] = [
+    stringHaeufigGenutzteAntraege,
+    ...new Set(
+      antragGruppen
+        .filter((antrag) => antrag.kategorieId !== AntragAbwesenheitConstants.ZeitkorrekturKategorieId)
+        .map((antrag) => antrag.kategorie)
+    ),
+  ];
+  const dataToShow =
+    selectedKategorie === stringHaeufigGenutzteAntraege
+      ? favorite
+      : antragGruppen.filter((item) => item.kategorie.toLocaleLowerCase() === selectedKategorie.toLocaleLowerCase());
+  const sortierteDataToShow = dataToShow.sort((a, b) => {
+    if (a.kategorieRang !== b.kategorieRang) {
+      return a.kategorieRang - b.kategorieRang;
+    }
+    return a.gruppeRang - b.gruppeRang;
+  });
+  return (
+    <Grid
+      container
+      justifyContent="center"
+      spacing={10}
+      flexDirection="column"
+      width={ThemeConstants.WIDTH_100_PERCENT}
+      gap={0}
+    >
+      <Grid
+        container
+        justifyContent={ThemeConstants.CONTENT_ALIGN_SPACE_BETWEEN}
+        alignItems="center"
+        spacing={1}
+        margin={3}
+      >
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02}>{t('antragStellen')}</Typography>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 3 }}>
+          <Select
+            data-variant="rounded"
+            fullWidth
+            value={selectedKategorie}
+            onChange={(event) => setSelectedKategorie(event.target.value)}
+          >
+            {antragsKategorien.map((kategorie) => (
+              <MenuItem value={kategorie} key={kategorie}>
+                {kategorie}
+              </MenuItem>
+            ))}
+          </Select>
+        </Grid>
+      </Grid>
+      <Grid
+        container
+        size={12}
+        justifyContent={ThemeConstants.CONTENT_ALIGN_FLEX_START}
+        alignItems="center"
+        spacing={3}
+      >
+        {sortierteDataToShow.map((antrag) => {
+          console.log('antrag', antrag);
+          return (
+            <Grid size={{ xs: 12, md: 6 }} key={antrag.bezeichnung + antrag.gruppeId + antrag.schluessel}>
+              <AntragAbwesenheitItem
+                antragGruppeId={antrag.gruppeId}
+                iconId={antrag.iconId}
+                bezeichnung={antrag.bezeichnung}
+                antragSchluessel={antrag.schluessel}
+                isExtern={antrag.isExtern}
+                personalserviceSchluessel={antrag.personalserviceSchluessel}
+                absVgngPrzId={absVgngPrzId}
+              />
+            </Grid>
+          );
+        })}
+      </Grid>
+    </Grid>
+  );
+};
+
+==============+
+export function parseAntraegeListFromKonfig(antragskategorien: KonfAntragskategorieRead[]): {
+  antragGruppen: ParsedAntraegeUebersichtItem[];
+  favorite: ParsedAntraegeUebersichtItem[];
+} {
+  const antragGruppen: ParsedAntraegeUebersichtItem[] = antragskategorien
+    .filter((kategorie) => kategorie.id !== KategorieId.Verfallzeitgutschriften)
+    .flatMap(({ bezeichnung: kategorieBezeichnung, antragsgruppen, id: kategorieId, rang: kategorieRang }) =>
+      antragsgruppen.flatMap(
+        ({ bezeichnung: gruppenBezeichnung, id: gruppenId, antraege, iconId: gruppenIconId, rang: gruppeRang }) => {
+          const aktiveSchluessel = antraege.filter(({ isAktiv }) => isAktiv);
+          if (aktiveSchluessel.length === 0) {
+            return [];
+          }
+
+          const isExtern = aktiveSchluessel.some(
+            ({ personalserviceSchluessel: psSchluessel }) => psSchluessel.length > 0
+          );
+          const personalserviceSchluessel =
+            aktiveSchluessel.find(({ personalserviceSchluessel: psSchluessel }) => psSchluessel.length > 0)
+              ?.personalserviceSchluessel ?? '';
+          const antragSchluessel = aktiveSchluessel.find(({ schluessel }) => schluessel.length > 0)?.schluessel ?? '';
+          return [
+            {
+              bezeichnung: gruppenBezeichnung,
+              kategorie: kategorieBezeichnung,
+              kategorieId,
+              kategorieRang,
+              gruppeId: gruppenId,
+              gruppeRang,
+              iconId: gruppenIconId,
+              isExtern,
+              personalserviceSchluessel,
+              schluessel: antragSchluessel,
+            } as ParsedAntraegeUebersichtItem,
+          ];
+        }
+      )
+    );
+
+  const favorite: ParsedAntraegeUebersichtItem[] = antragskategorien.flatMap(
+    ({ bezeichnung: kategorieBezeichnung, antragsgruppen, id: kategorieId, rang: kategorieRang }) =>
+      antragsgruppen.flatMap(({ id: gruppenId, antraege, iconId: gruppenIconId, rang: gruppeRang }) => {
+        const aktiveSchluessel = antraege.filter(({ isAktiv }) => isAktiv);
+
+        const isExtern = aktiveSchluessel.some(
+          ({ personalserviceSchluessel: psSchluessel }) => psSchluessel.length > 0
+        );
+
+        return aktiveSchluessel
+          .filter(({ isFavorit }) => isFavorit)
+          .map(
+            ({ schluessel, bezeichnung: schluesselBezeichnung, personalserviceSchluessel }) =>
+              ({
+                bezeichnung: schluesselBezeichnung,
+                schluessel,
+                gruppeId: gruppenId,
+                gruppeRang,
+                iconId: gruppenIconId,
+                isExtern,
+                kategorie: kategorieBezeichnung,
+                kategorieId,
+                kategorieRang,
+                personalserviceSchluessel,
+              }) as ParsedAntraegeUebersichtItem
+          );
+      })
+  );
+
+  return { antragGruppen, favorite };
+}
