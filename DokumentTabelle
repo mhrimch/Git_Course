@@ -1,3 +1,4 @@
+
 import { Stack, Typography } from '@mui/material';
 import { ThemeConstants } from '@personalsysteme/core';
 import { Dispatch, SetStateAction } from 'react';
@@ -61,7 +62,7 @@ export const DokumentTabelle = ({ dokumente, setDokumente, readOnly }: Dokumente
     </>
   );
 };
-=================================
+========================================================
 import { IcDeleteM, IcDocumentM, IcDownloadM } from '@finanzinformatik/mcd-module-icons';
 import { Box, Card, Grid, IconButton, Stack, Typography } from '@mui/material';
 import { DialogAction, DialogProvider, ThemeConstants } from '@personalsysteme/core';
@@ -145,179 +146,293 @@ export const DokumentItem = ({ fileName, downloadDokument, deleteDokument, readO
     </>
   );
 };
-======================================================
-// DokumentTabelle.tsx
-import { Card, Stack, Typography } from '@mui/material';
-import { ThemeConstants } from '@personalsysteme/core';
-import { Dispatch, SetStateAction } from 'react';
-import { useTranslation } from 'react-i18next';
-import { DokumentRead } from '../../apl/pzw/dokumenteUiModule/DokumentRead';
-import { useCreateDownloadLink } from '../../tanstack/dokumente/useCreateDownloadLink';
-import { downloadFile } from '../../utils/FileUtils';
-import { DokumentItem } from './DokumentItem';
-import { DokumentUpload } from './DokumentUpload';
 
-interface DokumentenTableProps {
-  dokumente: DokumentRead[];
-  readOnly: boolean;
-  setDokumente?: Dispatch<SetStateAction<DokumentRead[]>>;
+=========================================================
+import { useUuiService } from '@finanzinformatik/cpl-module-reactlib';
+import { callUploadFileByBase64 } from '../../apl/pzw/dokumenteUiModule/dokumenteUiModuleApi';
+import { DokumentRead } from '../../apl/pzw/dokumenteUiModule/DokumentRead';
+import { DokumentWrite } from '../../apl/pzw/dokumenteUiModule/DokumentWrite';
+import { DokumentConstants } from '../../constants/PzwConstants';
+import { DokumentUploadZone } from './DokumentUploadZone';
+
+interface DokumenteZuListeHochladenDialogProps {
+  addDokumente: (dokument: DokumentRead) => void;
 }
 
-export const DokumentTabelle = ({ dokumente, setDokumente, readOnly }: DokumentenTableProps) => {
-  const { t } = useTranslation();
-  const { mutateAsync: createDownloadLink } = useCreateDownloadLink();
-
-  const addDokumente = (newDokument: DokumentRead) => {
-    if (!readOnly && setDokumente) {
-      setDokumente((prev) => [...prev, newDokument]);
-    }
+export const DokumentUpload = ({ addDokumente }: DokumenteZuListeHochladenDialogProps) => {
+  const uuiService = useUuiService();
+  const uploadFile = (base64Str: string, file: File): void => {
+    const dokumentWrite: DokumentWrite = {
+      dokumentName: file.name,
+      base64: base64Str,
+    };
+    callUploadFileByBase64(uuiService, dokumentWrite).then((response) => {
+      if (response.payload) {
+        const dokument: DokumentRead = {
+          dokumentName: file.name,
+          undDownloadToken: response.payload.undDownloadToken,
+        };
+        addDokumente(dokument);
+      }
+    });
   };
-
-  const deleteDokument = (dokument: DokumentRead) => {
-    if (!readOnly && setDokumente) {
-      setDokumente(dokumente.filter((x) => x.undDownloadToken !== dokument.undDownloadToken));
-    }
-  };
-
-  const downloadDokument = (dokument: DokumentRead) => {
-    createDownloadLink(dokument.undDownloadToken ?? '', {
-      onSuccess: (downloadUrl) => {
-        if (downloadUrl) {
-          downloadFile(downloadUrl);
+  const onHandleSubmit = (dateien: File[]): void => {
+    let index: number = 0;
+    dateien.forEach((file: File) => {
+      index = index + 1;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (reader.result !== null && typeof reader.result === 'string') {
+          uploadFile(reader.result, file);
         }
-      },
+      };
+      reader.readAsDataURL(file);
     });
   };
 
-  return (
-    <Stack direction="column" width={ThemeConstants.WIDTH_100_PERCENT} gap={2}>
-      {/* Bereich 1: Upload + Löschen */}
-      {!readOnly && (
-        <Card sx={{ padding: 2 }}>
-          <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_03} sx={{ marginBottom: 2 }}>
-            {t('Dokumente.AnhangHochladen')}
-          </Typography>
-          <DokumentUpload addDokumente={addDokumente} />
-          <Stack sx={{ marginTop: 2 }}>
-            {dokumente.map((dokument, index) => (
-              <DokumentItem
-                key={index}
-                fileName={dokument.dokumentName ?? ''}
-                deleteDokument={() => deleteDokument(dokument)}
-                showDownload={false}
-                showDelete
-              />
-            ))}
-          </Stack>
-        </Card>
-      )}
-
-      {/* Bereich 2: Bereits hochgeladene Dokumente, nur Download */}
-      <Card sx={{ padding: 2 }}>
-        <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_03} sx={{ marginBottom: 2 }}>
-          {t('Dokumente.HochgeladeneAnhaenge')}
-        </Typography>
-        <Stack>
-          {dokumente.map((dokument, index) => (
-            <DokumentItem
-              key={index}
-              fileName={dokument.dokumentName ?? ''}
-              downloadDokument={() => downloadDokument(dokument)}
-              showDownload
-              showDelete={false}
-            />
-          ))}
-        </Stack>
-      </Card>
-    </Stack>
-  );
+  return <DokumentUploadZone maxFiles={DokumentConstants.MAX_FILES} onSubmit={onHandleSubmit} />;
 };
-=================================================================================
-// DokumentItem.tsx
-import { IcDeleteM, IcDocumentM, IcDownloadM } from '@finanzinformatik/mcd-module-icons';
-import { Box, Card, Grid, IconButton, Stack, Typography } from '@mui/material';
-import { DialogAction, DialogProvider, ThemeConstants } from '@personalsysteme/core';
-import { useState } from 'react';
+==================================================
+// @see "CR602Dokumentation"
+import { UuiServiceMessageType } from '@finanzinformatik/cpl-module-clientlib';
+import { IcUploadM } from '@finanzinformatik/mcd-module-icons';
+import { Card, CardContent, Typography, useTheme } from '@mui/material';
+import { addNotification, ThemeConstants } from '@personalsysteme/core';
+import { useCallback } from 'react';
+import { ErrorCode, FileRejection, useDropzone } from 'react-dropzone';
 import { useTranslation } from 'react-i18next';
+import { DokumentConstants } from '../../constants/PzwConstants';
 
-interface DokumentItemProps {
-  fileName: string;
-  downloadDokument?: () => void;
-  deleteDokument?: () => void;
-  showDownload: boolean;
-  showDelete: boolean;
+interface DokumenteHochladenDialogProps {
+  maxFiles?: number;
+  onSubmit: (dateien: File[]) => void;
 }
 
-export const DokumentItem = ({ fileName, downloadDokument, deleteDokument, showDownload, showDelete }: DokumentItemProps) => {
+export const DokumentUploadZone = ({ maxFiles, onSubmit }: DokumenteHochladenDialogProps) => {
   const { t } = useTranslation();
-  const [isConfirmationDialogOpen, setConfirmationDialogOpen] = useState<boolean>(false);
-
-  const handleDialogOpen = () => setConfirmationDialogOpen(true);
-  const handleDialogClose = () => setConfirmationDialogOpen(false);
-
-  const handleConfirmation = (confirmed: boolean) => {
-    if (confirmed) {
-      deleteDokument?.();
-    }
-    handleDialogClose();
-  };
-
-  const abbrechenButton: DialogAction = {
-    label: t('Nein'),
-    variant: ThemeConstants.BUTTON_VARIANT_OUTLINED,
-    type: 'submit',
-    onClick: () => handleConfirmation(false),
-  };
-  const uebernehmenButton: DialogAction = {
-    label: t('Ja'),
-    variant: ThemeConstants.BUTTON_VARIANT_CONTAINED,
-    type: 'submit',
-    onClick: () => handleConfirmation(true),
-  };
+  const theme = useTheme();
+  const onDropAccepted = useCallback((files: File[]) => {
+    onSubmit(files);
+  }, []);
+  const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
+    fileRejections.forEach((fileRejection) => {
+      fileRejection.errors.forEach((fileError) => {
+        if (ErrorCode.FileInvalidType === fileError.code) {
+          addNotification(
+            t('Warnung'),
+            t('Dokumente.Upload.InvalidFile', { filename: fileRejection.file.name }),
+            UuiServiceMessageType.Warn
+          );
+        } else if (ErrorCode.FileTooLarge === fileError.code) {
+          addNotification(
+            t('Warnung'),
+            t('Dokumente.Upload.FileToLarge', { filename: fileRejection.file.name }),
+            UuiServiceMessageType.Warn
+          );
+        } else if (ErrorCode.TooManyFiles === fileError.code) {
+          addNotification(
+            t('Warnung'),
+            t('Dokumente.Upload.MaxFiles', { filename: fileRejection.file.name }),
+            UuiServiceMessageType.Warn
+          );
+          return false;
+        } else {
+          addNotification(
+            t('Warnung'),
+            t('Dokumente.Upload.Fehler', { filename: fileRejection.file.name }),
+            UuiServiceMessageType.Warn
+          );
+        }
+      });
+    });
+  }, []);
+  const { getRootProps, getInputProps } = useDropzone({
+    accept: {
+      'image/jpeg': [],
+      'application/pdf': [],
+    },
+    maxFiles: maxFiles,
+    maxSize: DokumentConstants.MAX_FILE_SIZE,
+    onDropAccepted: onDropAccepted,
+    onDropRejected: onDropRejected,
+  });
 
   return (
     <>
-      <Card sx={{ marginBottom: 2 }}>
-        <Stack direction={'row'} alignItems={'center'} spacing={2} padding={2} margin={2}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <IcDocumentM fontSize={'medium'} />
-          </Box>
-
-          <Stack sx={{ flexGrow: 1 }}>
-            <Typography variant={ThemeConstants.TYPOGRAPHY_MULTILINE_01}>{fileName}</Typography>
-          </Stack>
-
-          {showDownload && (
-            <IconButton onClick={downloadDokument}>
-              <IcDownloadM />
-            </IconButton>
-          )}
-
-          {showDelete && (
-            <IconButton onClick={handleDialogOpen}>
-              <IcDeleteM />
-            </IconButton>
-          )}
-        </Stack>
+      <Card>
+        <CardContent sx={{ padding: { xs: theme.sizes.small05, md: theme.sizes.small20 } }}>
+          <div
+            {...getRootProps()}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: ThemeConstants.CARD_CONTENT_GAP,
+            }}
+          >
+            <input {...getInputProps()} />
+            <IcUploadM
+              style={{
+                height: '40px',
+                width: '40px',
+              }}
+            />
+            <Typography style={{ cursor: 'pointer' }}>{t('Dokumente.Upload.DateienAuswaehlen')}</Typography>
+            <Typography>{t('Dokumente.Upload.Hinweis')}</Typography>
+          </div>
+        </CardContent>
       </Card>
-
-      {showDelete && (
-        <DialogProvider
-          isOpen={isConfirmationDialogOpen}
-          onClose={handleDialogClose}
-          title={t('Dokumente.Tabelle.DokumentLoeschenTitel')}
-          width={ThemeConstants.WIDTH_SM}
-          actions={[abbrechenButton, uebernehmenButton]}
-        >
-          <Grid container spacing={ThemeConstants.GRID_CONTAINER_SPACING}>
-            <Grid size={12}>
-              <Typography>{t('Dokumente.Tabelle.DokumentLoeschen')}</Typography>
-            </Grid>
-          </Grid>
-        </DialogProvider>
-      )}
     </>
   );
 };
+=============================================================
+import { useUuiService, UuiServiceResponse } from '@finanzinformatik/cpl-module-reactlib';
+import { useMutation } from '@tanstack/react-query';
+import { callDownloadFileByDownloadToken } from '../../apl/pzw/dokumenteUiModule/dokumenteUiModuleApi';
+
+export function useCreateDownloadLink() {
+  const uuiService = useUuiService();
+
+  return useMutation({
+    mutationFn: async (downloadToken: string) =>
+      callDownloadFileByDownloadToken(uuiService, downloadToken).then((response: UuiServiceResponse<string>) => {
+        return response.payload;
+      }),
+  });
+}
+=================================================
+import { HttpMethod, UuiServiceClient, UuiServiceResponse } from '@finanzinformatik/cpl-module-reactlib';
+import { App, Services } from '../../../constants/ServiceConstants';
+import { DokumentRead } from './DokumentRead';
+import { DokumentWrite } from './DokumentWrite';
+
+export const callDownloadFileByDownloadToken = async (
+  uuiService: UuiServiceClient,
+  downloadToken: string
+): Promise<UuiServiceResponse<string>> => {
+  return uuiService.execute<string>({
+    method: HttpMethod.Get,
+    app: App.PZW,
+    module: Services.DokumenteUiModule.module,
+    service: Services.DokumenteUiModule.services.downloadFileByDownloadToken,
+    params: { downloadToken: downloadToken },
+  });
+};
+
+export const callUploadFileByBase64 = async (
+  uuiService: UuiServiceClient,
+  dokumentWrite: DokumentWrite
+): Promise<UuiServiceResponse<DokumentRead>> => {
+  return uuiService.execute<DokumentRead>({
+    method: HttpMethod.Post,
+    app: App.PZW,
+    module: Services.DokumenteUiModule.module,
+    service: Services.DokumenteUiModule.services.uploadFileByBase64,
+    payload: dokumentWrite,
+  });
+};
+============================================================
+package osplus.pzw.uimodule;
+
+import org.springframework.http.HttpStatus;
+import osplus.apl.core.api.AplLogging;
+import osplus.apl.core.api.i18n.I18nService;
+import osplus.apl.core.api.validation.AplValidated;
+import osplus.apl.uui.api.MethodType;
+import osplus.apl.uui.api.ServiceParam;
+import osplus.apl.uui.api.ServiceResponse;
+import osplus.apl.uui.api.ServiceReturnType;
+import osplus.apl.uui.api.UiModule;
+import osplus.apl.uui.api.UiService;
+import osplus.apl.uui.api.UiServiceReturnType;
+import osplus.apl.uui.api.message.MessageService;
+import osplus.fi.core.uui.api.message.MessageType;
+import osplus.psk.core.apl.AbstractUiModule;
+import osplus.psk.core.apl.exception.UiServiceException;
+import osplus.psk.core.apl.messages.MessageCallType;
+import osplus.psk.core.apl.messages.MessageCode;
+import osplus.psk.core.apl.messages.MessageMetadata;
+import osplus.psk.core.apl.messages.MessageScope;
+import osplus.psk.core.apl.services.DokumentService;
+import osplus.psk.core.model.dokument.DokumentRead;
+import osplus.psk.core.model.dokument.DokumentWrite;
+import osplus.pzw.constants.DokumenteUiModuleConstants;
+
+
+/**
+ * UiModule für Service-Funktionen für Dokumente.
+ *
+ * @see UiModule
+ */
+@UiModule(DokumenteUiModuleConstants.NAME)
+@AplValidated
+public class DokumenteUiModule extends AbstractUiModule {
+
+    private final transient DokumentService dokumentService;
+
+    public DokumenteUiModule(final MessageService messageService,
+                             final I18nService i18nService,
+                             final DokumentService dokumentService) {
+        super(messageService, i18nService);
+        this.dokumentService = dokumentService;
+    }
+
+    /**
+     * Der @UiService refreshDownloadLink erneuert den Download-Link zum übergebenen UND-Token.
+     *
+     * @param dokumentWrite DokumentWrite
+     * @return ServiceResponse(DokumentRead)
+     */
+    @UiService(value = DokumenteUiModuleConstants.UI_SERVICE_UPLOAD_FILE_BY_BASE64, method = MethodType.POST, requiresAuthentication = true, internalOnly = true)
+    @UiServiceReturnType({
+            @ServiceReturnType(statusCode = 200, value = DokumentRead.class),
+            @ServiceReturnType(statusCode = 400)
+    })
+    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
+    public ServiceResponse<DokumentRead> uploadFileByBase64(
+            @AplValidated DokumentWrite dokumentWrite
+    ) {
+        try {
+            DokumentRead result = dokumentService.uploadFileByBase64(dokumentWrite);
+            messageService.addMessage(MessageType.SUCCESS, MessageCode.OK,
+                    i18nService.getMessage("Dokument.Upload.Create.HttpStatus.200"),
+                    MessageMetadata.instance(MessageCallType.CREATE, MessageScope.APL));
+            return new ServiceResponse<>(HttpStatus.OK.value(), result);
+        } catch (UiServiceException e) {
+            handleException(e);
+            return new ServiceResponse<>(Integer.parseInt(e.getMessageCode()));
+        }
+    }
+
+    /**
+     * Der @UiService downloadFileByDownloadToken lädt den Download-Link zum übergebenen UND-Download-Token.
+     *
+     * @param downloadToken DownloadToken
+     * @return ServiceResponse(String)
+     */
+    @UiService(value = DokumenteUiModuleConstants.UI_SERVICE_DOWNLOAD_FILE_BY_DOWNLOADTOKEN, method = MethodType.GET, requiresAuthentication = true, internalOnly = true)
+    @UiServiceReturnType({
+            @ServiceReturnType(statusCode = 200, value = DokumentRead.class),
+            @ServiceReturnType(statusCode = 400)
+    })
+    @AplLogging(logExecutionTime = true, includeParameters = true, logTrace = true)
+    public ServiceResponse<String> downloadFileByDownloadToken(
+            @ServiceParam(value = DokumenteUiModuleConstants.PARAM_DOWNLOAD_TOKEN) String downloadToken
+            ) {
+        try {
+            String result = dokumentService.getUndDownloadUrl(downloadToken);
+            messageService.addMessage(MessageType.SUCCESS, MessageCode.OK,
+                    i18nService.getMessage("Dokument.Download.Get.HttpStatus.200"),
+                    MessageMetadata.instance(MessageCallType.READ, MessageScope.APL));
+            return new ServiceResponse<>(HttpStatus.OK.value(), result);
+        } catch (UiServiceException e) {
+            handleException(e);
+            return new ServiceResponse<>(Integer.parseInt(e.getMessageCode()));
+        }
+    }
+}
+=========================================================
+
+
 
 
