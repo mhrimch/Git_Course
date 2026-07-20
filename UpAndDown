@@ -1,0 +1,670 @@
+2026-07-14
+
+1. Einleitung
+Dieses Dokument dient der Dokumentation des Up- und Downloadservices (UnD-Service). Ziel des UnD-Service ist die standardisierte Behandlung von Up- und Downloads. Vor dem UnD-Service gab es keine standardisierte Lösung für das Hoch- und Herunterladen von Dateien. Vielmehr sind an vielen Stellen individuelle Insellösungen entstanden, die nach den jeweiligen Bedürfnissen der jeweils nutzenden Anwendungen konzipiert wurden. Dabei werden u.a. auch Dateien über mehrere Anwendungen weitergereicht, wobei Speicherproblematiken auftreten können. Diese beeinträchtigen die Performance und Verfügbarkeit der entsprechenden Anwendungen. Um diesen Nachteilen entgegenzuwirken, bietet der UnD-Service eine standardisierte, zentrale Lösung für das temporäre Vorhalten von Daten.
+
+Der Up- und Downloadservice stellt eine standardisierte Lösung für das temporäre Speichern von Dateien bereit. Mithilfe dieses Services reichen Anwendungen nicht mehr die Dateien selbst weiter, sondern lediglich eine Speicher-Lokation, unter der konsumierende Anwendungen Daten von dem UnD-Service beziehen können. Auf diese Weise wird der Datentransfer zwischen und innerhalb betroffener Anwendungen reduziert und die Performance und Ausfallsicherheit des Up- und Downloads erhöht.
+
+Die zentrale Idee hinter dem Up- and Download-Service ist die temporäre Ablage von hochgeladenen Dateien in einem zentralen Speicher, der von den nutzenden Anwendungen unerreichbar ist. Nur der Up- and Download-Service reserviert für diesen Zweck Speicher und gewährt Zugriff zu diesem.
+
+Der Up- und Download-Service wird über das Multikanalgateway oder andere Anwendungen angesprochen. Die Kommunikation mit dem Up- and Download-Service ist über eine REST-API durch entsprechende HTTP-Requests möglich. Zur Verdeutlichung der Infrastruktur siehe Eingliederung des UnD-Services. Neben den Sicherheitsmaßnahmen, die das Multikanalgateway bereitstellt, bedarf es für die direkte Interaktion mit den Speicher-Allokationen (Ressourcen) eines Client-Zertifikats, das in dem http-Request-Header anzugeben ist. Dieses Zertifikat reglementiert den Zugriff auf die Endpunkte, die die direkte Interaktion mit Ressourcen ermöglichen. Auf diese Weise wird sichergestellt, dass nur Anwendungen aus dem FI-Netz Ressourcen erzeugen bzw. zu schon vorhandenen Ressourcen Zugang gewähren können.
+
+Die Operationen zur Interaktion mit Ressourcen beschränken sich auf das Anlegen von Ressourcen über einen entsprechen POST-Request, die Abfrage von Ressourcen und deren Inhalt über einen entsprechenden GET-Request und das Löschen von Ressourcen über einen DELETE-Request. Darüber hinaus können über entsprechende Endpunkte Zugangs-Token für das Schreiben in oder Lesen aus Ressourcen beantragt werden. Auch diese Endpunkte sind durch Client-Zertifikate gesichert. Dadurch entscheiden FI-interne Anwendungen selbst, ob Anwendungen und Services außerhalb des FI-Netzes Zugang zu den Ressourcen haben, um dort Daten hoch- oder herunterzuladen. Auf diese Weise sind Ressourcen nur dann für FI-externe Anwendungen und Services zugänglich, wenn vertrauenswürdige FI-interne Anwendungen und Services Zugang gewähren.
+
+Neben der Absicherung vor unbefugten Zugriffen auf den temporären Speicher stellt der UnD-Service auch sicher, dass die hochgeladenen Daten sicher abgelegt werden. Die Absicherung der Daten wird über deren Verschlüsselung bei der Ablage in eine Ressource gewährleistet. Auch wenn die Daten nur für einen kurzen Zeitraum in der Ressource abgelegt werden, so liegen diese zu keinem Zeitpunkt unverschlüsselt vor.
+
+Die Absicherung vor einem Angriff durch infizierte Dateien wird durch die Anbindung an einen Virenscanner gewährleistet. Der Up- und Downloadservice stellt sicher, dass alle hochgeladenen Dateien durch einen Virenscanner geprüft und nur dann in eine Ressource geladen werden, wenn sie ohne Befund sind. Infizierte Dateien werden direkt abgelehnt, ohne jemals in den Speicher geladen zu werden.
+
+Zur Vermeidung einer Überlastung des Speichers stellt der Up- und Downloadservice Endpunkte bereit, die das periodische Löschen von veralteten Ressourcen und Zugangs-Tokens ermöglichen. Der Zugang zu diesen Endpunkten ist über ein zusätzliches Client-Zertifikat möglich, das ausschließlich bestimmten Anwendungen den Zugang zu den entsprechenden Endpunkten ermöglicht.
+
+Die temporäre Speicherung der Daten ist gewollt und nicht optional. Um die angeschlossenen Speichermedien zu schonen und eine Archivierung von Dateien zu vermeiden, ist das Vorhalten von Dateien auf eine konfigurierte Angabe von Minuten beschränkt. Im Default sind dies 240 Minuten, bis eine Ressource samt all ihrer Inhalte restlos gelöscht wird. Diese Dauer von 240 Minuten kann zwar über einen Konfigurationsparameter verändert werden. Dies sollte aber nur in Ausnahmefällen erfolgen.
+
+2. Up- und Downloadservice
+Die Umsetzung eines neuen Up- und Downloadservices (kurz: UnD-Service) resultiert aus der Anforderung an eine zentrale Datenverwaltungskomponente, die das temporäre Vorhalten von Daten für Anwendungen übernimmt.
+
+Als zentrale Datenverwaltung, die Daten temporär vorhalten kann, soll der UnD-Service sowohl im APL-Kontext als auch für Nicht-APL-Anwendungen verfügbar sein und ist somit außerhalb der APL anzusiedeln.
+
+Eingliederung des Up  und Downloadservice in die APL Architektur
+Abbildung 1. Eingliederung des UnD-Services
+Damit die REST-API des UnD-Services nicht direkt von anderen Anwendungen angesprochen werden muss, wird ein universeller Client bereitgestellt, der sämtliche HTTP-Requests hinter einfachen Funktionsaufrufen kapselt.
+
+Für eine Übersicht der verfügbaren REST-Endpunkte siehe REST-Endpunkte.
+
+Für Details zum UnD-Client siehe Up- and Download Client.
+
+2.1. REST-Endpunkte
+Die angebotenen REST-Endpunkte des UnD-Service sind in zwei Funktionsbereiche unterteilt:
+
+Resource-Management-Controller
+
+Up-And-Download-Controller
+
+Die Trennung in diese Funktionsbereiche hat den Vorteil, dass die Sichtbarkeit der darin verfügbaren Endpunkte nach außen geregelt werden kann. So sind die Endpunkte in dem Resource-Management-Controller nur innerhalb des FI-Netzes und durch Nutzung von Client-Zertifikaten möglich. Die Endpunkte des Up-And-Download-Controllers sind auch nach außen sichtbar, solange die erforderlichen Tokens für die Interaktion mit dem UnD-Service von einem FI-internen Service bezogen wurden.
+
+Die OpenApi Spezifikation beschreibt die Endpunkte beider Funktionsbereiche.
+
+Anwendungen, die einen Upload mit einer bereitgestellten Upload-URL durchführen wollen, müssen folgende Punkte beachten:
+
+Der Upload-Request muss mit dem Content-Type multipart/form-data gekennzeichnet sein.
+
+Die Dateien müssen als Part mit der Bezeichnung file in den Request eingefügt werden.
+
+Ein beispielhafter Java-Code bei Nutzung des Apache HttpClients sieht folgendermaßen aus:
+
+MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+InputStreamBody inputStreamBody = new InputStreamBody(someInputStream, ContentType.MULTIPART_FORM_DATA, dataName);
+builder.addPart("file", inputStreamBody);
+HttpEntity httpEntity = builder.build();
+HttpPost request = new HttpPost(url);
+request.setEntity(httpEntity);
+HttpResponse response = this.httpClient.execute(request);
+2.2. Absicherung von Endpunkten
+Bei der Absicherung der REST-Endpunkte werden zwei Varianten unterschieden. Die Idee dahinter ist, dass zwischen Aufrufen innerhalb des FI-Netzes und außerhalb davon unterschieden werden muss. Nach dieser Idee sollen Endpunkte, die direkten Einfluss auf das Verwalten von Ressourcen haben, vor Zugriffen außerhalb des FI-Netzes geschützt werden. Selbst die Endpunkte, die von außerhalb erreichbar sind, sollen nicht ohne Weiteres zugänglich sein. Nach diesen Einschränkungen ergeben sich die Absicherung von Endpunkten durch Client-Zertifikat oder Up- und DownloadToken.
+
+2.2.1. Client-Zertifikat
+Alle Endpunkte hinter dem Endpunkt /resource sind durch ein Client-Zertifikat abgesichert, das von autorisierten Services in dem Request-Header unter dem Key x-apl-client-auth mitzuschicken ist. Somit sind sämtliche Endpunkte, die die direkte Interaktion mit der Ressourcenverwaltung, wie das Erstellen, Abfragen und Löschen von Ressourcen, sowie das Beantragen von Up- und Download-Token, nur aus dem FI-internen Netz abrufbar. Das Client-Zertifikat muss Base64-kodiert verschickt werden.
+
+Neben den Endpunkten /resource sind auch die Endpunkte /command durch ein anderes Client-Zertifikat abgesichert, das lediglich administrierenden Anwendungen Zugang gewährt. Grund dafür ist, dass der UnD-Service periodische Aufräumarbeiten benötigt, die beispielsweise das Löschen veralteter Ressourcen oder abgelaufener Token ermöglicht. Die so abgesicherten Endpunkte sind somit ausschließlich für Services zuständig, die diese periodischen Aufräumarbeiten anstoßen können. Grund für das Auslagern dieser Aufräumarbeiten ist, dass auf diese Weise ohne viel Aufwand in den Speicher hinter dem UnD-Service eingegriffen werden kann. Zudem kann so sichergestellt werden, dass lediglich eine Instanz des UnD-Service die Aufräumarbeiten übernimmt und so keine Race Conditions entstehen können. Für Details zum Aufräumen von Ressourcen und Tokens siehe Periodische Tasks.
+
+2.2.2. Up- und DownloadToken
+Für die Interaktionen mit dem UnD-Service, die das Hoch- oder Herunterladen von Dateien betreffen, ist ein Up- bzw. Download-Token erforderlich. Es handelt sich hierbei um JSON Web Token (JWT), bei deren Erzeugung eine zufällige UUID generiert und in den Claims des Tokens abgelegt wird. Diese zufällige Id, die somit Teil des Tokens ist, kann allerdings nicht ohne Kenntnis über das verwendete Passwort bei der Tokenerstellung extrahiert werden. Neben der Integration der Id in den Token, wird zudem in einem Token-Storage ein Eintrag für diese Id vorgenommen, der auf die betroffene Ressource und betroffenen FileIds verweist. Somit kann der UnD-Service beim Empfang eines Tokens eine entsprechende Assoziation herstellen. Für die Signatur des Tokens wird ein Secret-Key verwendet, der über die Property und.token.secret gesetzt werden kann.
+
+Da Up- und Download-Token eine zentrale Komponente in der Kommunikation mit dem UnD-Service darstellen, werden diese Tokens hier kurz näher betrachtet.
+
+UploadToken
+
+Der UploadToken ist erforderlich, um eine oder mehr Dateien per Upload in eine Ressource zu laden. UploadToken sind, unter Angabe der entsprechenden Ressource (resourceId), über einen abgesicherten Endpunkt zu beziehen, der in der obigen Tabelle aufgeführt ist. Hierbei ist anzugeben, wie viele Minuten der Token gültig sein soll und welcher Key für die Verschlüsselung herangezogen werden soll. Des Weiteren können über die Flags skipEncryption und skipVirusScanning Vorgaben für das Verhalten des UnD-Service während des Uploads gemacht werden. Das Flag skipEncryption soll dabei darauf hindeuten, dass die hochgeladene Datei nicht mehr verschlüsselt werden muss. Dabei ist aber vorausgesetzt, dass die hochgeladene Datei eine vom UnD-Service verschlüsselte Datei ist. Dies wird vom UnD-Service beim Upload-Prozess geprüft. Sollte die Datei nicht durch den UnD-Service verschlüsselt worden sein, wird der Upload Request abgelehnt. Das Flag skipVirusScanning soll darauf hindeuten, dass die Datei nicht durch den Virenscanner auf Schadsoftware geprüft werden soll. Dies ist allerdings nur dann möglich, wenn der in dem Header x-service-name übergebene Servicename auf der Whitelist des UnD-Service vermerkt ist. Services, die das Virenscanning für ihre Dateien ausschließen möchten, müssen dies vor der eigentlichen Nutzung des UnD-Services anmelden, damit die vereinbarte Service-Kennung in die Whitelist aufgenommen wird. Um die Schnittstelle zur Erzeugung von UploadToken möglichst einfach zu halten, wird die Parametrisierung in Form eines UploadDescriptors in dem Request-Body übergeben.
+
+Es ist zudem anzumerken, dass ein UploadToken genau einmal genutzt werden kann. Eine Token-Invalidierung wird nur dann vorgenommen, wenn der damit durchgeführte Upload erfolgreich war.
+
+Zu beachten ist, dass der Token auch nach der Invalidierung weiterhin nutzbar ist. Beispielsweise lässt sich damit abfragen, welche Dateien in welche Ressource geladen wurden. Weiterhin lässt sich auf Basis des UploadTokens ein DownloadToken generieren, mit dem sich die hochgeladenen Dateien herunterladen lassen. Auf diese Weise können Services außerhalb des FI-Netzes DownloadToken beantragen, ohne sich vorab darüber informieren zu müssen, welche Dateien mit dem UploadToken hochgeladen wurden. Die weitere Nutzung des UploadTokens ist allerdings nur möglich, solange der Token nicht abgelaufen ist. Die bei der Erstellung angegebene Gültigkeit in Minuten darf also noch nicht abgelaufen sein.
+
+DownloadToken
+
+DownloadToken beziehen sich immer auf eine Ressource und eine oder mehrere darin hochgeladene Dateien. Die Erzeugung eines DownloadTokens ist über den abgesicherten Endpunkt /resource/{resource_id}/downloadToken unter Angabe der Gültigkeit des Tokens in Minuten und den betreffenden Dateien möglich. Zusätzlich ist auch der für den Download zu nutzende Key anzugeben, sollte die Datei beim Upload mit einem spezifischen Key verschlüsselt worden sein. Der Download-Key muss daher dem Key Feld des UploadDescriptors des UploadTokens entsprechen. Sollte kein spezifischer Key bei dem Upload benutzt worden sein, wird auch bei dem Download der Default-Key des UnD-Service für die Entschlüsselung genutzt, weshalb das Key-Feld des DownloadDescriptors leer bleiben kann.
+
+Für eine übersichtliche API ist bei der Beantragung von DownloadToken ein DownloadDescriptor anzugeben, der die zuvor erwähnten Angaben kapselt. Mit einem DownloadToken können eine oder mehr Dateien heruntergeladen werden. Daher bietet der DownloadDescriptor auch die Möglichkeit zur Angabe eines archiveName an, unter dem das bereitgestellte Zip-File vom UnD-Service zurückgegeben wird. Da auch eine einzelne Datei in dem Zip-Foprmat heruntergeladen werden kann, wird das Feld archiveName als Indikator über eine Zip-Download genutzt. Sobald das Feld archiveName gesetzt wird, werden die Dateien, egal ob eine oder mehrere, in einer Zip-Datei mit entsprechendem Namen (archiveName) bereitgestellt. Sollte, im Falle eines Downloads mehrerer Dateien, kein archiveName angegeben werden, wird die Zip-Datei mit dem Default-Namen Multidownload.zip bereitgestellt. Neben dem archiveName kann auch das archivePassword in dem DownloadDescriptor angegeben werden. Dieser beschreibt das Passwort, mit dem das Zip-Archiv verschlüsselt werden soll. Soll die Zip-Datei nicht verschlüsselt werden, kann das archivePassword einfach leer bleiben.
+
+Des Weiteren bietet der DownloadDescriptor auch die Möglichkeit, Angaben zu den gewünschten Dateinamen zu machen. Hierzu können in FileDownloadDescriptor die Id der Datei und der gewünschte Dateiname angegeben werden.
+
+Da zur Erzeugung eines DownloadTokens Kenntnisse über die Identifikation einer Ressource und deren Inhalte erforderlich sind, kann ein DownloadToken auf Basis eines UploadToken erzeugt werden. Dabei wird im Hintergrund eine Assoziation zwischen einem UploadToken und den damit hochgeladenen Ressourcen gemacht, woraus sich ein DownloadToken ergibt, der genau diese Informationen kapselt.
+
+Auf diese Weise können DownloadToken schnell und zielgerichtet direkt beantragt werden. Im Gegensatz zu UploadToken, bleiben DownloadToken nach ihrer Nutzung nicht länger verfügbar und es erfolgt eine Löschung aus dem Token-Storage. Eine Ausnahme sind Download Token, die mit einer Retention im DownloadDescriptor angelegt wurden.
+
+DownloadToken können anstatt in einem entsprechenden Header-Feld, x-und-token-auth, auch als Teil der URL, in Form eines Parameters, downloadToken, übergeben werden. Somit wird die Möglichkeit gegeben, URLs für den Download zu generieren und diese URLs als Download-Links an Endbenutzer weiterzugeben.
+
+2.2.3. Retention
+Im Regelfall ist der DownloadToken nur für einen einmaligen Download verwendbar. Hintergrund ist, dass die Token als URL Parameter mitgegeben werden und daher z.B. auch in Access Logs zu finden sind. Um die Dateien vor dem Zugriff durch Dritte zu schützen, wird der Download Token beim Download gelöscht. In manchen Fällen ist es jedoch notwendig, einen Download unter Angabe der gleichen URL mehrfach zu ermöglichen. In diesem Fall kann die Absicherung nicht ausschließlich durch den DownloadToken erfolgen. Es bedarf eines zusätzlichen Parameters, der im Header oder als Cookie mitgeliefert wird.
+
+Ein entsprechendes Retention Objekt im DownloadDescriptor enthält wahlweise eine cookie oder header Namen sowie eine value Property für den Parameter.
+
+"retention": [{
+  "cookie": "JSESSIONID",
+  "value": "00009pQz0AWPsG9RCdfmZ5BrbTi:98d9d2d23"
+}]
+Wurde ein DownloadToken unter Angabe eines solchen Retention Objekts erzeugt, muss beim Download zwingend der entsprechende Cookie oder Header mitgeliefert werden. Im Gegenzug kann der Download Token dann mehrfach verwendet werden, um einen Retry des Downloads unter der gleichen URL zu ermöglichen.
+
+2.2.4. Basic Authentication
+Zur weiteren Absicherung von Up- und Downloads sind die erforderlichen Tokens mit einem BasicAuth-Feature versehen. Somit ist es möglich, bei der Erzeugung eines Tokens einen Usernamen und ein Passwort anzugeben. Werden diese Werte im entsprechenden UploadDescriptor oder DownloadDescriptor in Form der Datenstruktur BasicAuth angegeben, wird bei der Nutzung des so erzeugten Tokens bei einem Up- bzw. Download-Requests der AuthorizationHeader geprüft. Beispiel:
+
+Authorization: Basic d2lraTpwZWRpYQ==
+Die Base64-Kodierung des Usernamens und des Passworts wird vom UnD-Service aufgelöst und gegen die angegebenen Daten aus dem UploadDescriptor oder DownloadDescriptor geprüft. Eine fehlende oder fehlerhafte Angabe des Usernamens und/oder Passworts wird mit einem Fehler 401 - Unauthorized beantwortet.
+
+2.3. Verschlüsselung
+Neben der Absicherung der REST-Endpunkte ist auch die eigentliche Absicherung der temporär abgelegten Dateien zu beachten. Diese Dateien sind teilweise nur für sehr kurze Zeit in einer Ressource. Um jedoch eine zusätzliche Absicherung vor unberechtigten Zugriffen zu gewährleisten, werden Dateien stets verschlüsselt abgelegt. Der dafür genutzte Schlüssel kann entweder beim Hochladen einer Datei oder der Initialisierung eines Chunk-Uploads vorgegeben werden. Sollte kein Schlüssel angegeben werden, wird ein Default-Schlüssel verwendet. Bei Angabe eines Schlüssels ist ein Download nur dann möglich, wenn der korrekte Schlüssel vorliegt. Soll der Default-Schlüssel verwendet werden, darf kein Schlüssel angegeben werden.
+
+Für den Schlüssel sind folgende Punkte zu beachten:
+
+Der Schüssel muss eine Länge von 32 Zeichen haben.
+
+Pro Ressource kann nur ein Schlüssel genutzt werden.
+
+Der Schlüssel entspricht immer dem Schlüssel, der für den ersten Upload in die entsprechende Ressource genutzt wurde. Grund dafür ist, dass so der Download von einer oder mehreren Dateien möglich ist. Unterschiedlich verschlüsselte Dateien sind nicht gleichzeitig herunterladbar, sofern diese unter verschiedenen Schlüsseln abgelegt wurden, da ein Download-Request die Angabe maximal eines Schlüssels zulässt.
+
+Die Prüfung des Schlüssels wird durch das Ablegen einer Datei mit dem Namen {resourceId}_key ermöglicht. In dieser Datei wird die ResourceId abgelegt. Im Anschluss wird die Datei mit dem zu nutzenden Schlüssel verschlüsselt. Auf diese Weise kann für jeden Upload in eine Ressource geprüft werden, ob der bereitgestellte Schlüssel die Datei _key entschlüsselt und die ResourceId daraus korrekt gelesen werden kann.
+
+2.4. Virenscanner
+Als Schutz vor externen Angriffen auf das FI-Netz wird jede in den temporären Speicher hochgeladene Datei durch einen angebundenen Virenscanner geprüft. Die Prüfung der Dateien durch den UnD-Service ist vor allem durch die Ermöglichung von Chunk-Uploads notwendig. Da Chunks nur Bruchstücke einer Datei sind, ist es nahezu unmöglich daran zu erkennen, ob die Ausgangsdatei einen Virus enthält oder nicht. Um dieses Risiko zu reduzieren, wird eine Datei, die nach dem Upload aller Chunks in dem UnD-Service zusammengesetzt wird, zunächst an den angebundenen Virenscanner gesendet bevor sie in den temporären Speicher geladen wird. Sollte der Virenscanner einen Infekt feststellen, wird der gesamte Chunk-Upload verworfen und eine entsprechende Warnung zurückgegeben.
+
+Für das Virenscanning wird ein Bluecoat-Proxy durch die Verwendung des Internet Content Adaption Protocol (ICAP) angesprochen.
+
+2.5. Logging und Exceptions
+Das Log-Verhalten des Up- und Downloadservices beschränkt sich auf das Log-Level trace. Da das Loggen der Interaktionen mit dem Up- und Downloadservice aufgrund der erwarteten Vielzahl an Requests zu einem unübersichtlichen Log-Verhalten führen könnte, wurde zugunsten eines Loggings im Trace-Modus entschieden. Auf diese Weise werden die Logs des UnD-Service schlank gehalten und lediglich für das Nachvollziehen von Datenflüssen angereichert.
+
+Neben dem Logging spielen Exceptions eine wichtige Rolle. Für Details zu möglichen Exceptions für die jeweiligen Endpunkte siehe Abschnitt [Datenstrukturen im Kontext des UnD-Service].
+
+2.6. Periodische Tasks
+Wie bereits im Abschnitt Client-Zertifikat dargestellt, erfordert der temporäre Speicher hinter dem UnD-Service regelmäßige Aufräumarbeiten, um sicherzustellen, dass der Speicher nicht vollläuft. Die bereits zu Anfang erwähnten 240 Minuten gelten hier als Referenz, ab wann eine Ressource als veraltet angesehen und aufgeräumt wird. Für die Aufräumarbeiten wurde ein sogenannter Command implementiert, der über den Endpunkt /command angestoßen werden kann. Somit werden autorisierte Administrations-Services dazu befähigt, in periodischen Zyklen die möglichen Kommandos an eine oder mehrere Instanzen des UnD-Services zu schicken. Konkret erledigt der implementierte Cleanup-Command das Löschen von Ressourcen und abgelaufener Token.
+
+Durch das Löschen von Ressourcen wird sichergestellt, dass der Speicher nicht so schnell volllaufen kann. Zusätzlich wird sichergestellt, dass der UnD-Service tatsächlich nur als temporärer Speicher-Service und nicht als Langzeit-Ablage genutzt wird. Als grobe Richtlinie ist hier eine Dauer von maximal 4 Stunden vorgesehen, die eine Ressource existieren darf. Da das CleanupStorageCommand parametrisierbar ist, kann die Lebensdauer von Ressourcen jederzeit angepasst werden, ohne in den Prozess des UnD-Services eingreifen zu müssen.
+
+Für die Token-Beseitigung ist derzeit keine Parametrisierung vorgesehen. Grund dafür ist, dass Token durch die Vorgabe einer Gültigkeit in Minuten bei der Erstellung, ohnehin eine begrenzte Gültigkeitsdauer haben. Diese Gültigkeitsdauer hilft zwar, dass der Token nur innerhalb dieser Zeitspanne nutzbar ist. Der Token befindet sich danach allerdings immer noch in dem Token-Storage. Durch die Implementierung des Commands für die Löschung abgelaufener Token ist sichergestellt, dass der Token-Storage regelmäßig aufgeräumt wird. Dabei werden alle Token gelöscht, egal ob Up- oder DownloadToken, deren Ablaufzeitpunkt in der Vergangenheit liegt.
+
+2.7. Profile
+Für den Start des Up- and Downloadservices stehen verschiedene Profile zur Verfügung. Ein wichtiges Profil im Zusammenhang mit dem UnD-Service ist das Profil enable-discovery. Durch dieses Profil wird der UnD-Service dazu veranlasst, sich bei einer Service-Registry anzumelden. Dieses Profil ist dann wichtig, wenn der UnD-Service von anderen APL-Anwendungen über den im APL-Framework bereitgestellten Connector genutzt wird.
+
+Für die Verwendung des UnD-Services im Umfeld der Containerplattform muss das Profil cloud gesetzt werden.
+
+Soll der UnD-Service alleinstehend betrieben werden, ist ein Profil zu setzen, das eine integrierte Lösung für das periodische Löschen von Ressourcen aktiviert. Da das periodische Löschen über einen abgesicherten Endpunkt möglich sein soll, ist ein Umgang mit dem periodischen Löschen beim Fehlen eines autorisierten Services erforderlich. Durch das Profil embedded-administration wird ein integrierter Cron-Job aktiviert, der mithilfe der Property und.resource.tenure.minutes die Löschung der Ressourcen in einem fünfminütigen Turnus anstößt.
+
+Für den lokalen Betrieb des UnD-Services ist das Profil local-development wichtig. Durch die Nutzung dieses Profils wird das Virenscanning deaktiviert, da es nicht möglich ist, eine Verbindung zwischen einem lokalen Arbeitsplatz und dem CAS-System (Bluecoat-Proxy) herzustellen. Des Weiteren werden das Tracing und die Administration des UnD-Service für den lokalen Betrieb deaktiviert, um den Overhead des Services zu reduzieren.
+
+3. Workflows und Use-Cases in dem UnD-Service
+Ziel dieses Abschnitts ist die exemplarische Darstellung der Funktionen des UnD-Services. Die Funktionen sollen das Verständnis für die Interaktion mit dem UnD-Service vertiefen, wobei auf die Erläuterungen in den Abschnitten [Datenstrukturen im Kontext des UnD-Service] und REST-Endpunkte weiter eingegangen wird.
+
+Als Orientierung soll nachfolgende Abbildung die verschiedenen Workflows innerhalb des UnD-Services veranschaulichen.
+
+workflow
+Abbildung 2. Workflow-Abbildung des UnD-Services
+3.1. Ressource anlegen
+Um Dateien mithilfe des UnD-Services hoch- oder herunterladen zu können, muss zunächst eine Ressource, also eine Speicherallokation, beantragt werden. Diese Beantragung kann über den durch Client-Zertifikate abgesicherten Endpunkt resource erfolgen. Mithilfe der übertragenen ResourceOptions kann in einem direkten POST-Request gegen den Endpunkt resource der UnD-Service dazu veranlasst werden, in dem zugrundeliegenden StorageService eine Ressource anzulegen. Die Ressource selbst erhält dabei eine zufällige UUID als Namen.
+
+Wurde die Ressource erfolgreich angelegt, so werden die überlieferten ResourceOptions in einem JSON-File mit dem Postfix {resourceId} _resource_metadata.json in der zuvor angelegten Ressource abgelegt. Tritt beim Marshalling der ResourceOptions in die JSON-Datei ein Fehler auf, so wird die Ressource gelöscht und eine Runtime-Exception geworfen. Im Fall eines erfolgreichen Marshallings wird ein Objekt der Klasse ResourceDescriptor zurückgegeben, um dem anfragenden Service die erfolgreiche Ressourcen-Erstellung zu signalisieren und zugleich die für weitere Anfragen erforderliche resourceId bereitzustellen.
+
+createResourceWithHeader
+Abbildung 3. POST-Request zur Erzeugung einer Ressource mit dem Client-Zertifikat im Header
+createResourceBody
+Abbildung 4. POST-Request zur Erzeugung einer Ressource mit den ResourceOptions im Body
+3.2. Ressource löschen
+Das Beseitigen von Ressourcen ist über einen DELETE-Request auf den abgesicherten Endpunkt /resource/{resourceId} möglich. Mit der übertragenen resourceId wird der UnD-Service dazu veranlasst, die Ressource mit der entsprechenden Id im zugrundeliegenden StorageService, z. B. FileSystem, zu löschen. Sollte keine Ressource mit der entsprechenden Id existieren oder der Löschvorgang fehlschlagen, so wird eine Runtime-Exception geworfen. Da der Delete-Request an einen mit Client-Zertifikaten abgesicherten Endpunkt geht, ist sichergestellt, dass ausschließlich Anwendungen innerhalb des FI-Netzes für das Löschen von Ressource autorisiert sind.
+
+3.3. Ressource und deren Inhalte abfragen
+Mit einer bekannten resourceId kann mit einem GET-Request gegen den Endpunkt /resource/{resourceId} eine Beschreibung der Ressource mit der entsprechenden Id angefordert werden. Damit wird der UnD-Service veranlasst, die Metadaten der Ressource und der darin hochgeladenen Dateien bei dem zugrundeliegenden StorageService anzufordern und die Metadaten als ResourceDescriptor zurückzugeben. Sollte keine entsprechende Ressource existieren, wird eine Runtime-Exception geworfen. Auch hier sind nur Anwendungen innerhalb des FI-Netzes für das Abfragen von Ressourcen und deren Inhalte autorisiert.
+
+getResourceUsingIdWithHeader
+Abbildung 5. Abfragen eines Ressourcen-Inhalts
+Sollten Dateien in der Ressource hochgeladen sein, werden auch die Metadaten, einschließlich der externen Dateiinformationen ausgegeben.
+
+3.4. UploadToken erzeugen
+Um Dateien in eine zuvor erstellte Ressource hochladen zu können, sowohl von innerhalb als auch von außerhalb des FI-Netzes, ist es notwendig, einen UploadToken zu beantragen. Mit dem beantragten und bereitstellten UploadToken kann genau einmal der Upload von einer oder mehr Dateien in eine Ressource durchgeführt werden. Mit einem POST-Request auf den Endpunkt /resource/{resourceId}/uploadToken kann ein UploadToken im UnD-Service registriert werden. Die Restriktionen für den Upload werden dabei im Request-Body in Form eines UploadDescriptors spezifiziert.
+
+createUploadTokenWithHeader
+Abbildung 6. Header für die Anforderung eines UploadTokens
+createUploadTokenUploadDescriptor
+Abbildung 7. UploadDescriptor für die Anforderung eines UploadTokens
+Der erzeugte Token wird in einem entsprechenden Token-Storage abgelegt.
+Durch die Kapselung der Ressourcen-ID in diesem Token wird eine Verbindung zwischen einem Token und der zugehörigen Ressource hergestellt. Auf diese Weise müssen hochladende Anwendungen nicht wissen, welche Ressourcen existieren. Der UnD-Service wird die entsprechende Zuordnung des UploadTokens an die betreffende Ressource bei dem Upload-Request serverseitig auflösen.
+
+Für einige Services ist das Auslassen des Virenscannings relevant, weshalb es für vertrauenswürdige Services möglich ist, beim UploadToken-Request das Flag skipVirusScanning zu setzen. Liegt der angegebene Servicename im Header x-service-name in der Whitelist des UnD-Services, ist ein solcher Request valide. Die mit dem erzeugten UploadToken hochgeladenen Dateien werden dann nicht an den Virenscanner gesendet. Steht das Flag skipVirusScanning auf true und der Service steht nicht in der Whitelist, wird der Request durch den UnD-Service abgelehnt und kein Token erzeugt.
+
+createUploadTokenWithHeaderTrustedService
+Abbildung 8. Header für die Anforderung eines UploadTokens für einen vertrauenswürdigen Service
+createUploadTokenUploadDescriptorTrustedService
+Abbildung 9. UploadDescriptor für die Anforderung eines UploadTokens für einen vertrauenswürdigen Service
+Das Flag skipEncryption signalisiert, dass die mit dem erzeugten Token hochgeladenen Dateien bereits verschlüsselt sind und somit keine weiteren Verschlüsselung erfordern. Dies setzt allerdings voraus, dass die Verschlüsselung vom UnD-Service durchgeführt wurde. Ein solcher Fall tritt ein, wenn eine Datei von einer Anwendung mit dem Flag skipDecryption heruntergeladen und später wieder hochgeladen werden soll.
+
+Die Token-Generierung erfolgt mithilfe von JSON Web Token (JWT) und eines internen Passworts. Dadurch wird sichergestellt, dass nur der UnD-Service im Stande ist, ankommende Tokens zu entschlüsseln. Im Vorfeld der Token-Erstellung wird eine zufällige UUID erzeugt, die in den Claims des JWT abgelegt und somit Teil des Tokens ist. Zeitgleich wird im Storage unter dieser UUID ein Eintrag abgelegt, der die Informationen resourceId, expiration und fileIds enthält. Unter den fileIds wird abgelegt, welche Dateien mithilfe eines Tokens in die entsprechende Ressource hochgeladen wurden.
+
+Sollte der Token abgelaufen sein, wird der Token in einem extern angestoßenen Prozess aus dem Token-Storage entfernt. Somit ist sichergestellt, dass der Token-Storage nicht zu groß wird. Sollte ein UploadToken schon benutzt, aber noch nicht abgelaufen sein, so wird dieser Token als used markiert und kann somit nur noch für Informationsabfragen genutzt werden. Beispielsweise ist es möglich, mit einem UploadToken den damit hochgeladenen Inhalt einer Ressource abzufragen oder aber auf dessen Basis einen DownloadToken zu generieren.
+
+3.5. Upload
+Mithilfe eines UploadTokens ist es einem Service möglich, eine oder mehrere Dateien in eine Ressource hochzuladen. Durch die Nutzung eines UploadTokens ist die Angabe der betreffenden resourceId nicht erforderlich. Es muss nur die hochzuladende Datei als Parameter im Body des POST-Requests unter dem Parameter file angehängt werden. Die restlichen Konfigurationen und Restriktionen für den Upload werden im Vorfeld bei der Erstellung des UploadTokens getroffen.
+
+uploadWithHeader
+Abbildung 10. Header eines Upload Requests
+uploadBody
+Abbildung 11. Body eines Single-Upload Requests
+getResourceAfterUploadWithHeader
+Abbildung 12. Ergebnis einer Ressourcen-Anfrage nach einem File-Upload
+Der UnD-Service empfängt den POST-Request und unterzieht diesen Request zunächst folgenden grundlegenden Prüfungen:
+
+Kommt der MimeType der überlieferten Datei in der Liste der zugelassenen MimeTypes in den ResourceOptions vor?
+
+Ist die Datei eine im Vorfeld durch den UnD verschlüsselte Datei (skipEncryption)?
+
+Sollten diese beiden Prüfungen positiv ausfallen, sendet der UnD-Service die Datei in einem ersten Schritt an den angebundenen Virenscanner (skipVirusScanning=false). Ein Befund führt zur sofortigen Ablehnung des Uploads. Ohne Befunde wird der UnD-Service dazu veranlasst, die Datei an die anschließenden Prozessschritte weiterzugeben.
+
+Dabei wird zunächst eine zufällige UUID als Bezeichnung und Identifikator für die Datei in der Ressource ermittelt. Unter dieser Id wird über einen FileOutputStream, dem ein CipherOutputStream vorgesetzt wird, die Datei verschlüsselt in der Ressource abgelegt. Sollte die Datei erfolgreich in der Ressource abgelegt werden, wird versucht, ein FileMetaData Objekt zu erzeugen und dieses Objekt in ein JSON-File mit der zuvor bestimmten UUID als Dateiname zu speichern. Sollte während dieses Prozesses ein Fehler auftreten, wird der Upload mit einer Exception beendet und die abgelegte Datei gelöscht. Dies geschieht, da keine Datei in einer Ressource abgelegt werden darf, ohne dass es ein entsprechendes Metadaten-File zu diesem gibt. Im Falle eines Multi-File-Uploads wird dieser Vorgang für jedes File, das mit dem Parameter file angegeben wird, durchlaufen.
+
+uploadBodyMultiple
+Abbildung 13. Body eines Multi-Upload-Requests
+Nachdem ein Upload erfolgreich durchgeführt wurde, sind in der Ressource das hochgeladene File mit dem zugehörigen Metadaten-File (Postfix {uuid}_file_metadata.json) zu finden. Das Metadaten-File ist wichtig, da es nicht nur die Metadaten wie den originalen Dateinamen oder den Zeitpunkt des Uploads enthält, sondern auch deshalb, weil Downloads immer über die Bereitstellung eines InputStreams auf eine Datei erfolgen. Sollte nun für eine Datei gelten, dass diese nach dem einmaligen Download zu löschen ist, kann die eigentliche Datei nicht gelöscht werden, da der UnD-Service nicht weiß, wann der bereitgestellte Stream konsumiert wurde. Hier kommt das Metadaten-File ins Spiel. Sollte eine Datei nach einem einmaligen Download gelöscht werden, wird das Metadaten-File gelöscht. Dadurch kann eine Datei nicht erneut heruntergeladen werden. Grund dafür ist, dass beim Download einer Datei immer versucht wird, das zugehörige Metadaten-File zu lesen. Sollte dieses File nicht mehr aufzufinden sein, bricht der Download-Request mit einem entsprechenden Fehler ab, der mitteilt, dass die angeforderte Datei nicht existiert. Die eigentliche Datei, auf der ein InputStream bereitgestellt wurde, liegt somit in der Ressource bis die Ressource beseitigt ist.
+
+3.5.1. Externe Dateiinformationen
+Werden mehrere Dateien in einer Ressource hochgeladen, ist es in manchen Anwendungsfällen nicht möglich, die Dateien nach dem Upload zu identifizieren. Es gibt daher die Möglichkeit, die file Parts durch individuelle Bezeichner (file1, file2,file3, …​, file99) zu ersetzen und eine Beschreibung in einem info Part mitzuliefern.
+
+uploadBodyMultipleWithInfo
+Abbildung 14. Body eines Multi-Upload-Requests mit externen Dateiinformationen
+Der info Part sollte dann eine JSON-Datei enthalten, die die file Parts beschreibt.
+
+{
+    "file1": {
+        "externalFileId": "image-file",
+        "externalFileMetaData": "The image File"
+    },
+    "file2": {
+        "externalFileId": "text-file",
+        "externalFileMetaData": "A text file"
+    }
+}
+Diese externen Dateiinformationen werden in der Ressource gespeichert und können wie beschrieben abgefragt werden.
+
+3.6. Chunk-Upload
+Für einen Chunk-Upload ist es zunächst wichtig, Informationen über das in Chunks hochgeladene File in der Ressource zu platzieren. Darüber hinaus muss eine UUID (chunkUploadId) reserviert werden, unter der die einzelnen Chunks abgelegt werden können, um ein einfacheres Zusammenführen der Dateien zu ermöglichen. Diese Vorbereitung eines Chunk-Uploads wird in Folge eines POST-Requests auf den Endpunkt /resource/chunkUploadInit abgearbeitet. Dabei erwartet der Service die Anzahl der erwarteten Chunks, den Dateinamen und einen optionalen Schlüssel im Body des Requests in Form eines ChunkUploadDescriptors.
+
+Nachfolgend wird geprüft, ob der MimeType in der Ressource zulässig ist. Sollte diese Prüfung positiv ausfallen, wird eine Metadaten-Datei mit dem Namen {chunkUploadId}_chunk_metadata.json in der Ressource abgelegt, die die Id selbst, den Dateinamen der hochzuladenden Datei, Informationen über die einzelnen Chunks und einen Status des ChunkUploads enthält. Der Status kann folgende Ausprägungen haben:
+
+Error
+
+InProgress
+
+Merging
+
+Ok
+
+Somit erlaubt ein GET-Request auf den Endpunkt /chunkUpload eine Information über einen Chunk-Upload zu beziehen, während dieser möglicherweise noch im Gange ist. Dabei signalisiert InProgress den noch ausstehenden Upload von Chunks. Solange nicht alle zuvor angekündigten Chunks hochgeladen sind, bleibt dieser Status bestehen. Erst wenn alle Chunks hochgeladen sind, wird der UploadStatus entsprechend angepasst.
+
+chunkUploadInit
+Abbildung 15. Initialisierung eines Chunk-Uploads
+Die einzelnen Chunks werden als POST-Requests an den Endpunkt /chunkUpload hochgeladen. Dabei können die entsprechenden Informationen zu der betroffenen Ressource und der zu nutzenden chunkUploadId über den erforderlichen UploadToken ermittelt werden. Neben dem UploadToken im Header des Requests sind noch zwei Parameter für den Upload eines Chunks erforderlich. Der Chunk selbst ist als Parameter chunk in Form eines MultipartFiles hochzuladen. Zusätzlich ist ein ChunkDescriptor unter dem Parameternamen description anzuhängen, der den Hash und den Index des Chunks enthält.
+
+Der so übermittelte Chunk wird ohne einen Virenscan und unverschlüsselt unter dem angegebenen Index in einer Datei mit dem Namen chunk_{chunkUploadId}_{index} in der entsprechenden Ressource abgelegt. Zuvor wird jedoch dessen Hash berechnet und mit dem angegebenen Hash in dem mitgesandten ChunkDescriptor verglichen. Stimmen die Hashes überein, wird der UploadStatus des Chunks auf Ok, andernfalls auf Error gesetzt. Der Vergleich des Hashes der einzelnen Chunks ist notwendig, um die Erstellung der Gesamtdatei zu gewährleisten. Diese Gesamtdatei kann nur dann korrekt zusammengesetzt werden, wenn alle Chunks korrekt empfangen und abgelegt wurden.
+
+Im Anschluss an das Ablegen eines Chunks in der entsprechenden Ressource wird das Metadaten-File des Chunk-Uploads um die Daten des Chunks ergänzt. Nachdem alle Chunks hochgeladen wurden, werden die einzelnen Chunks zusammengesetzt, sofern jeder Chunk den Status Ok aufweist. Sollte auch nur ein Chunk sich in dem Status Error befinden, wird kein Merging-Prozess angestoßen und der Status des Chunk-Uploads wird auf Error gesetzt. Sollten alle Chunks Ok sein, wird der Status des Chunk-Uploads auf Merging gesetzt und das eigentliche Zusammenfügen der Chunks erfolgt. Die so erzeugte Datei wird dann an den Virenscanner übergeben und bei einem ausbleibenden Befund verschlüsselt in der Ressource abgelegt.
+
+Sollte bis dahin alles problemlos verlaufen sein, wird ein Metadaten-File erzeugt und die einzelnen Chunks samt der zugehörigen ChunkMetaData-Dateien gelöscht. Damit der Client nach dem Upload des letzten Chunks nicht zu lange warten muss, erfolgt das Mergen und das anschließende Virenscanning asynchron. Somit muss der Client nicht auf serverseitige Prozesse warten. Der Status des Chunk-Uploads wird währenddessen auf Merging gesetzt, um zu signalisieren, dass zwar alle Chunks hochgeladen wurden, der Prozess des Chunk-Uploads allerdings nicht fertig ist. Erst wenn der Status auf Ok steht, gilt der Chunk-Upload als serverseitig abgeschlossen.
+
+3.7. DownloadToken erzeugen
+Um Dateien aus einer Ressource herunterladen zu können, muss ein DownloadToken über einen POST-Request auf den Endpunkt /resource/{resourceId}/downloadToken bezogen werden. Folgende Angaben sind dabei erforderlich:
+
+Gültigkeit in Minuten (minutesToLive)
+
+Ids der Dateien (fileIds)
+
+Die Angabe erfolgt hier ähnlich zum UploadDescriptor bei der Erzeugung von UploadToken in Form eines DownloadDescriptors. Dabei können, neben dem Flag skipDecryption, auch Angaben zu den Bezeichnungen der herunterzuladenden Dateien angegeben werden. Auf diese Weise ist es möglich, Dateien unter einem anderen Namen herunterzuladen.
+
+Standardmäßig erfolgt der Download mit dem Content-Disposition header attachment. Dies hat bei den meisten Browsern zur Folge, dass sich ein Download Dialog-öffnet. Soll die Datei stattdessen direkt angezeigt werden, z.{nbsp]B. eine PDF im Browser, kann dies mit der Flag "inline":true umgestellt werden.
+
+Für den Fall eines Multi-Downloads können zudem ein archiveName und ein archivePassword vorgegeben werden. Der archiveName stellt dabei den Namen des Zip-File dar, in dem die Dateien bereitgestellt werden. Sollte das archivePassword gesetzt sein, wird es als Passwort der Zip-Datei gesetzt.
+
+Alternativ kann ein DownloadToken über den Endpunkt /resource/downloadToken unter Angabe eines UploadTokens beantragt werden. Auf diese Weise müssen keine resourceId und fileIds angegeben werden.
+
+createDownloadToken
+Abbildung 16. Beantragen eines DownloadTokens mit DownloadDescriptor
+createDownloadTokenUsingUploadToken
+Abbildung 17. Beantragen eines DownloadTokens mithilfe eines UploadTokens
+createDownloadTokenUsingUploadTokenDownloadDescriptor
+Abbildung 18. Beantragen eines DownloadToken mithilfe eines UploadTokens mit DownloadDescriptor
+Auch dieser Token wird nach dem gleichen Prozess erzeugt, wie im Abschnitt UploadToken erzeugen beschrieben. Es ist lediglich anzumerken, dass DownloadTokens im Vergleich zu UploadTokens nach der einmaligen Nutzung aus dem Speicher entfernt werden, da keine zusätzliche Nutzung nach dem Download mehr nötig ist.
+
+3.8. Download
+Der Download einer oder mehrerer Dateien ist durch einen GET-Request auf den Endpunkt /download unter Angabe des erforderlichen DownloadTokens möglich. Da die Informationen zu der betreffenden Ressource und den herunterzuladenden Dateien in der Erzeugung des DownloadTokens anzugeben sind, wird für einen Download nur der Token benötigt. Dieser Token kann sowohl als Header oder als Parameter an den UnD-Service übergeben werden.
+
+downloadWithHeader
+Abbildung 19. Download mit dem DownloadToken im Header
+downloadWithParameter
+Abbildung 20. Download mit dem DownloadToken als Parameter
+Serverseitig stellt der UnD-Service die Assoziation zwischen dem Token und der betreffenden Ressource und den darin enthaltenen Dateien her. Mit diesen Informationen beginnt der UnD-Service die Dateien aus der entsprechenden Ressource herunterzuladen. Der Download erfolgt über das Schreiben der herunterzuladenden Dateien in den OutputStream der HttpServletResponse. Auf diese Weise werden die Daten direkt an den aufrufenden Client gestreamt. Sollte mehr als eine Datei heruntergeladen werden, wird der OutputStream in einem ZipOutputStream gekapselt und die einzelnen Dateien werden in ZipEntries geschrieben. Sollten ein Archivename und -Passwort im DownloadDescriptor angegeben worden sein, wird das ZipFile passwortgeschützt und unter dem angegebenen Namen ausgeliefert
+
+Wenn beim Erzeugen des Download Tokens nicht anders angegeben erfolgt der Download mit dem Content-Disposition header attachment. Dies hat bei den meisten Browsern zur Folge, dass sich ein Download Dialog öffnet. Soll die Datei stattdessen direkt angezeigt werden, z.B. eine PDF im Browser, kann der Disposition-Mode in der Download URL auf auf inline gesetzt werden:
+
+/download?downloadToken=<token>&dispositionMode=(inline|attachment)
+
+Es ist anzumerken, dass der Download ohne Authentifizierung erfolgt. Dies hat zur Folge, dass die Nachvollziehbarkeit eines Downloads nicht durch den Up- und Downloadservice sichergestellt wird.
+
+4. Up- and Download Client
+4.1. Einleitung
+Für die Nutzung des Up- und Downloadservices wird ein universeller Client angeboten. Durch den Verzicht auf Abhängigkeiten von Spring und Spring Boot kann der Client mit einer entsprechenden Konfiguration in allen Frameworks eingesetzt werden.
+
+4.2. Maven Dependencies FI Core Repository
+Um den universellen UnD-Client nutzen zu können, sind folgende Abhängigkeiten zu beziehen:
+
+<dependency>
+    <groupId>osplus.mkp.core</groupId>
+    <artifactId>fi-core-und-client-api</artifactId>
+</dependency>
+<dependency>
+    <groupId>osplus.mkp.core</groupId>
+    <artifactId>fi-core-und-client</artifactId>
+</dependency>
+Ein Großteil der im UnD-Client genutzten Dependencies ist mit provided markiert, wodurch sie durch die nutzenden Anwendungen bereitgestellt werden müssen. Im Kontext der fi-core-und-client-api ist lediglich folgende Abhängigkeit bereitzustellen:
+
+<dependency>
+    <groupId>commons-logging</groupId>
+    <artifactId>commons-logging</artifactId>
+    <version>1.0.4</version>
+    <scope>provided</scope>
+</dependency>
+Für die Einbindung der Implementierung fi-core-und-client sind folgende Abhängigkeiten durch die nutzende Anwendung bereitzustellen:
+
+<dependency>
+    <groupId>commons-io</groupId>
+    <artifactId>commons-io</artifactId>
+    <scope>provided</scope>
+</dependency>
+<dependency>
+    <groupId>commons-logging</groupId>
+    <artifactId>commons-logging</artifactId>
+    <scope>provided</scope>
+</dependency>
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <scope>provided</scope>
+</dependency>
+<dependency>
+    <groupId>org.apache.httpcomponents</groupId>
+    <artifactId>httpclient</artifactId>
+    <scope>provided</scope>
+</dependency>
+<dependency>
+    <groupId>org.apache.httpcomponents</groupId>
+    <artifactId>httpmime</artifactId>
+    <scope>provided</scope>
+</dependency>
+Für die Auflösung dieser Abhängigkeiten gelten folgende Mindestversionen:
+
+GroupId	ArtifactId	Min-Version
+commons-io
+
+commons-io
+
+2.4
+
+commons-logging
+
+commons-logging
+
+1.0.4
+
+com.fasterxml.jackson.core
+
+jackson-databind
+
+2.13.3
+
+org.apache.httpcomponents
+
+httpclient
+
+4.4
+
+org.apache.httpcomponents
+
+httpmime
+
+4.4
+
+4.3. UpAndDownloadClientPropertyProvider
+Für die Einbindung der Implementierung des Interfaces UpAndDownloadClient ist das Interface UpAndDownloadClientPropertyProvider zu realisieren. Dieses Interface dient der Konfiguration des Clients und bildet zusammen mit dem UpAndDownloadClientBuilder die Basis für die Einbindung des UpAndDownloadClients.
+
+public interface UpAndDownloadClientPropertyProvider {
+
+        int MIN_CHUNK_SIZE = 5242880;
+
+        /**
+         * @return the identifier of the application which is need for the authentication of the requests
+         * to the und service.
+         */
+        String getApplicationId();
+
+        /**
+         * @return the identifier of the runtime application which is need for the authentication of the requests
+         * to the und service.
+         */
+        default String getRuntimeApplicationId() {
+                return null;
+        }
+
+        /**
+         * @return the identifier of the plattform in which the application is run. The combination of
+         * the application id and the plattform id will be used to create the service name.
+         */
+        String getPlattformId();
+
+        /**
+         * @return the version of the application which is need for the authentication of the requests
+         * to the und service.
+         */
+        String getApplicationVersion();
+
+        /**
+         * The chunk size is relevant for the upload using the chunkUpload method. In case no chunks were
+         * created prior to the chunkUpload call, the und client will chunk the file using the configured
+         * chunk size in bytes. For example a defined chunk size of 5242880 will lead to a chunking of
+         * 5.24 mb.
+         * 5242880 will be the default value since it is the minimum size of chunks that can be uploaded in
+         * the s3 storage.
+         *
+         * @return the size which should be used during the chunking process.
+         */
+        default int getChunkSize() {
+                return MIN_CHUNK_SIZE;
+        }
+
+        /**
+         * @return the default minutes a token should be active. This will be used if no specific minutesToLive
+         * parameter is provided during the method call.
+         */
+        int getDefaultTokenMinutesToLive();
+
+        /**
+         * This method should return an implementation of the {@link UrlProvider} interface
+         * that can be used for overwriting the default blz routing methods.
+         *
+         * @return an instance of type {@link UrlProvider}
+         */
+        default UrlProvider getUrlProvider() {
+                return null;
+        }
+
+        /**
+         * @return indication whether the client should be setup for a test environment or not.
+         */
+        boolean useEtaps();
+
+        /**
+         * Indicates if the internal communication should be used for the interaction with the und service. In addition
+         * to that, the URLs requested using the getDownloadUrl and getUploadUrl methods will use the default internal URLs
+         * if no InternalUrlProvider is configured. If there is an InternalUrlProvider configured, it will be used for
+         * the communication with the und service and the URL creation.
+         *
+         * @return a flag that indicates whether the communication should be done internally or not
+         */
+        default boolean useInternalCommunication() {
+                return true;
+        }
+
+        default String getEtapsRoutingUrl() {
+                return "https://global.sfg-mkg-etaps.intern/route/blz?blz=";
+        }
+
+        default String getRoutingUrl() {
+                return "https://global.sfg-mkg.intern/route/blz?blz=";
+        }
+}
+Im Rahmen dieses Property-Providers sind Konfigurationen zu setzen, die das Verhalten des UnD-Clients bestimmen. Maßgebend für die Kommunikation des UnD-Clients mit dem Up- und Download-Service sind die Angaben useEtaps und useInternalCommunication. Die Rückgabe dieser Methoden beeinflusst den angesprochenen UnD-Service und die Art der Kommunikation. Sobald useEtaps mit true zurückgegeben wird, nutzt der UnD-Client den BlzRouting-Endpunkt für ETAPS um die Adressen der zu nutzenden UnD-Service-Instanzen zu ermitteln.
+
+Die Unterscheidung zwischen interner und externer Kommunikation richtet sich nach der Rückgabe der Methode useInternalCommunication. Der interne Kommunikationsweg ist dabei der Standard-Kommunikationsweg und wird nur überschrieben, wenn ein InternalEtapsUrlProvider konfiguriert wird. In dem Fall liefert die Methode getBaseUrl die URL, die für die Kommunikation mit dem UnD-Service in der ETAPS-Umgebung genutzt werden soll.
+
+4.4. UnD Client in der APL
+Die Einbindung des UnD Clients über die APL wird durch die Nutzung eines abstrahierten Moduls ermöglicht.
+
+<dependency>
+    <groupId>osplus.apl</groupId>
+    <artifactId>apl-core-und</artifactId>
+</dependency>
+Durch diese Abhängigkeit ist die Nutzung des UnD Clients sehr vereinfacht, da die Konfiguration des UpAndDownloadClientPropertyProvider im Hintergrund erfolgt. Die Erzeugung eines UnD Clients kann dann wie im folgenden Beispiel erfolgen:
+
+@AplComponent
+public final class UndClientTestApp {
+
+        private final UpAndDownloadClientFactory upAndDownloadClientFactory;
+
+        public UndClientTestApp(UpAndDownloadClientFactory upAndDownloadClientFactory) {
+                this.upAndDownloadClientFactory = upAndDownloadClientFactory;
+        }
+
+        public void testClient(MultipartFile multipartFile) {
+                //
+                //UpAndDownloadClient upAndDownloadClient = upAndDownloadClientFactory.getUpAndDownloadClient(ausfallmenge,"und");
+                UpAndDownloadClient upAndDownloadClient = upAndDownloadClientFactory.getUpAndDownloadClient();
+                //
+                try (InputStream fis = multipartFile.getInputStream()) {
+                        //Beispiel create resource
+                        ResourceOptions resourceOptions = upAndDownloadClient.createResourceOptions(false);
+                        ResourceDescriptor resource = upAndDownloadClient.createResource(resourceOptions);
+                        assert resource != null;
+                        assert upAndDownloadClient.getResource(resource.getResourceId()) != null;
+
+                        //Beispiel upload
+                        UploadDescriptor uploadDescriptor = new UploadDescriptor(15);
+                        String uploadToken = upAndDownloadClient.createUploadToken(resource.getResourceId(), uploadDescriptor);
+                        assert uploadToken != null && !"".equals(uploadToken);
+                        upAndDownloadClient.upload(uploadToken, new UploadResource(fis, multipartFile.getOriginalFilename()));
+
+                        // Upload verifizieren
+                        resource = upAndDownloadClient.getResource(resource.getResourceId());
+                        assert (multipartFile.getOriginalFilename().equals(resource.getFileMetaData().get(0).getOriginalFilename()));
+
+                        //Beispiel download
+                        DownloadDescriptor downloadDescriptor = DownloadDescriptor.createBuilder().withMinutesToLive(15).build();
+                        String downloadToken = upAndDownloadClient.createDownloadToken(downloadDescriptor, uploadToken);
+                        assert downloadToken != null && !"".equals(downloadToken);
+                        upAndDownloadClient.download((InputStream inputStream, String originalFilename) -> {
+                                LoggerFactory.getLogger(UndClientTestApp.class).info("Downloaded file: " + originalFilename);
+                        }, downloadToken);
+
+                        //Beispiel delete
+                        upAndDownloadClient.deleteResource(resource.getResourceId());
+                } catch (IOException e) {
+                        e.printStackTrace();
+                }
+        }
+}
+4.5. RoutingUrl und URL-Provider
+4.5.1. RoutingUrl
+Der UnD-Client arbeitet im Kontext einer BLZ und ermittelt für diese mit einem initialen Http-Aufruf gegen einen globalen BlzRouting-Endpunkt (ETAPS oder PROD), dessen URL durch die RoutingUrl bzw. EtapsRoutingUrl festgelegt ist, die Adresse der zu nutzenden UnD-Service-Instanzen.
+
+Wird der UnD-Client mit useEtaps mit true konfiguriert, so erfolgt das Ermitteln der Adresse standardmäßig gegen
+
+Beispiel Testinstitut 307: https://global.sfg-mkg-etaps.intern/route/blz?blz=94059307
+
+Ist der UnD-Client dagegen in einer Produktionsumgebung mit useEtaps mit false konfiguriert, so erfolgt das Ermitteln der Adresse standardmäßig gegen
+
+Beispiel Sparkasse Hannover: https://global.sfg-mkg.intern/route/blz?blz=25050180
+
+Firewallfreischaltung zum BlzRouting-Endpunkt (ETAPS oder PROD)
+Damit der UnD-Client in seiner Umgebung (ETAPS oder PROD) die Adressen der zu nutzenden UnD-Service-Instanzen ermitteln kann, muss er netzwerktechnisch die entsprechenden globalen BlzRouting-Endpunkte erreichen können.
+
+ETAPS: https://global.sfg-mkg-etaps.intern
+
+PROD: https://global.sfg-mkg.intern
+
+Die RoutingUrls können durch entsprechende Implementierung des UpAndDownloadClientPropertyProvider überschrieben und damit der Lookup gegen einen anderen BlzRouting-Endpunkt erfolgen. Dies ist eigentlich nur in Ausnahmefällen, wie z.B. bei der Unterstützung von Lasttestumgebungen oder anderen Sonderumgebungen, in denen für bestimmte BLZs andere UnD-Instanzen genutzt werden sollen, nötig. Alternativ dazu besteht die Option in solchen Fällen ganz auf das Routing zu verzichten und durch einen URL-Provider explizit die Adressen zu setzen.
+
+4.5.2. URL-Provider
+Ein URL-Provider, der optional durch den UpAndDownloadClientPropertyProvider gesetzt wird, dient dazu, die Standardrouting-Funktion des UnD-Clients über die Nutzung der BlzRouting-Endpunkte zu überspringen und explizit die Adressen der zu nutzenden UnD-Service-Instanzen festzulegen.
+
+Dies ist eigentlich nur in Ausnahmefällen, wie z.B. bei der Unterstützung von Lasttestumgebungen oder anderen Sonderumgebungen, in denen für bestimmte BLZs anderen UnD-Instanzen genutzt werden sollen, nötig. Liefert der UpAndDownloadClientPropertyProvider einen URL-Provider, so entfällt - unabhängig von der verwendetetn BLZ - der initiale Lookup auf den BlzRouting-Endpunkt und die durch den URL-Provider festgelegte URL wird benutzt.
+
+4.6. Manueller Upload
+Damit Anwendungen einen Upload mit einer bereitgestellten Upload-URL durchführen können, sind folgende Punkte wichtig:
+
+Der Upload-Request muss mit dem Content-Type multipart/form-data gekennzeichnet sein.
+
+Die Dateien müssen als Part mit der Bezeichnung file in den Request eingefügt werden.
+
+Ein beispielhafter Code bei Nutzung des Apache HttpClients sieht folgendermaßen aus:
+
+MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+InputStreamBody inputStreamBody = new InputStreamBody(someInputStream, ContentType.MULTIPART_FORM_DATA, dataName);
+builder.addPart("file", inputStreamBody);
+HttpEntity httpEntity = builder.build();
+HttpPost request = new HttpPost(url);
+request.setEntity(httpEntity);
+HttpResponse response = this.httpClient.execute(request);
+5. UnD JavaScript-Client
+Innerhalb des UnD-Projekts befindet sich eine Referenzimplementierung in JavaScript (jQuery). Die Implementierung soll grundsätzlich aufzeigen, was bei einzelnen Aufrufen von Endpunkten des UnD-Services in JavaScript vom Browser aus zu beachten ist. Gleichzeitig ist es mit dem JavaScript-Client möglich, die korrekte Verarbeitung von CORS-Requests zu überprüfen.
+
+Damit Ressourcen sowie Up- und Download-Tokens direkt über den Client erzeugt werden können, wurde ein UUI-Service mit UnD-Ausprägung erstellt. Entsprechende Endpunkte ermöglichen es, nun die benötigten Vorkehrungen zum Up- und Download (Erstellung von Ressource und Token) durchzuführen.
+
+Im Folgenden wird nur auf wichtige Punkte der Referenzimplementierung eingegangen.
+
+5.1. Upload
+Ein einfacher Upload über den UnD-Service sieht wie folgt aus:
+
+                const uploadData = new FormData(uploadForm);
+                $.ajax({
+                        url: uploadUrl,
+                        type: 'post',
+                        enctype: 'multipart/form-data',
+                        processData: false,
+                        contentType: false,
+                        cache: false,
+                        data: uploadData,
+                        success: function () {
+                                uploadOutput.text('Datei hochgeladen!');
+                                uploadForm.reset();
+                        }, error: function () {
+                                uploadOutput.text('Datei nicht hochgeladen!');
+                                uploadForm.reset();
+                        }
+                });
+Wichtig in dem obigen Ajax-Call sind die beiden Zeilen:
+
+processData: false
+contentType: false
+Um die Verständlichkeit zu erhöhen, werden die folgenden Informationen von der jQuery Seite zitiert.
+
+Erläuterung zu processData
+By default, data passed in to the data option as an object (technically, anything other than a string) will be processed and transformed into a query string, fitting to the default content-type "application/x-www-form-urlencoded". If you want to send a DOMDocument, or other non-processed data, set this option to false.
+
+Da Daten im form-data-Format versenden, wird processData auf false gesetzt.
+
+Erläuterung zu contentType
+When sending data to the server, use this content type. Default is "application/x-www-form-urlencoded; charset=UTF-8", which is fine for most cases. If you explicitly pass in a content-type to $.ajax(), then it is always sent to the server (even if no data is sent). As of jQuery 1.6 you can pass false to tell jQuery to not set any content type header. Note: The W3C XMLHttpRequest specification dictates that the charset is always UTF-8; specifying another charset will not force the browser to change the encoding.
+
+Der contentType ergibt sich aus dem form-data Parameter und wird vom Browser automatisch aufgelöst. Aus diesem Grund wird diese Option ebenfalls auf false gesetzt.
+
+5.2. ChunkUpload
+Für den ChunkUpload ist es wichtig, dass der zum Server übertragene Parameter form-data folgendermaßen aufgebaut wird:
+
+                //                     const chunkUploadData = new FormData();
+                //                     chunkUploadData.append("chunk", new Blob([chunkFilePart], {type: "multipart/form-data"}));
+                //                     chunkUploadData.append("description", new Blob([JSON.stringify(chunkUploadDescription)], {type: "application/json"}));
+Entscheidend ist hier, dass explizit angegeben wird, welcher (content-)type verwendet wird. Ohne diese Angabe kann der UnD-Service den Parameter beim ChunkUpload nicht verarbeiten.
+
+6. UnD-Service Best-Practices und Bad-Practices
+Ziel dieses Abschnitts ist es, Antworten auf immer wiederkehrende Fragen zu geben, die bei der Nutzung des UnD-Services und des UnD-Clients auftreten.
+
+6.1. UnD Best-Practices
+6.1.1. Upload- und Download-Tokens immer mit einer für den Use-Case passenden Zeit versehen
+Upload- und Download-Tokens sind per se nur einmalig verwendbar, auf eine Ressource eingeschränkt und haben daher bei Verlust nur ein begrenztes Risiko. Trotzdem ist deren Gültigkeitsdauer nicht länger als für den vorhandenen Use-Case nötig zu wählen. Am besten werden Tokens unmittelbar vor der Benutzung erstellt und dann an den Uploader oder Downloader gereicht.
+
+Tokenlaufzeiten, die länger als 10 Minuten (minutesToLive) gültig sind, sollten vermieden werden.
+
+6.1.2. Einschränken der erlaubten MimeTypes für eine Ressource
+Bei der Erzeugung einer Ressource müssen die erlaubten MimeTypes der später darin zu speichernden Dateien festgelegt werden. Die einfache Verwendung von "*" ist aktuell noch möglich, aber wegen der Gefahr des Uploads beliebiger Dateitypen nur in UseCases mit internen Clients geduldet. Für Ressourcen, in die Uploads aus einem unsicheren Umfeld erfolgen, z. B. also dem Browser eines Endkunden, müssen die erlaubten MimeTypes explizit nach dem Minimalprinzip festgelegt werden.
+
+6.1.3. Erzeugung der richtigen URL-Form für stationäre und mediale Nutzung
+Die erzeugten Upload- oder Download-Tokens für Ressourcen sind unabhängig vom Zugriffskanal, über den man sie benutzt. Erst für die konkrete Nutzung durch einen Client muss ein Token in eine für den Client passende URL umgewandelt werden. Welche die richtige Form ist, hängt davon ab, ob die URL von einem Client im internen Netz (Nutzung mit interner URL) oder von einem Client aus dem Internet (Nutzung mit externer URL) benutzt werden soll. Der UnD-Client, der immer (Ausnahme Nutzung im globalen Kontext) mit einer Bankleitzahl konfiguriert wird, hat intern die Konfiguration für die dafür passenden internen und externen Adressen und bietet zur Aufbereitung der Tokens zu URLs die folgenden APIs.
+
+// Erzeugung von URLs für interne Clients
+String getDownloadUrl(String uploadToken, DownloadDescriptor downloadDescriptor) throws IOException, ResourceManagementException;
+String getDownloadUrl(String downloadToken);
+String getDownloadUrl(String downloadToken,DispositionMode dispositionMode) {
+String getUploadUrl(String uploadToken);
+// Erzeugung von URLs für externe Clients
+String getExternalDownloadUrl(String uploadToken, DownloadDescriptor downloadDescriptor) throws IOException, ResourceManagementException;
+String getExternalDownloadUrl(String downloadToken);
+String getExternalDownloadUrl(String downloadToken,DispositionMode dispositionMode) {
+String getExternalUploadUrl(String uploadToken);
+So sehen die Basis-URLs aus, an die dann noch die Tokens und ggf. Optionen gehängt werden, zum Beispiel für die Sparkasse Hannover (BLZ 25050180).
+
+Intern: https://ni04.sfg-mkg.intern/und
+
+Extern: https://und-pvq.sfg-mkg.de/und?grp=4
+
+6.2. UnD Bad-Practices
+6.2.1. Nutzung der Dateinamen zur Erkennung der erlaubten MimeTypes für eine Ressource
+Probleme Nutzung der automatischen Erkennung der MimeTypes im UnD-Client
+Da der MimeType im UnD-Client nur aus dem Filenamen (der Fileinhalt ist ja noch nicht da) mit Java-Bordmitteln bestimmt wird, (intern wird dann jre/lib/content-types.properties genutzt), wird nur eine geringe Anzahl an Typen korrekt erkannt. Alle anderen werden als "application/octet-stream" erkannt. Dies führt zu einem Problem, wenn ein Browser beispielsweise die Datei hochlädt und den korrekt aus dem Inhalt erkannten MimeType beim Upload mitschickt. Der Inhalt wird dann vom UnD als nicht passend für die Ressource abgelehnt.
+Die Erzeugung der ResourceOptions und damit der erlaubten MimeTypes über den UnD-Client durch den Aufruf`createResourceOptions(boolean deleteAfterReading, String…​ filenames)` ist möglich. Wegen der eingeschränkten Möglichkeit aus Dateinamen auf MimeTypes zu schließen, ist allerdings die direkte Erstellung durch new ResourceOptions(List<String> mimeTypes, boolean deleteAfterReading) mit der expliziten Angabe der gewünschten MimeTypes vorzuziehen.
+
+6.2.2. Ressourcen-IDs sind nicht für externe, unsichere Clients gedacht
+Eine Ressource ist ein Container, in den Dateien hoch- oder heruntergeladen werden können. Die Ressourcen-ID ist der Zugang zu diesem Container. Wenn nicht anders bei der Erzeugung der Ressource festgelegt, ist diese ID für einen Ressourcen-Manager (interner UnD-Client mit Client-Zertifikat) auch ausreichend, um für diese Ressource zu verwalten und Up- bzw. Download-Tokens dafür zu erzeugen.
+
+Auch wenn der direkte Zugriff auf Ressourcen nur für interne UND-Clients möglich ist und unsichere, externe Clients (z. B. Browser) diese mangels direktem API nicht verwenden können, sollen Ressourcen-IDs nicht an externe Clients übermittelt werden. Die Übertragung von Ressourcen-IDs über einen Frontend-Channel, also z. B. über einen Browser von einem Service in einen anderen, ist ungesichert und beispielsweise nicht gegen Manipulation (Austausch gegen eine andere bekannte Ressourcen-ID im JS-Debugger) geschützt. Daher ist stattdessen immer die Übertragung über sichere Backend-Channel durchzuführen.
