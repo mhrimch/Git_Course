@@ -1,0 +1,109 @@
+export const KonfArbeitsorte = () => {
+  const queryClient = useQueryClient();
+
+  const [showKonfArbeitsorte, setShowKonfArbeitsorte] = useState<KonfArbeitsorteRead>({
+    isBuero: true,
+    isMobileArbeit: false,
+  } as KonfArbeitsorteRead);
+
+  function updateKonfArbeitsorte(arbeitsort: string, value: boolean) {
+    setShowKonfArbeitsorte((prevState: KonfArbeitsorteRead) => {
+      return { ...prevState, [arbeitsort]: value };
+    });
+  }
+
+  const { data: benutzer } = useReadKonfArbeitsorte();
+
+  useEffect(() => {
+    if (benutzer?.isBuero) {
+      setShowKonfArbeitsorte(benutzer);
+    }
+  }, [benutzer]);
+
+  const { t } = useTranslation();
+  const workflowService = useWorkflowService();
+
+  const { mutateAsync: writeKonfig } = useUpdateKonfArbeitsorte();
+
+  function createData(arbeitsort: string, status: JSX.Element) {
+    return { arbeitsort, status };
+  }
+
+  const handleClickZurueckZuKonfiguration = () => {
+    navigateToPskKonfiguration(workflowService);
+  };
+
+  function setUpdateKonfig(arbeitsort: string, value: boolean) {
+    updateKonfArbeitsorte(arbeitsort, value);
+    writeKonfig({
+      arbeitsort: arbeitsort,
+      isAktiv: value,
+    } as KonfArbeitsorteWrite).then(() => {
+      queryClient.invalidateQueries({ queryKey: KonfigKeys.konfig });
+    });
+  }
+
+  const rows = [
+    createData(
+      t('KonfigurationArbeitsorte.ImBueroDefault'),
+      <FormControlLabel control={<Switch checked={true} />} label={t('aktiviert')} />
+    ),
+    createData(
+      t('mobileArbeit'),
+      <FormControlLabel
+        control={
+          <Switch
+            checked={showKonfArbeitsorte.isMobileArbeit}
+            onChange={(event) => setUpdateKonfig('mobileArbeit', event.target.checked)}
+          />
+        }
+        label={showKonfArbeitsorte.isMobileArbeit ? t('aktiviert') : t('deaktiviert')}
+      ></FormControlLabel>
+    ),
+  ];
+  if (!benutzer?.isRollout) {
+    return <></>;
+  }
+  return (
+    <>
+      <Grid size={{ xs: 12, lg: 10 }} mt={10}>
+        <Stack spacing={ThemeConstants.GRID_CONTAINER_SPACING}>
+          <Box>
+            <Button
+              size={ThemeConstants.SMALL}
+              onClick={handleClickZurueckZuKonfiguration}
+              startIcon={<IcBackArrowS />}
+            >
+              {t('ZurueckZurKonfiguration')}
+            </Button>
+          </Box>
+          <DynamicTypography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02}>
+            {t('KonfigurationArbeitsorte.ZugelasseneEinsatzorte')}
+          </DynamicTypography>
+        </Stack>
+      </Grid>
+      <Grid size={{ xs: 12, lg: 10 }} mt={10}>
+        <TableContainer component={Paper}>
+          <Table width={ThemeConstants.WIDTH_100_PERCENT} aria-label="simple table">
+            <TableHead>
+              <TableRow>
+                <TableCell>{t('KonfigurationArbeitsorte.OrtdesArbeitens')}</TableCell>
+                <TableCell width={PzwThemeConstants.PZW_KONFIGURATION_STATUS_TABLECELL_WIDTH}>Status</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.map((row) => (
+                <TableRow key={row.arbeitsort} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell component="th" scope="row">
+                    {row.arbeitsort}
+                  </TableCell>
+                  <TableCell width={PzwThemeConstants.PZW_KONFIGURATION_STATUS_TABLECELL_WIDTH}>{row.status}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Grid>
+    </>
+  );
+};
