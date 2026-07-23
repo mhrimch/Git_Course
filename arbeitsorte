@@ -107,3 +107,46 @@ export const KonfArbeitsorte = () => {
     </>
   );
 };
+=======================================
+export function useUpdateKonfArbeitsorte() {
+  const uuiService = useUuiService();
+  return useMutation({
+    mutationFn: async (konfEinstellungWrite: KonfArbeitsorteWrite) =>
+      callUpdateKonfArbeitsorte(uuiService, konfEinstellungWrite).then((response: UuiServiceResponse<void>) => {
+        return response.success;
+      }),
+  });
+}
+===========================================
+export interface KonfArbeitsorteWrite {
+  arbeitsort: Arbeitsort;
+  isAktiv: boolean;
+}
+======================================
+export const Arbeitsorte = {
+  buero: 'Im Büro',
+  mobileArbeit: 'Mobile Arbeit',
+} as const;
+
+export type Arbeitsort = (typeof Arbeitsorte)[keyof typeof Arbeitsorte];
+===================================================
+export function readKonfigOptions(uuiService: Readonly<UuiServiceClientDef>) {
+  return queryOptions({
+    queryKey: KonfigKeys.konfigArbeitsorte,
+    queryFn: async (): Promise<(KonfArbeitsorteRead & { isRollout: boolean }) | undefined> =>
+      callReadKonfArbeitsorte(uuiService).then((response: UuiServiceResponse<KonfArbeitsorteRead>) => {
+        //TODO Entfernen wenn Rollout abgeschlossen ist
+        return {
+          ...(response.payload as KonfArbeitsorteRead),
+          isRollout: isRollout(response.messages),
+        };
+      }),
+  });
+}
+
+export function useReadKonfArbeitsorte(): UseQueryResult<(KonfArbeitsorteRead & { isRollout: boolean }) | undefined> {
+  const uuiService = useUuiService();
+  return useQuery(readKonfigOptions(uuiService));
+}
+
+
