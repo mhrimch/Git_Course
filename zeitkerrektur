@@ -1,0 +1,508 @@
+import { useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import { IcBackArrowS } from '@finanzinformatik/mcd-module-icons';
+import { Button } from '@mui/material';
+import { Grid } from '@mui/system';
+import { ThemeConstants } from '@personalsysteme/core';
+import { t } from 'i18next';
+import { Tagesbuchung } from '../components/zeitkorrektur/Tagesbuchung';
+import { WorkflowAction } from '../constants/ServiceConstants';
+
+export default function ZeitkorrekturView() {
+  const workflowService = useWorkflowService();
+  return (
+    <Grid container spacing={ThemeConstants.GRID_CONTAINER_SPACING} justifyContent={ThemeConstants.ALIGNMENT_CENTER}>
+      <Grid size={{ xs: 12, lg: 10 }}>
+        <Button
+          onClick={() => {
+            workflowService.executeAction(WorkflowAction.Back);
+          }}
+          startIcon={<IcBackArrowS />}
+        >
+          {t('zurueckZeitwirtschaft')}
+        </Button>
+      </Grid>
+      <Grid size={{ xs: 12, lg: 10 }}>
+        <Tagesbuchung />
+      </Grid>
+    </Grid>
+  );
+}
+=====================================
+import { DynamicTypography, useWorkflowService, UuiServiceMessageType } from '@finanzinformatik/cpl-module-reactlib';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Alert, Button, Checkbox, FormControlLabel } from '@mui/material';
+import { Box, Stack } from '@mui/system';
+import {
+  addNotification,
+  FormInputDatePicker,
+  FormProviderWrapper,
+  LocalDate,
+  ThemeConstants,
+} from '@personalsysteme/core';
+import { useQueryClient } from '@tanstack/react-query';
+import dayjs from 'dayjs';
+import { parseAsString, useQueryState } from 'nuqs';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import z from 'zod';
+import { ZeitkorrekturWrite } from '../../apl/pzw/zeitkorrekturUiModule/ZeitkorrekturWrite';
+import { KalenderConstants } from '../../constants/KalenderConstants';
+import { AbsParameter, BuchungsEigsNummern, getTagesbuchungKonfFuerMeldungsart } from '../../constants/PzwConstants';
+import { AntragKeys } from '../../tanstack/antrag/Antrag.keys';
+import { useReadKonfAntraege } from '../../tanstack/konfiguration/useReadKonfAntraege';
+import { useCreateZeitkorrektur } from '../../tanstack/zeitkorrektur/useCreateZeitkorrektur';
+import { useReadMeldung } from '../../tanstack/zeitkorrektur/useReadMeldung';
+import { navigateToPskMeinBereich } from '../../utils/bookmarkUtil';
+import { AntraegeAbwesenheitUebersicht } from '../antraege/abwesenheit/AntraegeAbwesenheitUebersicht';
+import { getAntragskonfiguration } from '../antraege/AntragUtils';
+import { AntragsgruppenIds, AntragskategorieIds, Antragsschluessel } from '../zeitwirtschaft/ZeitwirtschaftConstants';
+import { BuchungGutschreiben } from './BuchungGutschreiben';
+import { BuchungKorrigieren, setBuchungszeitpunktToMeldungsdatum } from './BuchungKorrigieren';
+import { getFormSchemaTagesbuchung } from './formSchemaTagesbuchung';
+import { TagesbuchungAntraege } from './TagesbuchungAntraege';
+import { TagesbuchungBuchungspaare } from './TagesbuchungBuchungspaare';
+import { TagesbuchungOffeneBuchungen } from './TagesbuchungOffeneBuchungen';
+
+export const Tagesbuchung = () => {
+  const { t } = useTranslation();
+  const [absVgngPrzId] = useQueryState(AbsParameter.ABS_VORGANG_PRZ_ID.name, parseAsString.withDefault(''));
+  const [personalnummer] = useQueryState('personalnummer', parseAsString.withDefault(''));
+  const [datum] = useQueryState('datum', parseAsString.withDefault(''));
+  const [meldungsart] = useQueryState('meldungsart', parseAsString.withDefault(''));
+  const [meldungstyp] = useQueryState('meldungstyp', parseAsString.withDefault(''));
+  const { data: meldungRead, isLoading: isMeldungLoading } = useReadMeldung(
+    absVgngPrzId,
+    datum as LocalDate,
+    meldungstyp,
+    meldungsart,
+    personalnummer !== ''
+  );
+  const meldungsdatum = meldungRead?.meldungsdatum ?? datum;
+  const [bearbeiten, setBearbeiten] = useState(!datum);
+  const [abwesenheitMelden, setAbwesenheitMelden] = useState(false);
+  const [gutschriftBeantragen, setGutschriftBeantragen] = useState(false);
+  const { mutateAsync: createZeitkorrektur, isPending } = useCreateZeitkorrektur();
+  const queryClient = useQueryClient();
+
+  const workflowService = useWorkflowService();
+
+  const { data: konfAntraege, isLoading: isKonfAntraegeLoading } = useReadKonfAntraege();
+  const konfAntragZeitkorrektur = konfAntraege
+    ? getAntragskonfiguration(
+        konfAntraege,
+        AntragskategorieIds.zeitkorrektur,
+        AntragsgruppenIds.zeitkorrektur,
+        Antragsschluessel.zeitkorrektur
+      )
+    : undefined;
+  const konfAntragVerfallszeit = konfAntraege
+    ? getAntragskonfiguration(
+        konfAntraege,
+        AntragskategorieIds.zeitgutschriftVerfallszeit,
+        AntragsgruppenIds.zeitgutschriftVerfallszeit,
+        Antragsschluessel.zeitgutschriftVerfallszeit
+      )
+    : undefined;
+  const formSchemaTagesbuchung = getFormSchemaTagesbuchung(konfAntragZeitkorrektur?.isKommentarPflicht);
+
+  type FormValuesTagesbuchung = z.infer<typeof formSchemaTagesbuchung>;
+  const methods = useForm<FormValuesTagesbuchung>({
+    resolver: zodResolver(formSchemaTagesbuchung),
+    defaultValues: {
+      datum: meldungsdatum,
+      zeitkorrekturbuchungen: [
+        {
+          buchungsart: BuchungsEigsNummern.buero,
+          zeitpunkt: dayjs(''),
+        },
+      ],
+      kommentar: '',
+    },
+  });
+  const { formState } = methods;
+  useEffect(() => {
+    if (methods.formState.isSubmitSuccessful) {
+      methods.reset({
+        datum: methods.getValues('datum'),
+        zeitkorrekturbuchungen: [
+          {
+            buchungsart: BuchungsEigsNummern.buero,
+            zeitpunkt: dayjs(''),
+          },
+        ],
+        kommentar: '',
+      });
+    }
+  }, [formState, methods.reset]);
+  const handleClickAbwesenheitMelden = () => {
+    setAbwesenheitMelden((prevState) => !prevState);
+  };
+  const handleClickGutschriftBeantragen = () => {
+    setGutschriftBeantragen((prevState) => !prevState);
+  };
+
+  const handleClickBearbeiten = () => {
+    if (!konfAntragZeitkorrektur?.isAktiv && !konfAntragVerfallszeit?.isAktiv) {
+      addNotification(t('Info'), t('ZeitkorrekturInaktivMeldung'), UuiServiceMessageType.Info);
+      return;
+    }
+    setBearbeiten(true);
+  };
+  const handleClickSpeichern = (formData: FormValuesTagesbuchung) => {
+    const eingabeDatum = meldungsdatum ? meldungsdatum : formData.datum;
+    if (!eingabeDatum) {
+      return;
+    }
+    const zeitkorrekturWrite: ZeitkorrekturWrite = {
+      zeitkorrekturbuchungen: formData.zeitkorrekturbuchungen.map((buchung) =>
+        setBuchungszeitpunktToMeldungsdatum({
+          buchung: buchung,
+          datum: eingabeDatum,
+        })
+      ),
+      kommentar: formData.kommentar,
+      absVgngPrzId: absVgngPrzId ? absVgngPrzId : '',
+    };
+    createZeitkorrektur(zeitkorrekturWrite).then(async () =>
+      queryClient.invalidateQueries({ queryKey: AntragKeys.all })
+    );
+    setBearbeiten(false);
+  };
+
+  const TagesbuchungUeberschrift = () => {
+    if (dayjs(meldungsdatum).isValid()) {
+      return (
+        <DynamicTypography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02}>
+          {'Tagesbuchungen' +
+            ' - ' +
+            dayjs(meldungsdatum).format(KalenderConstants.TAG_FORMAT_LONG_STRING) +
+            ' ' +
+            dayjs(meldungsdatum).format(KalenderConstants.DATUM_FORMAT_STRING)}
+        </DynamicTypography>
+      );
+    }
+    return <DynamicTypography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02}>{'Tagesbuchungen'}</DynamicTypography>;
+  };
+  const meldungKonfig = meldungRead?.meldungsart
+    ? getTagesbuchungKonfFuerMeldungsart(meldungRead.meldungsart)
+    : undefined;
+  const isGutschriftBeantragenCheckboxVisible =
+    !personalnummer && bearbeiten && meldungRead?.meldungsart && meldungKonfig?.isGutschriftVerfallszeit;
+  const isAbwesenheitMeldenCheckboxVisible =
+    !personalnummer && bearbeiten && meldungRead?.meldungsart && meldungKonfig?.isAbwesenheitNachtragen;
+  const isBuchungGutschreibenAnzeigen = Boolean(bearbeiten && gutschriftBeantragen && konfAntragVerfallszeit?.isAktiv);
+  const eingabedatum = methods.watch('datum');
+  return (
+    <Stack>
+      <FormProviderWrapper
+        methods={methods}
+        formId={'korrekturbuchungen-hinzufuegen-form'}
+        onSubmit={handleClickSpeichern}
+      >
+        <Stack spacing={ThemeConstants.STACK_SPACING}>
+          <TagesbuchungUeberschrift />
+          {meldungRead?.meldungstext && (
+            <Alert severity={ThemeConstants.INFO} variant={'filled'} color={ThemeConstants.ATTENTION}>
+              {meldungRead.meldungstext}
+            </Alert>
+          )}
+          {!isMeldungLoading && !meldungsdatum && (
+            <Box>
+              <FormInputDatePicker<FormValuesTagesbuchung>
+                name={'datum'}
+                label={'Datum'}
+                slotProps={{ textField: { required: true } }}
+              />
+            </Box>
+          )}
+          <Stack direction={ThemeConstants.DIRECTION_ROW} justifyContent={ThemeConstants.CONTENT_ALIGN_FLEX_END}>
+            {isGutschriftBeantragenCheckboxVisible && (
+              <FormControlLabel
+                control={<Checkbox checked={gutschriftBeantragen} onChange={handleClickGutschriftBeantragen} />}
+                label={t('Tagesbuchungen.GutschriftBeantragen')}
+              />
+            )}
+            {isAbwesenheitMeldenCheckboxVisible && (
+              <FormControlLabel
+                control={<Checkbox checked={abwesenheitMelden} onChange={handleClickAbwesenheitMelden} />}
+                label={t('Tagesbuchungen.AbwesenheitMelden')}
+              />
+            )}
+          </Stack>
+          <TagesbuchungBuchungspaare
+            meldungsdatum={meldungRead?.meldungsdatum}
+            eingabedatum={eingabedatum as LocalDate}
+            queryDatum={datum as LocalDate}
+            personalnummer={personalnummer}
+          />
+          {bearbeiten && (
+            <TagesbuchungOffeneBuchungen
+              meldungsdatum={meldungRead?.meldungsdatum}
+              eingabedatum={eingabedatum as LocalDate}
+              queryDatum={datum as LocalDate}
+              personalnummer={personalnummer}
+            />
+          )}
+          {!isKonfAntraegeLoading && !personalnummer && !bearbeiten && (
+            <Stack direction={ThemeConstants.DIRECTION_ROW} justifyContent={ThemeConstants.CONTENT_ALIGN_FLEX_END}>
+              <Button variant={ThemeConstants.BUTTON_VARIANT_CONTAINED} onClick={handleClickBearbeiten}>
+                {t('Bearbeiten')}
+              </Button>
+            </Stack>
+          )}
+          {bearbeiten && konfAntragZeitkorrektur?.isAktiv && !gutschriftBeantragen && (
+            <BuchungKorrigieren
+              weiterleitung={() => navigateToPskMeinBereich(workflowService)}
+              konfAntragZeitkorrektur={konfAntragZeitkorrektur}
+              bearbeiten={bearbeiten}
+              setBearbeiten={setBearbeiten}
+              isPending={isPending}
+            />
+          )}
+        </Stack>
+      </FormProviderWrapper>
+      {isBuchungGutschreibenAnzeigen && (
+        <BuchungGutschreiben
+          meldungsdatum={meldungsdatum as LocalDate}
+          setBearbeiten={setBearbeiten}
+          isKommentarPflichtfeld={false}
+        />
+      )}
+      {bearbeiten && (
+        <TagesbuchungAntraege
+          meldungsdatum={meldungRead?.meldungsdatum}
+          eingabedatum={eingabedatum as LocalDate}
+          queryDatum={datum as LocalDate}
+          personalnummer={personalnummer}
+        />
+      )}
+      {abwesenheitMelden && <AntraegeAbwesenheitUebersicht absVgngPrzId={absVgngPrzId} />}
+    </Stack>
+  );
+};
+=========================================================================
+import { IcPlusS } from '@finanzinformatik/mcd-module-icons';
+import { Alert, Box, Button, FormControl, Stack } from '@mui/material';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { FormInputTextField, FormInputTimePicker, ThemeConstants } from '@personalsysteme/core';
+import dayjs, { Dayjs } from 'dayjs';
+import { Dispatch, SetStateAction } from 'react';
+import { useFieldArray, useFormContext } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import { KonfAntragRead } from '../../apl/pzw/konfigUiModule/KonfAntragRead';
+import { KalenderConstants } from '../../constants/KalenderConstants';
+import { BuchungsEigsNummern } from '../../constants/PzwConstants';
+import { useReadKonfArbeitsorte } from '../../tanstack/konfiguration/useReadKonfArbeitsorte';
+import { ControlledSelectArbeitsort } from './ControlledSelectArbeitsort';
+
+interface BuchungKorrigierenProps {
+  absVgngPrzId?: string;
+  weiterleitung?: () => void;
+  konfAntragZeitkorrektur: KonfAntragRead;
+  bearbeiten?: boolean;
+  setBearbeiten: Dispatch<SetStateAction<boolean>>;
+  isPending: boolean;
+}
+
+export interface ZeitkorrekturInput {
+  buchungsart: number;
+  zeitpunkt: dayjs.Dayjs;
+}
+
+export const validateUhrzeitEingabe = (eingabe: Dayjs, korrekturdatum: Dayjs) => {
+  if (korrekturdatum.isBefore(dayjs(), KalenderConstants.TAG)) {
+    return true;
+  }
+  return eingabe.isBefore(dayjs(), KalenderConstants.MINUTE);
+};
+
+export const setBuchungszeitpunktToMeldungsdatum = ({
+  buchung,
+  datum,
+}: {
+  buchung: ZeitkorrekturInput;
+  datum: string;
+}) => {
+  return {
+    buchungsartEigsNr: buchung.buchungsart,
+    zeitpunkt: buchung.zeitpunkt
+      .set(KalenderConstants.JAHR, dayjs(datum).year())
+      .set(KalenderConstants.MONAT, dayjs(datum).month())
+      .set(KalenderConstants.DATUM, dayjs(datum).date())
+      .format(KalenderConstants.DATUM_FORMAT_IDTIMESTAMP),
+  };
+};
+
+export const BuchungKorrigieren = ({ konfAntragZeitkorrektur, setBearbeiten, isPending }: BuchungKorrigierenProps) => {
+  const { t } = useTranslation();
+  const { data: konfEinstellung } = useReadKonfArbeitsorte();
+  const { control } = useFormContext();
+  console.log('control', control);
+  const { fields, append } = useFieldArray({
+    name: 'zeitkorrekturbuchungen',
+    control,
+  });
+  if (!konfEinstellung) {
+    return;
+  }
+  return (
+    <Box width={ThemeConstants.WIDTH_100_PERCENT}>
+      <Stack spacing={ThemeConstants.STACK_SPACING}>
+        {fields.map((field, index) => {
+          return (
+            <Stack
+              key={field.id}
+              direction="row"
+              spacing={ThemeConstants.STACK_SPACING}
+              width={ThemeConstants.WIDTH_100_PERCENT}
+            >
+              <FormControl fullWidth>
+                <ControlledSelectArbeitsort
+                  name={`zeitkorrekturbuchungen.${index}.buchungsart`}
+                  label={t('Arbeitsort')}
+                  required={true}
+                  disabled={!konfEinstellung.isMobileArbeit}
+                  isBuero={konfEinstellung.isBuero}
+                  isMobileArbeit={konfEinstellung.isMobileArbeit}
+                  control={control}
+                />
+              </FormControl>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <FormControl fullWidth>
+                  <FormInputTimePicker
+                    name={`zeitkorrekturbuchungen.${index}.zeitpunkt`}
+                    label={t('BuchungTabelle.Uhrzeit')}
+                    required={true}
+                  />
+                </FormControl>
+              </LocalizationProvider>
+            </Stack>
+          );
+        })}
+        <Box>
+          <Button
+            variant="text"
+            startIcon={<IcPlusS />}
+            onClick={() =>
+              append({
+                buchungsart: BuchungsEigsNummern.buero,
+                zeitpunkt: dayjs(''),
+              })
+            }
+          >
+            {t('weitereBuchungenHinzufuegen')}
+          </Button>
+        </Box>
+        <FormInputTextField
+          name={'kommentar'}
+          label={t('Kommentar')}
+          required={konfAntragZeitkorrektur.isKommentarPflicht}
+          multiline
+          minRows={3}
+        />
+        <Alert severity="info" variant={'filled'} color={'info'}>
+          {t('interneAktualisierungszyklen')}
+        </Alert>
+
+        <Stack
+          direction={'row'}
+          justifyContent={ThemeConstants.CONTENT_ALIGN_FLEX_END}
+          spacing={ThemeConstants.GRID_CONTAINER_SPACING}
+        >
+          <Button
+            variant={ThemeConstants.BUTTON_VARIANT_OUTLINED}
+            onClick={() => setBearbeiten(false)}
+            disabled={isPending}
+          >
+            {t('Abbrechen')}
+          </Button>
+          <Button variant={ThemeConstants.BUTTON_VARIANT_CONTAINED} type={'submit'} loading={isPending}>
+            {t('Tagesbuchungen.Absenden')}
+          </Button>
+        </Stack>
+      </Stack>
+    </Box>
+  );
+};
+============================================================
+// @see "CR602Dokumentation"
+import { FormControl, FormHelperText } from '@mui/material';
+import { TimePicker } from '@mui/x-date-pickers';
+import 'dayjs/locale/de';
+import dayjs, { Dayjs } from 'dayjs';
+import { Controller, useFormContext } from 'react-hook-form';
+
+export const FormInputTimePicker = ({ name, label, required }: { name: string; label: string; required: boolean }) => {
+  const { control: contextControl } = useFormContext();
+  return (
+    <FormControl fullWidth={true}>
+      <Controller
+        rules={{ required: required }}
+        name={name}
+        control={contextControl}
+        render={({ field: { ref, ...field }, fieldState: { error } }) => (
+          <>
+            <TimePicker
+              {...field}
+              value={dayjs(field.value as Dayjs)}
+              defaultValue={dayjs().hour(0).minute(0)}
+              onChange={(value: Dayjs | null) => {
+                field.onChange(value);
+              }}
+              inputRef={ref}
+              ampm={false}
+              slotProps={{ textField: { required: required, error: Boolean(error) } }}
+              label={label}
+            />
+            <FormHelperText error>{error?.message}</FormHelperText>
+          </>
+        )}
+      />
+    </FormControl>
+  );
+};
+==============================
+import dayjs, { Dayjs } from 'dayjs';
+import { useTranslation } from 'react-i18next';
+import z from 'zod';
+import { KalenderConstants } from '../../constants/KalenderConstants';
+import { validateUhrzeitEingabe } from './BuchungKorrigieren';
+
+export const getFormSchemaTagesbuchung = (isKommentarPflicht?: boolean) => {
+  const { t } = useTranslation();
+  return z
+    .object({
+      datum: z
+        .string()
+        .nonempty({
+          message: t('Pflichtfeld'),
+        })
+        .refine((val) => dayjs(val).isSameOrBefore(dayjs(), KalenderConstants.TAG), {
+          message: t('ZeitkorrekturDatumNichtInZukunft'),
+        }),
+      zeitkorrekturbuchungen: z
+        .object({
+          buchungsart: z.number(),
+          zeitpunkt: z.custom<Dayjs>((val) => dayjs.isDayjs(val) && dayjs(val).isValid(), {
+            message: t('Pflichtfeld'),
+          }),
+        })
+        .array(),
+      kommentar: isKommentarPflicht ? z.string().min(1, t('Pflichtfeld')) : z.string(),
+    })
+    .superRefine((values, context) =>
+      values.zeitkorrekturbuchungen.forEach((buchung, index) => {
+        if (!validateUhrzeitEingabe(dayjs(buchung.zeitpunkt), dayjs(values.datum))) {
+          context.addIssue({
+            code: 'custom',
+            path: [`zeitkorrekturbuchungen.${index}.zeitpunkt`],
+            message: t('ZeitkorrekturUngueltigeUhrzeit'),
+          });
+        }
+      })
+    );
+};
+========================
+
