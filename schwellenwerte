@@ -1,0 +1,933 @@
+import { useInputModel, useWorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import { IcBackArrowS } from '@finanzinformatik/mcd-module-icons';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Accordion, AccordionDetails, AccordionSummary, Button, Grid, Skeleton, Typography } from '@mui/material';
+import { FormProviderWrapper, ThemeConstants } from '@personalsysteme/core';
+import { TFunction } from 'i18next';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import z from 'zod';
+import { KonfSchwellenwerteRW } from '../apl/pzw/konfSchwellenwerteUiModule/KonfSchwellenwerteRW';
+import { KonfGleitzeitsaldoTeilzeitkraft } from '../components/konfiguration/schwellenwerte/KonfGleitzeitsaldoTeilzeitkraft';
+import { KonfGleitzeitsaldoVollzeitkraft } from '../components/konfiguration/schwellenwerte/KonfGleitzeitsaldoVollzeitkraft';
+import { KonfUrlaubsuebersicht } from '../components/konfiguration/schwellenwerte/KonfUrlaubsuebersicht';
+import { KonfigurationConstants } from '../constants/KonfigurationConstants';
+import { PzwConstants } from '../constants/PzwConstants';
+import { useReadKonfSchwellenwerte } from '../tanstack/konfiguration/useReadKonfSchwellenwerte';
+import { useUpdateKonfSchwellenwerte } from '../tanstack/konfiguration/useUpdateKonfSchwellenwerte';
+import { navigateToPskKonfiguration } from '../utils/bookmarkUtil';
+
+const formSchemaKonfSchwellenwerte = (t: TFunction) =>
+  z
+    .object({
+      gleitzeitsaldoVollzeit: z.object({
+        negativerRotbereich: z.object({
+          wert: z.number(),
+        }),
+        negativerGelbbereich: z.object({
+          wert: z.number(),
+        }),
+        positiverGelbbereich: z.object({
+          wert: z.number(),
+        }),
+        positiverRotbereich: z.object({
+          wert: z.number(),
+        }),
+      }),
+      gleitzeitsaldoTeilzeit: z.object({
+        negativerRotbereich: z.object({
+          wert: z.number(),
+        }),
+        negativerGelbbereich: z.object({
+          wert: z.number(),
+        }),
+        positiverGelbbereich: z.object({
+          wert: z.number(),
+        }),
+        positiverRotbereich: z.object({
+          wert: z.number(),
+        }),
+      }),
+      urlaub: z.object({
+        resturlaub: z.object({
+          wert: z.number().min(0).max(KonfigurationConstants.SCHWELLENWERTE_URLAUB_MAX_ANZAHL_TAGE_RESTURLAUB),
+        }),
+        neutralerBereich: z.object({
+          wert: z.number().min(0).max(KonfigurationConstants.SCHWELLENWERTE_URLAUB_MAX_ANZAHL_TAGE_NEUTRALER_BEREICH),
+        }),
+        gelbbereich: z.object({
+          wert: z.number().min(0).max(PzwConstants.ANZAHL_TAGE_IM_JAHR),
+        }),
+        rotbereich: z.object({
+          wert: z.number().min(0).max(PzwConstants.ANZAHL_TAGE_IM_JAHR),
+        }),
+      }),
+      isTeilzeitVollzeitIdentisch: z.boolean(),
+    })
+    .superRefine((data, ctx) => {
+      // Vollzeit
+      if (
+        data.gleitzeitsaldoVollzeit.negativerRotbereich.wert >= data.gleitzeitsaldoVollzeit.negativerGelbbereich.wert
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: t('Schwellenwerte.GleitzeitsaldoVollzeitkraft.NegativerRotbereich.Fehler'),
+          path: ['gleitzeitsaldoVollzeit.negativerRotbereich.wert'],
+        });
+        ctx.addIssue({
+          code: 'custom',
+          message: t('Schwellenwerte.GleitzeitsaldoVollzeitkraft.NegativerGelbbereich.Fehler'),
+          path: ['gleitzeitsaldoVollzeit.negativerGelbbereich.wert'],
+        });
+      }
+      if (
+        data.gleitzeitsaldoVollzeit.positiverGelbbereich.wert >= data.gleitzeitsaldoVollzeit.positiverRotbereich.wert
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: t('Schwellenwerte.GleitzeitsaldoVollzeitkraft.PositiverGelbbereich.Fehler'),
+          path: ['gleitzeitsaldoVollzeit.positiverGelbbereich.wert'],
+        });
+        ctx.addIssue({
+          code: 'custom',
+          message: t('Schwellenwerte.GleitzeitsaldoVollzeitkraft.PositiverRotbereich.Fehler'),
+          path: ['gleitzeitsaldoVollzeit.positiverRotbereich.wert'],
+        });
+      }
+      // Teilzeit
+      if (
+        data.gleitzeitsaldoTeilzeit.negativerRotbereich.wert >= data.gleitzeitsaldoTeilzeit.negativerGelbbereich.wert
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.NegativerRotbereich.Fehler'),
+          path: ['gleitzeitsaldoTeilzeit.negativerRotbereich.wert'],
+        });
+        ctx.addIssue({
+          code: 'custom',
+          message: t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.NegativerGelbbereich.Fehler'),
+          path: ['gleitzeitsaldoTeilzeit.negativerGelbbereich.wert'],
+        });
+      }
+      if (
+        data.gleitzeitsaldoTeilzeit.positiverGelbbereich.wert >= data.gleitzeitsaldoTeilzeit.positiverRotbereich.wert
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.PositiverGelbbereich.Fehler'),
+          path: ['gleitzeitsaldoTeilzeit.positiverGelbbereich.wert'],
+        });
+        ctx.addIssue({
+          code: 'custom',
+          message: t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.PositiverRotbereich.Fehler'),
+          path: ['gleitzeitsaldoTeilzeit.positiverRotbereich.wert'],
+        });
+      }
+      // Urlaub
+      if (data.urlaub.gelbbereich.wert >= data.urlaub.neutralerBereich.wert) {
+        ctx.addIssue({
+          code: 'custom',
+          message: t('Schwellenwerte.Urlaubsuebersicht.Gelbbereich.FehlerNeutral'),
+          path: ['urlaub.gelbbereich.wert'],
+        });
+        ctx.addIssue({
+          code: 'custom',
+          message: t('Schwellenwerte.Urlaubsuebersicht.NeutralerBereich.Fehler'),
+          path: ['urlaub.neutralerBereich.wert'],
+        });
+      }
+      if (data.urlaub.rotbereich.wert >= data.urlaub.gelbbereich.wert) {
+        ctx.addIssue({
+          code: 'custom',
+          message: t('Schwellenwerte.Urlaubsuebersicht.Rotbereich.Fehler'),
+          path: ['urlaub.rotbereich.wert'],
+        });
+        ctx.addIssue({
+          code: 'custom',
+          message: t('Schwellenwerte.Urlaubsuebersicht.Gelbbereich.FehlerGelb'),
+          path: ['urlaub.gelbbereich.wert'],
+        });
+      }
+      // Cross-side - übergreifend
+      if (
+        data.gleitzeitsaldoVollzeit.negativerGelbbereich.wert >= data.gleitzeitsaldoVollzeit.positiverGelbbereich.wert
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: t('Schwellenwerte.Gleitzeitsaldo.AbgrenzungFehler'),
+          path: ['gleitzeitsaldoVollzeit.negativerGelbbereich.wert'],
+        });
+      }
+      if (
+        data.gleitzeitsaldoTeilzeit.negativerGelbbereich.wert >= data.gleitzeitsaldoTeilzeit.positiverGelbbereich.wert
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: t('Schwellenwerte.Gleitzeitsaldo.AbgrenzungFehler'),
+          path: ['gleitzeitsaldoTeilzeit.negativerGelbbereich.wert'],
+        });
+      }
+    });
+export type KonfSchwellenwerteFormType = z.infer<ReturnType<typeof formSchemaKonfSchwellenwerte>>;
+
+export default function KonfSchwellenwerteView() {
+  const { t } = useTranslation();
+  const inputModel = useInputModel<{ canUpdateSchwellenwerte: boolean }>();
+  const { data: schwellenwerte, isLoading: isKonfSchwellenwerteLoading, refetch } = useReadKonfSchwellenwerte();
+  const { mutate: updateSchwellenwerte, isPending: isKonfSchwellenwerteUpdating } = useUpdateKonfSchwellenwerte();
+  const workflowService = useWorkflowService();
+  const methods = useForm<KonfSchwellenwerteFormType, unknown, KonfSchwellenwerteFormType>({
+    resolver: zodResolver(formSchemaKonfSchwellenwerte(t)),
+    mode: 'all',
+    reValidateMode: 'onBlur',
+    defaultValues: async () => {
+      const { data } = await refetch();
+      return data ?? ({} as KonfSchwellenwerteFormType);
+    },
+    values: schwellenwerte,
+  });
+  const handleClickZurueckZuKonfiguration = () => {
+    navigateToPskKonfiguration(workflowService);
+  };
+
+  const handleFormSubmit = () => {
+    updateSchwellenwerte(methods.getValues() as KonfSchwellenwerteRW);
+  };
+
+  /*
+   * Workaround für cross-side-validation (zod/react-hook-form validiert bei Änderungen nur betroffenes Feld)
+   * TODO: Arash/Jan Prüfung auf Korrektur/Erweiterung in PSK-core
+   */
+  useEffect(() => {
+    const sub = methods.watch((_) => {
+      methods.trigger().then(() => {
+        // Nur Auslöser ohne weitere Behandlung.
+      });
+    });
+    return () => sub.unsubscribe();
+  }, [methods.watch, methods.trigger]);
+
+  return (
+    <Grid container spacing={ThemeConstants.GRID_CONTAINER_SPACING} justifyContent={ThemeConstants.ALIGNMENT_CENTER}>
+      <Grid size={{ xs: 12, lg: 10 }}>
+        <FormProviderWrapper<KonfSchwellenwerteFormType>
+          formId={'konfiguration-schwellenwerte'}
+          methods={methods}
+          onSubmit={handleFormSubmit}
+        >
+          <Grid
+            container
+            spacing={ThemeConstants.GRID_CONTAINER_SPACING}
+            justifyContent={ThemeConstants.ALIGNMENT_CENTER}
+            gap={5}
+          >
+            <Grid size={12}>
+              <Button size="small" onClick={handleClickZurueckZuKonfiguration} startIcon={<IcBackArrowS />}>
+                {t('ZurueckZurKonfiguration')}
+              </Button>
+            </Grid>
+            <Grid size={12}>
+              <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_02} component="div">
+                {t('Schwellenwerte.Schwellenwerte')}
+              </Typography>
+            </Grid>
+
+            {isKonfSchwellenwerteLoading ? (
+              <>
+                <Skeleton variant="rectangular" width={ThemeConstants.WIDTH_100_PERCENT} height={20} />
+                <Skeleton variant="rectangular" width={ThemeConstants.WIDTH_100_PERCENT} height={20} />
+                <Skeleton variant="rectangular" width={ThemeConstants.WIDTH_100_PERCENT} height={20} />
+              </>
+            ) : (
+              <Grid size={12}>
+                <Accordion sx={{ border: '1px solid #E3E3E3 !important' }}>
+                  <AccordionSummary>
+                    <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01}>
+                      {t('Schwellenwerte.GleitzeitsaldoVollzeitkraft.GleitzeitsaldoVollzeitkraft')}
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <KonfGleitzeitsaldoVollzeitkraft methods={methods} />
+                  </AccordionDetails>
+                </Accordion>
+
+                <Accordion sx={{ border: '1px solid #E3E3E3 !important' }}>
+                  <AccordionSummary>
+                    <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01}>
+                      {t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.GleitzeitsaldoTeilzeitkraft')}
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <KonfGleitzeitsaldoTeilzeitkraft methods={methods} />
+                  </AccordionDetails>
+                </Accordion>
+
+                <Accordion sx={{ border: '1px solid #E3E3E3 !important' }}>
+                  <AccordionSummary>
+                    <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01}>
+                      {t('Schwellenwerte.Urlaubsuebersicht.Urlaubsuebersicht')}
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <KonfUrlaubsuebersicht methods={methods} />
+                  </AccordionDetails>
+                </Accordion>
+              </Grid>
+            )}
+          </Grid>
+          <Grid size={12} paddingTop={5}>
+            <Button
+              variant={ThemeConstants.BUTTON_VARIANT_CONTAINED}
+              type={'submit'}
+              loading={isKonfSchwellenwerteUpdating}
+              disabled={!inputModel?.canUpdateSchwellenwerte}
+            >
+              {t('Speichern')}
+            </Button>
+          </Grid>
+        </FormProviderWrapper>
+      </Grid>
+    </Grid>
+  );
+}
+========================================================
+import {
+  IcArrowDownRightS,
+  IcArrowUpRightS,
+  IcCircleS,
+  IcDownArrowS,
+  IcLockS,
+  IcUpArrowS,
+} from '@finanzinformatik/mcd-module-icons';
+import { useMcdPalette } from '@finanzinformatik/mcd-module-theme-provider';
+import { Avatar, Grid, TextField, Typography } from '@mui/material';
+import { FormInputNumber, ThemeConstants } from '@personalsysteme/core';
+import { UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import { KonfSchwellenwerteFormType } from '../../../views/KonfSchwellenwerteView';
+
+interface KonfGleitzeitsaldoVollzeitkraftProps {
+  methods: UseFormReturn<KonfSchwellenwerteFormType, unknown, KonfSchwellenwerteFormType>;
+}
+
+export const KonfGleitzeitsaldoVollzeitkraft = ({ methods }: KonfGleitzeitsaldoVollzeitkraftProps) => {
+  const { t } = useTranslation();
+  const { ColorTokens } = useMcdPalette();
+  const watchVollzeitNegativerGelbbereich = methods.watch('gleitzeitsaldoVollzeit.negativerGelbbereich.wert');
+  const watchVollzeitPositiverGelbbereich = methods.watch('gleitzeitsaldoVollzeit.positiverGelbbereich.wert');
+  const INPUT_WIDTH = '330px';
+  return (
+    <Grid container spacing={ThemeConstants.GRID_CONTAINER_SPACING} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+      {/* NEGATIVER ROTBEREICH */}
+      <Grid size={{ xs: 12, sm: 3 }} display={'inline-flex'} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+        <Avatar
+          sx={{
+            background: ColorTokens[ThemeConstants.COLOR_TOKEN_ERROR_02],
+            color: ColorTokens[ThemeConstants.COLOR_TOKEN_ERROR_01],
+            width: ThemeConstants.AVATAR_SIZE_SM,
+            height: ThemeConstants.AVATAR_SIZE_SM,
+          }}
+        >
+          <IcDownArrowS width={ThemeConstants.ICON_SIZE_SM} height={ThemeConstants.ICON_SIZE_SM} />
+        </Avatar>
+        <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01} paddingLeft={2}>
+          {t('Schwellenwerte.GleitzeitsaldoVollzeitkraft.NegativerRotbereich.Titel')}
+        </Typography>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 9 }}>
+        <FormInputNumber<KonfSchwellenwerteFormType>
+          name={'gleitzeitsaldoVollzeit.negativerRotbereich.wert'}
+          label={t('Schwellenwerte.GleitzeitsaldoVollzeitkraft.ZeitsaldoUnter')}
+          required={true}
+          maximumFractionDigits={2}
+          sx={{
+            width: INPUT_WIDTH,
+          }}
+        />
+      </Grid>
+
+      {/* NEGATIVER GELBBEREICH */}
+      <Grid size={{ xs: 12, sm: 3 }} display={'inline-flex'} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+        <Avatar
+          sx={{
+            background: ColorTokens[ThemeConstants.COLOR_TOKEN_WARNING_02],
+            color: ColorTokens[ThemeConstants.COLOR_TOKEN_WARNING_01],
+            width: ThemeConstants.AVATAR_SIZE_SM,
+            height: ThemeConstants.AVATAR_SIZE_SM,
+          }}
+        >
+          <IcArrowDownRightS width={ThemeConstants.ICON_SIZE_SM} height={ThemeConstants.ICON_SIZE_SM} />
+        </Avatar>
+        <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01} paddingLeft={2}>
+          {t('Schwellenwerte.GleitzeitsaldoVollzeitkraft.NegativerGelbbereich.Titel')}
+        </Typography>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 9 }}>
+        <FormInputNumber<KonfSchwellenwerteFormType>
+          name={'gleitzeitsaldoVollzeit.negativerGelbbereich.wert'}
+          label={t('Schwellenwerte.GleitzeitsaldoVollzeitkraft.ZeitsaldoUnter')}
+          required={true}
+          maximumFractionDigits={2}
+          sx={{
+            width: INPUT_WIDTH,
+          }}
+        />
+      </Grid>
+
+      {/* NEUTRALER BEREICH */}
+      <Grid size={{ xs: 12, sm: 3 }} display={'inline-flex'} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+        <Avatar
+          sx={{
+            background: ColorTokens[ThemeConstants.COLOR_TOKEN_SUCCESS_02],
+            color: ColorTokens[ThemeConstants.COLOR_TOKEN_SUCCESS_01],
+            width: ThemeConstants.AVATAR_SIZE_SM,
+            height: ThemeConstants.AVATAR_SIZE_SM,
+          }}
+        >
+          <IcCircleS width={ThemeConstants.ICON_SIZE_SM} height={ThemeConstants.ICON_SIZE_SM} />
+        </Avatar>
+        <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01} paddingLeft={2}>
+          {t('Schwellenwerte.GleitzeitsaldoVollzeitkraft.NeutralerBereich.Titel')}
+        </Typography>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 9 }}>
+        <TextField
+          label={t('Schwellenwerte.GleitzeitsaldoVollzeitkraft.ZeitsaldoZwischen')}
+          value={`${watchVollzeitNegativerGelbbereich}/+${watchVollzeitPositiverGelbbereich}`}
+          disabled={true}
+          required={true}
+          sx={{
+            width: INPUT_WIDTH,
+          }}
+          slotProps={{
+            input: {
+              endAdornment: <IcLockS width={ThemeConstants.ICON_SIZE_SM} height={ThemeConstants.ICON_SIZE_SM} />,
+            },
+          }}
+        />
+      </Grid>
+
+      {/* POSITIVER GELBBEREICH */}
+      <Grid size={{ xs: 12, sm: 3 }} display={'inline-flex'} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+        <Avatar
+          sx={{
+            background: ColorTokens[ThemeConstants.COLOR_TOKEN_WARNING_02],
+            color: ColorTokens[ThemeConstants.COLOR_TOKEN_WARNING_01],
+            width: ThemeConstants.AVATAR_SIZE_SM,
+            height: ThemeConstants.AVATAR_SIZE_SM,
+          }}
+        >
+          <IcArrowUpRightS width={ThemeConstants.ICON_SIZE_SM} height={ThemeConstants.ICON_SIZE_SM} />
+        </Avatar>
+        <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01} paddingLeft={2}>
+          {t('Schwellenwerte.GleitzeitsaldoVollzeitkraft.PositiverGelbbereich.Titel')}
+        </Typography>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 9 }}>
+        <FormInputNumber<KonfSchwellenwerteFormType>
+          name={'gleitzeitsaldoVollzeit.positiverGelbbereich.wert'}
+          label={t('Schwellenwerte.GleitzeitsaldoVollzeitkraft.ZeitsaldoUeber')}
+          required={true}
+          maximumFractionDigits={2}
+          sx={{
+            width: INPUT_WIDTH,
+          }}
+        />
+      </Grid>
+
+      {/* POSITIVER ROTBEREICH */}
+      <Grid size={{ xs: 12, sm: 3 }} display={'inline-flex'} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+        <Avatar
+          sx={{
+            background: ColorTokens['error-02'],
+            color: ColorTokens['error-01'],
+            width: ThemeConstants.AVATAR_SIZE_SM,
+            height: ThemeConstants.AVATAR_SIZE_SM,
+          }}
+        >
+          <IcUpArrowS width={ThemeConstants.ICON_SIZE_SM} height={ThemeConstants.ICON_SIZE_SM} />
+        </Avatar>
+        <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01} paddingLeft={2}>
+          {t('Schwellenwerte.GleitzeitsaldoVollzeitkraft.PositiverRotbereich.Titel')}
+        </Typography>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 9 }}>
+        <FormInputNumber<KonfSchwellenwerteFormType>
+          name={'gleitzeitsaldoVollzeit.positiverRotbereich.wert'}
+          label={t('Schwellenwerte.GleitzeitsaldoVollzeitkraft.ZeitsaldoUeber')}
+          required={true}
+          maximumFractionDigits={2}
+          sx={{
+            width: INPUT_WIDTH,
+          }}
+        />
+      </Grid>
+    </Grid>
+  );
+};
+=================================================
+import {
+  IcArrowDownRightS,
+  IcArrowUpRightS,
+  IcCircleS,
+  IcDownArrowS,
+  IcHintCircleS,
+  IcLockS,
+  IcUpArrowS,
+} from '@finanzinformatik/mcd-module-icons';
+import { useMcdPalette } from '@finanzinformatik/mcd-module-theme-provider';
+import { Alert, Avatar, Grid, TextField, Typography } from '@mui/material';
+import { FormInputNumber, FormInputSwitch, ThemeConstants } from '@personalsysteme/core';
+import { UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import { KonfSchwellenwerteFormType } from '../../../views/KonfSchwellenwerteView';
+
+interface KonfGleitzeitsaldoTeilzeitkraftProps {
+  methods: UseFormReturn<KonfSchwellenwerteFormType, unknown, KonfSchwellenwerteFormType>;
+}
+
+export const KonfGleitzeitsaldoTeilzeitkraft = ({ methods }: KonfGleitzeitsaldoTeilzeitkraftProps) => {
+  const { t } = useTranslation();
+  const { ColorTokens } = useMcdPalette();
+  const watchIsTeilzeitVollzeitIdentisch = methods.watch('isTeilzeitVollzeitIdentisch');
+  const watchTeilzeitNegativerGelbbereich = methods.watch('gleitzeitsaldoTeilzeit.negativerGelbbereich.wert');
+  const watchTeilzeitPositiverGelbbereich = methods.watch('gleitzeitsaldoTeilzeit.positiverGelbbereich.wert');
+  const INPUT_WIDTH = '330px';
+  return (
+    <Grid container spacing={ThemeConstants.GRID_CONTAINER_SPACING} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+      <Grid size={{ xs: 12, sm: 10 }}>
+        <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01}>
+          {t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.EinstellungenUebernehmen')}
+        </Typography>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 2 }}>
+        <FormInputSwitch<KonfSchwellenwerteFormType>
+          name={'isTeilzeitVollzeitIdentisch'}
+          label={watchIsTeilzeitVollzeitIdentisch ? t('aktiviert') : t('deaktiviert')}
+        />
+      </Grid>
+      {!watchIsTeilzeitVollzeitIdentisch ? (
+        <>
+          {/* NEGATIVER ROTBEREICH */}
+          <Grid size={{ xs: 12, sm: 3 }} display={'inline-flex'} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+            <Avatar
+              sx={{
+                background: ColorTokens[ThemeConstants.COLOR_TOKEN_ERROR_02],
+                color: ColorTokens[ThemeConstants.COLOR_TOKEN_ERROR_01],
+                width: ThemeConstants.AVATAR_SIZE_SM,
+                height: ThemeConstants.AVATAR_SIZE_SM,
+              }}
+            >
+              <IcDownArrowS width={ThemeConstants.ICON_SIZE_SM} height={ThemeConstants.ICON_SIZE_SM} />
+            </Avatar>
+            <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01} paddingLeft={2}>
+              {t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.NegativerRotbereich.Titel')}
+            </Typography>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 9 }}>
+            <FormInputNumber<KonfSchwellenwerteFormType>
+              name={'gleitzeitsaldoTeilzeit.negativerRotbereich.wert'}
+              label={t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.ZeitsaldoUnter')}
+              required={true}
+              maximumFractionDigits={2}
+              sx={{
+                width: INPUT_WIDTH,
+              }}
+            />
+          </Grid>
+
+          {/* NEGATIVER GELBBEREICH */}
+          <Grid size={{ xs: 12, sm: 3 }} display={'inline-flex'} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+            <Avatar
+              sx={{
+                background: ColorTokens[ThemeConstants.COLOR_TOKEN_WARNING_02],
+                color: ColorTokens[ThemeConstants.COLOR_TOKEN_WARNING_01],
+                width: ThemeConstants.AVATAR_SIZE_SM,
+                height: ThemeConstants.AVATAR_SIZE_SM,
+              }}
+            >
+              <IcArrowDownRightS width={ThemeConstants.ICON_SIZE_SM} height={ThemeConstants.ICON_SIZE_SM} />
+            </Avatar>
+            <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01} paddingLeft={2}>
+              {t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.NegativerGelbbereich.Titel')}
+            </Typography>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 9 }}>
+            <FormInputNumber<KonfSchwellenwerteFormType>
+              name={'gleitzeitsaldoTeilzeit.negativerGelbbereich.wert'}
+              label={t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.ZeitsaldoUnter')}
+              required={true}
+              maximumFractionDigits={2}
+              sx={{
+                width: INPUT_WIDTH,
+              }}
+            />
+          </Grid>
+
+          {/* NEUTRALER BEREICH */}
+          <Grid size={{ xs: 12, sm: 3 }} display={'inline-flex'} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+            <Avatar
+              sx={{
+                background: ColorTokens[ThemeConstants.COLOR_TOKEN_SUCCESS_02],
+                color: ColorTokens[ThemeConstants.COLOR_TOKEN_SUCCESS_01],
+                width: ThemeConstants.AVATAR_SIZE_SM,
+                height: ThemeConstants.AVATAR_SIZE_SM,
+              }}
+            >
+              <IcCircleS width={ThemeConstants.ICON_SIZE_SM} height={ThemeConstants.ICON_SIZE_SM} />
+            </Avatar>
+            <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01} paddingLeft={2}>
+              {t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.NeutralerBereich.Titel')}
+            </Typography>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 9 }}>
+            <TextField
+              label={t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.ZeitsaldoZwischen')}
+              value={`${watchTeilzeitNegativerGelbbereich}/+${watchTeilzeitPositiverGelbbereich}`}
+              disabled={true}
+              required={true}
+              sx={{
+                width: INPUT_WIDTH,
+              }}
+              slotProps={{
+                input: {
+                  endAdornment: <IcLockS width={ThemeConstants.ICON_SIZE_SM} height={ThemeConstants.ICON_SIZE_SM} />,
+                },
+              }}
+            />
+          </Grid>
+
+          {/* POSITIVER GELBBEREICH */}
+          <Grid size={{ xs: 12, sm: 3 }} display={'inline-flex'} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+            <Avatar
+              sx={{
+                background: ColorTokens[ThemeConstants.COLOR_TOKEN_WARNING_02],
+                color: ColorTokens[ThemeConstants.COLOR_TOKEN_WARNING_01],
+                width: ThemeConstants.AVATAR_SIZE_SM,
+                height: ThemeConstants.AVATAR_SIZE_SM,
+              }}
+            >
+              <IcArrowUpRightS width={ThemeConstants.ICON_SIZE_SM} height={ThemeConstants.ICON_SIZE_SM} />
+            </Avatar>
+            <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01} paddingLeft={2}>
+              {t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.PositiverGelbbereich.Titel')}
+            </Typography>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 9 }}>
+            <FormInputNumber<KonfSchwellenwerteFormType>
+              name={'gleitzeitsaldoTeilzeit.positiverGelbbereich.wert'}
+              label={t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.ZeitsaldoUeber')}
+              required={true}
+              maximumFractionDigits={2}
+              sx={{
+                width: INPUT_WIDTH,
+              }}
+            />
+          </Grid>
+
+          {/* POSITIVER ROTBEREICH */}
+          <Grid size={{ xs: 12, sm: 3 }} display={'inline-flex'} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+            <Avatar
+              sx={{
+                background: ColorTokens['error-02'],
+                color: ColorTokens['error-01'],
+                width: ThemeConstants.AVATAR_SIZE_SM,
+                height: ThemeConstants.AVATAR_SIZE_SM,
+              }}
+            >
+              <IcUpArrowS width={ThemeConstants.ICON_SIZE_SM} height={ThemeConstants.ICON_SIZE_SM} />
+            </Avatar>
+            <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01} paddingLeft={2}>
+              {t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.PositiverRotbereich.Titel')}
+            </Typography>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 9 }}>
+            <FormInputNumber<KonfSchwellenwerteFormType>
+              name={'gleitzeitsaldoTeilzeit.positiverRotbereich.wert'}
+              label={t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.ZeitsaldoUeber')}
+              required={true}
+              maximumFractionDigits={2}
+              sx={{
+                width: INPUT_WIDTH,
+              }}
+            />
+          </Grid>
+        </>
+      ) : (
+        <Grid size={12}>
+          <Alert
+            icon={<IcHintCircleS width={ThemeConstants.ICON_SIZE_SM} height={ThemeConstants.ICON_SIZE_SM} />}
+            sx={{ backgroundColor: '#DBEEFF' }} // TODO: JCH - Farbe aus Design nicht zu Entwurf
+          >
+            {t('Schwellenwerte.GleitzeitsaldoTeilzeitkraft.EinstellungenIdentisch')}
+          </Alert>
+        </Grid>
+      )}
+    </Grid>
+  );
+};
+=======================================================
+import { IcArrowUpRightS, IcCircleS, IcUpArrowS } from '@finanzinformatik/mcd-module-icons';
+import { useMcdPalette } from '@finanzinformatik/mcd-module-theme-provider';
+import { Avatar, Grid, Typography } from '@mui/material';
+import { FormInputNumber, ThemeConstants } from '@personalsysteme/core';
+import { UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import { KonfSchwellenwerteFormType } from '../../../views/KonfSchwellenwerteView';
+
+interface KonfUrlaubsuebersichtProps {
+  methods: UseFormReturn<KonfSchwellenwerteFormType, unknown, KonfSchwellenwerteFormType>;
+}
+
+export const KonfUrlaubsuebersicht = ({ methods }: KonfUrlaubsuebersichtProps) => {
+  const { t } = useTranslation();
+  const { ColorTokens } = useMcdPalette();
+  return (
+    <Grid container spacing={ThemeConstants.GRID_CONTAINER_SPACING} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+      <Grid size={{ xs: 12, sm: 3 }} display={'inline-flex'} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+        <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01} paddingLeft={2}>
+          {t('Schwellenwerte.Urlaubsuebersicht.SchwellenwertResturlaub')}
+        </Typography>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 2 }}>
+        <FormInputNumber<KonfSchwellenwerteFormType>
+          name={'urlaub.resturlaub.wert'}
+          label={t('Schwellenwerte.Urlaubsuebersicht.ResturlaubUnter')}
+          required={true}
+        />
+      </Grid>
+      <Grid size={{ xs: 0, sm: 7 }} />
+
+      {/* NEUTRALER BEREICH */}
+      <Grid size={{ xs: 12, sm: 3 }} display={'inline-flex'} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+        <Avatar
+          sx={{
+            background: ColorTokens[ThemeConstants.COLOR_TOKEN_SUCCESS_02],
+            color: ColorTokens[ThemeConstants.COLOR_TOKEN_SUCCESS_01],
+            width: ThemeConstants.AVATAR_SIZE_SM,
+            height: ThemeConstants.AVATAR_SIZE_SM,
+          }}
+        >
+          <IcCircleS width={ThemeConstants.ICON_SIZE_SM} height={ThemeConstants.ICON_SIZE_SM} />
+        </Avatar>
+        <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01} paddingLeft={2}>
+          {t('Schwellenwerte.Urlaubsuebersicht.NeutralerBereich.Titel')}
+        </Typography>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 2 }}>
+        <FormInputNumber<KonfSchwellenwerteFormType>
+          name={'urlaub.neutralerBereich.wert'}
+          label={t('Schwellenwerte.Urlaubsuebersicht.TageVorFaelligkeit')}
+          required={true}
+        />
+      </Grid>
+      <Grid size={{ xs: 0, sm: 7 }} />
+
+      {/* GELBBEREICH */}
+      <Grid size={{ xs: 12, sm: 3 }} display={'inline-flex'} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+        <Avatar
+          sx={{
+            background: ColorTokens[ThemeConstants.COLOR_TOKEN_WARNING_02],
+            color: ColorTokens[ThemeConstants.COLOR_TOKEN_WARNING_01],
+            width: ThemeConstants.AVATAR_SIZE_SM,
+            height: ThemeConstants.AVATAR_SIZE_SM,
+          }}
+        >
+          <IcArrowUpRightS width={ThemeConstants.ICON_SIZE_SM} height={ThemeConstants.ICON_SIZE_SM} />
+        </Avatar>
+        <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01} paddingLeft={2}>
+          {t('Schwellenwerte.Urlaubsuebersicht.Gelbbereich.Titel')}
+        </Typography>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 2 }}>
+        <FormInputNumber<KonfSchwellenwerteFormType>
+          name={'urlaub.gelbbereich.wert'}
+          label={t('Schwellenwerte.Urlaubsuebersicht.TageVorFaelligkeit')}
+          required={true}
+        />
+      </Grid>
+      <Grid size={{ xs: 0, sm: 7 }} />
+
+      {/* ROTBEREICH */}
+      <Grid size={{ xs: 12, sm: 3 }} display={'inline-flex'} alignItems={ThemeConstants.ALIGNMENT_CENTER}>
+        <Avatar
+          sx={{
+            background: ColorTokens['error-02'],
+            color: ColorTokens['error-01'],
+            width: ThemeConstants.AVATAR_SIZE_SM,
+            height: ThemeConstants.AVATAR_SIZE_SM,
+          }}
+        >
+          <IcUpArrowS width={ThemeConstants.ICON_SIZE_SM} height={ThemeConstants.ICON_SIZE_SM} />
+        </Avatar>
+        <Typography variant={ThemeConstants.TYPOGRAPHY_INPUT_01} paddingLeft={2}>
+          {t('Schwellenwerte.Urlaubsuebersicht.Rotbereich.Titel')}
+        </Typography>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 2 }}>
+        <FormInputNumber<KonfSchwellenwerteFormType>
+          name={'urlaub.rotbereich.wert'}
+          label={t('Schwellenwerte.Urlaubsuebersicht.TageVorFaelligkeit')}
+          required={true}
+        />
+      </Grid>
+      <Grid size={{ xs: 0, sm: 7 }} />
+    </Grid>
+  );
+};
+
+===================================================
+// @see "CR602Dokumentation"
+import {
+    FormControl,
+    FormHelperText,
+    InputAdornment,
+    SxProps,
+    TextField,
+    TextFieldProps,
+    Theme,
+    Typography,
+} from '@mui/material';
+import { Control, Controller, FieldPath, FieldValues, useFormContext } from 'react-hook-form';
+import { LocalesConstants, NumberConstants, ThemeConstants } from '../Constants';
+import { convertNumberToGermanString, getOnlyNumericWithDecimalString } from '../Util';
+import { FormInputSkeleton } from './FormInputSkeleton';
+
+interface FormInputNumberProps<TFieldValues extends FieldValues, TTransformedValues = TFieldValues> extends Omit<
+  TextFieldProps,
+  'name'
+> {
+  name: FieldPath<TFieldValues>;
+  label: string;
+  oldValue?: number;
+  disabled?: boolean;
+  minimumFractionDigits?: number;
+  maximumFractionDigits?: number;
+  valueType?: string;
+  onDependencyChange?: (number: number) => void;
+  isLoading?: boolean;
+  max?: number;
+  min?: number;
+  control?: Control<TFieldValues, unknown, TTransformedValues>;
+  sx?: SxProps<Theme>;
+  showTrailingZeros?: boolean;
+}
+
+/**
+ * Generische Komponente für numerische Eingaben mit Validierung.
+ * @template T - Typ der Formulardaten
+ * @param {Object} props - Komponenteneigenschaften
+ * @param {Path<T>} props.name - Feldname im Formular
+ * @param {string} props.label - Beschriftung des Feldes
+ * @param {number} props.oldValue - Alt-Wert des Feldes
+ * @param {number} [props.minimumFractionDigits] - minimale Anzahl der Dezimalstellen
+ * @param {number} [props.maximumFractionDigits] - maximale Anzahl der Dezimalstellen
+ * @param {string} [props.valueType] - Einheit des Wertes
+ * @param {Function} [props.onDependencyChange] - Funktion, welches bei Änderung des Watch-Wertes ausgeführt wird
+ * @param {boolean} [props.isLoading] - Gibt an ob die Liste noch geladen wird
+ * @param {number} [props.max] - Gibt an welche Number maximal angegeben werden muss und überschreibt sie damit wenn größer
+ * @param {number} [props.min] - Gibt an welche Number minimal angegeben werden muss und überschreibt sie damit wenn kleiner
+ * @param {Control<T> | undefined} [props.control] - Verwendet die übergebene control statt des useFormContext
+ * @param {SxProps<Theme>} [props.sx] - MUI-Styling-Eigenschaften
+ * @param {boolean} [props.showTrailingZeros] - Gibt an, ob nachfolgende Nullen angezeigt werden sollen. Standardwert: 'false'
+ * @example
+ * <FormInputNumber name="alter" label="Alter" maximumFractionDigits={0} valueType="Jahre" />
+ */
+export const FormInputNumber = <TFieldValues extends FieldValues, TTransformedValues = TFieldValues>({
+  name,
+  label,
+  oldValue,
+  disabled,
+  minimumFractionDigits = NumberConstants.TWO_DIGITS,
+  maximumFractionDigits = NumberConstants.TWO_DIGITS,
+  valueType,
+  onDependencyChange,
+  sx,
+  isLoading,
+  max,
+  min,
+  control,
+  showTrailingZeros = false,
+  ...mui
+}: FormInputNumberProps<TFieldValues, TTransformedValues>) => {
+  const { control: contextControl } = useFormContext<TFieldValues, unknown, TTransformedValues>();
+
+  return (
+    <FormControl fullWidth={true}>
+      <Controller<TFieldValues, FieldPath<TFieldValues>, TTransformedValues>
+        name={name}
+        control={control ?? contextControl}
+        render={({ field, fieldState: { error } }) => (
+          <FormInputSkeleton isLoading={isLoading}>
+            <TextField
+              label={label}
+              // Die Prüfung verhindert die Formatierung von leeren oder ungültigen Werten, da `field.value` auch `undefined` oder `Nan` sein kann.
+              value={showTrailingZeros && typeof field.value === 'number' && !isNaN(field.value)
+                  ? field.value.toFixed(minimumFractionDigits)
+                  : field.value}
+              onChange={(e) => {
+                const numberString = getOnlyNumericWithDecimalString(e.target.value);
+                const num = Number(numberString);
+                let newValue = numberString;
+                if (max && !isNaN(num) && num > max) {
+                  newValue = Number(max).toFixed(maximumFractionDigits);
+                } else if (min && !isNaN(num) && num < min) {
+                  newValue = Number(min).toFixed(minimumFractionDigits);
+                }
+                field.onChange(newValue);
+                if (onDependencyChange) {
+                  onDependencyChange(parseFloat(newValue));
+                }
+              }}
+              onBlur={(e) => {
+                const value = parseFloat(getOnlyNumericWithDecimalString(e.target.value));
+                if (!isNaN(value)) {
+                  const rounded = parseFloat(value.toFixed(maximumFractionDigits));
+                    // `toFixed` wird verwendet, um die gewünschte Anzahl Nachkommastellen inklusive nachfolgender Nullen anzuzeigen.
+                  field.onChange(showTrailingZeros ? rounded.toFixed(minimumFractionDigits) : rounded);
+                }
+              }}
+              disabled={disabled}
+              error={Boolean(error)}
+              slotProps={{
+                htmlInput: {
+                  step: maximumFractionDigits > 0 ? `0.${'1'.padStart(maximumFractionDigits ?? 0 , '0')}` : '1',
+                  min: 0,
+                  pattern: `^\\d+(\\.\\d{1,${maximumFractionDigits}})?$`,
+                  lang: LocalesConstants.LOCALES_DE_DE,
+                },
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end" sx={{ width: '100%', pointerEvents: 'none' }}>
+                      <Typography
+                        component={'div'}
+                        sx={{
+                          display: 'flex',
+                          justifyContent: ThemeConstants.CONTENT_ALIGN_SPACE_BETWEEN,
+                          width: '100%',
+                          alignItems: 'center',
+                          fontSize: 'inherit',
+                          color: disabled ? 'text.disabled' : 'text.primary',
+                        }}
+                      >
+                        {oldValue !== undefined && (
+                          <span>{`vorher: ${convertNumberToGermanString(oldValue, minimumFractionDigits, maximumFractionDigits)}`}</span>
+                        )}
+                        {valueType !== undefined && <span> {valueType}</span>}
+                      </Typography>
+                    </InputAdornment>
+                  ),
+                },
+              }}
+              sx={sx}
+              {...mui}
+            />
+            <FormHelperText error>{error?.message}</FormHelperText>
+          </FormInputSkeleton>
+        )}
+      />
+    </FormControl>
+  );
+};
+
