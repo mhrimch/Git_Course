@@ -90,7 +90,9 @@ export const KonfAntraege = () => {
   );
 };
 
-======================================
+
+==============================
+
 import { IcBackArrowS } from '@finanzinformatik/mcd-module-icons';
 import { Box, Button, Grid, Stack, Typography } from '@mui/material';
 import { MenuCard, MenuItem, ThemeConstants } from '@personalsysteme/core';
@@ -175,7 +177,10 @@ export const KonfAntragsgruppen = ({
     </Stack>
   );
 };
-=======================================
+
+
+======================================
+
 import { IcBackArrowS } from '@finanzinformatik/mcd-module-icons';
 import { useMcdPalette } from '@finanzinformatik/mcd-module-theme-provider';
 import {
@@ -193,7 +198,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { ConfirmationDialog, ThemeConstants } from '@personalsysteme/core';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KonfAntragsgruppeRead } from '../../../apl/pzw/konfigUiModule/KonfAntragsgruppeRead';
 import { Dokumententyp } from '../../../apl/pzw/konfigUiModule/SvzSapEintragRead';
@@ -238,30 +243,39 @@ export const KonfAntragTable = ({
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('sm'));
   const { ColorTokens } = useMcdPalette();
-  const [antraegeMitChanges, setAntraegeMitChanges] = useState<Set<string>>(new Set());
+  const [anzahlgeaenderteAntraege, setAnzahlgeaenderteAntraege] = useState<Map<string, boolean>>(new Map());
   const [openDialog, setOpenDialog] = useState(false);
-  const handleUnsavedChanges = (antragId: string, hasChanges: boolean) => {
-    setAntraegeMitChanges((prev) => {
-      const next = new Set(prev);
-      if (hasChanges) {
-        next.add(antragId);
-        next.forEach((item) => console.log('antragID ', item));
-        console.log('size ', next.size);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (anzahlgeaenderteAntraege.size > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [anzahlgeaenderteAntraege]);
+
+  const handleAntraegeMitAenderungen = (antragId: string, isAenderungVorhanden: boolean) => {
+    setAnzahlgeaenderteAntraege((prev) => {
+      const next = new Map(prev);
+      if (isAenderungVorhanden) {
+        next.set(antragId, isAenderungVorhanden);
+        console.log('Anzahl ', next.size);
+        next.forEach((item) => console.log(item));
       } else {
         next.delete(antragId);
-        next.forEach((item) => console.log('antragID ', item));
-        console.log('size ', next.size);
+        console.log('Anzahl ', next.size);
       }
       return next;
     });
   };
   const handleClickZurueck = () => {
-    if (antraegeMitChanges.size > 0) {
-      console.log('es gibt Änderungen zum speichern');
+    if (anzahlgeaenderteAntraege.size > 0) {
       setOpenDialog(true);
       return;
     }
-    setAntraegeMitChanges(new Set());
     handleClickZurueckZuAntragsgruppen();
   };
 
@@ -281,11 +295,13 @@ export const KonfAntragTable = ({
             {isDesktop ? (
               <TableHeader />
             ) : (
-              <TableRow>
-                <TableCell>
-                  <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_05}>Anträge</Typography>
-                </TableCell>
-              </TableRow>
+              <TableHead>
+                <TableRow>
+                  <TableCell>
+                    <Typography variant={ThemeConstants.TYPOGRAPHY_HEADLINE_05}>Anträge</Typography>
+                  </TableCell>
+                </TableRow>
+              </TableHead>
             )}
             <TableBody>
               {antragsgruppe.antraege
@@ -299,7 +315,9 @@ export const KonfAntragTable = ({
                     versionsnummer={versionsnummer}
                     buchungskreis={buchungskreis}
                     dokumententype={dokumententype}
-                    onUnsavedChanges={(antragId, hasChanges) => handleUnsavedChanges(antrag.id, hasChanges)}
+                    ermittleAntraegeMitAenderungen={(antragId, hasChanges) =>
+                      handleAntraegeMitAenderungen(antrag.id, hasChanges)
+                    }
                   />
                 ))}
             </TableBody>
@@ -312,6 +330,7 @@ export const KonfAntragTable = ({
         open={openDialog}
         onConfirm={(confirmed) => {
           if (confirmed) {
+            setAnzahlgeaenderteAntraege(new Map());
             handleClickZurueckZuAntragsgruppen();
           } else {
             setOpenDialog(false);
@@ -321,7 +340,8 @@ export const KonfAntragTable = ({
     </Stack>
   );
 };
-====================================
+
+=========================================
 import { UuiServiceMessageType } from '@finanzinformatik/cpl-module-clientlib';
 import { IcDownS, IcUpS } from '@finanzinformatik/mcd-module-icons';
 import {
@@ -337,7 +357,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { addNotification, ThemeConstants } from '@personalsysteme/core';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KonfAntragRead } from '../../../apl/pzw/konfigUiModule/KonfAntragRead';
 import { KonfAntragsgruppeRead } from '../../../apl/pzw/konfigUiModule/KonfAntragsgruppeRead';
@@ -352,7 +372,7 @@ interface KonfAntragsgruppenCollapsibleProps {
   versionsnummer: string;
   buchungskreis: string;
   dokumententype: Dokumententyp[];
-  onUnsavedChanges: (antragId: string, hasChanges: boolean) => void;
+  ermittleAntraegeMitAenderungen: (antragId: string, isAenderungVorhanden: boolean) => void;
 }
 
 export const KonfAntragCollapsible = ({
@@ -361,7 +381,7 @@ export const KonfAntragCollapsible = ({
   versionsnummer,
   buchungskreis,
   dokumententype,
-  onUnsavedChanges,
+  ermittleAntraegeMitAenderungen,
 }: KonfAntragsgruppenCollapsibleProps) => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('sm'));
@@ -376,14 +396,23 @@ export const KonfAntragCollapsible = ({
     Boolean(antrag.personalserviceSchluessel) && !isAntragPSLoading && isAntragInPersonalservicesAktiv === false
       ? false
       : antragAktiv;
+
   const handleClickAktivitaetAendern = () => {
     if (Boolean(antrag.personalserviceSchluessel) && !isAntragPSLoading && isAntragInPersonalservicesAktiv === false) {
       addNotification(t('Info'), t('KonfigurationPersonalservicesMeldung'), UuiServiceMessageType.Info);
       return;
     }
     setAntragAktiv(!antragAktiv);
-    setOpen(!antragAktiv);
+    setOpen(true);
   };
+  useEffect(() => {
+    const isAnderungVorhanden = isAntragAktiv !== antrag.isAktiv;
+    console.log('antrag.isAktiv ', antrag.isAktiv);
+    console.log('isAntragAktiv ', isAntragAktiv);
+    console.log('antragAktiv ', antragAktiv);
+    console.log(' isAnderungVorhanden', isAntragAktiv !== antrag.isAktiv);
+    ermittleAntraegeMitAenderungen(antrag.id, isAnderungVorhanden);
+  }, [isAntragAktiv, antragAktiv]);
   if (isDesktop) {
     return (
       <>
@@ -434,7 +463,7 @@ export const KonfAntragCollapsible = ({
                 versionsnummer={versionsnummer}
                 isAntragInPersonalservicesAktiv={isAntragInPersonalservicesAktiv}
                 dokumententype={dokumententype}
-                onUnsavedChanges={onUnsavedChanges}
+                ermittleAntraegeMitAenderungen={ermittleAntraegeMitAenderungen}
               />
             </Collapse>
           </TableCell>
@@ -484,7 +513,7 @@ export const KonfAntragCollapsible = ({
               versionsnummer={versionsnummer}
               isAntragInPersonalservicesAktiv={isAntragInPersonalservicesAktiv}
               dokumententype={dokumententype}
-              onUnsavedChanges={onUnsavedChanges}
+              ermittleAntraegeMitAenderungen={ermittleAntraegeMitAenderungen}
             />
           </Collapse>
         </TableCell>
@@ -492,6 +521,7 @@ export const KonfAntragCollapsible = ({
     </>
   );
 };
+
 ==========================================
 import { DynamicTypography, useWorkflowService, UuiServiceMessageType } from '@finanzinformatik/cpl-module-reactlib';
 
@@ -526,7 +556,7 @@ import { AntragSchluessel } from '../../../constants/AntragConstants';
 import { EpaAblageort } from '../../../constants/PzwConstants';
 import { useUpdateKonfAntraege } from '../../../tanstack/konfiguration/useUpdateKonfAntraege';
 import { navigateToPskKonfiguration } from '../../../utils/bookmarkUtil';
-import { pruefeAntragAufAenderung } from './antragCheckUtil';
+import { pruefeAntraegeAufAenderungen } from './antragCheckUtil';
 
 interface CheckboxRowProps {
   beschreibung: string;
@@ -692,7 +722,7 @@ interface AntraegeKonfigCheckboxPanelProps {
   antragAktiv: boolean;
   isAntragInPersonalservicesAktiv?: boolean;
   dokumententype: Dokumententyp[];
-  onUnsavedChanges: (antragId: string, hasChanges: boolean) => void;
+  ermittleAntraegeMitAenderungen: (antragId: string, isAenderungVorhanden: boolean) => void;
 }
 
 export const KonfAntragEigenschaftenPanel = ({
@@ -703,12 +733,14 @@ export const KonfAntragEigenschaftenPanel = ({
   antragAktiv,
   isAntragInPersonalservicesAktiv,
   dokumententype,
-  onUnsavedChanges,
+  ermittleAntraegeMitAenderungen,
 }: AntraegeKonfigCheckboxPanelProps) => {
   const { t } = useTranslation();
   const [konfAntrag, setKonfAntrag] = useState<KonfAntragRead>(
     antrag.schluessel === AntragSchluessel.URLAUB ? { ...antrag, isGanztaegig: true } : antrag
   );
+  console.log('antrag', antrag);
+  console.log('konfAntrag', konfAntrag);
   const [urlTouched, setUrlTouched] = useState(false);
   const [urlError, setUrlError] = useState(false);
   const [anzahltageError, setAnzahlTageError] = useState(false);
@@ -742,10 +774,12 @@ export const KonfAntragEigenschaftenPanel = ({
   ].includes(antragSchluessel);
   const isUrlaubAntrag = antrag.schluessel === AntragSchluessel.URLAUB;
   const hasPersonalSchluessel = Boolean(konfAntrag.personalserviceSchluessel);
-  const updateEigenschaft = (event: ChangeEvent<HTMLInputElement>) => {
-    const updatedAntrag = { ...konfAntrag, [event.target.name]: event.target.checked };
-    setKonfAntrag(updatedAntrag);
-    pruefeAntragAufAenderung(antrag, updatedAntrag, onUnsavedChanges);
+  const handleKommentarPflicht = (event: ChangeEvent<HTMLInputElement>) => {
+    setKonfAntrag((prev) => {
+      const updatedAntrag = { ...prev, isKommentarPflicht: event.target.checked };
+      pruefeAntraegeAufAenderungen(antrag, updatedAntrag, ermittleAntraegeMitAenderungen);
+      return updatedAntrag;
+    });
   };
 
   const handleFuehrungskraftFreigabeChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -753,9 +787,11 @@ export const KonfAntragEigenschaftenPanel = ({
       addNotification(t('Info'), t('GenehemigungFuehrungskraftErforderlich'), UuiServiceMessageType.Info);
       return;
     }
-    const updatedAntrag = { ...konfAntrag, isFuehrungskraftFreigabePflicht: event.target.checked };
-    setKonfAntrag(updatedAntrag);
-    pruefeAntragAufAenderung(antrag, updatedAntrag, onUnsavedChanges);
+    setKonfAntrag((prev) => {
+      const updatedAntrag = { ...prev, isFuehrungskraftFreigabePflicht: event.target.checked };
+      pruefeAntraegeAufAenderungen(antrag, updatedAntrag, ermittleAntraegeMitAenderungen);
+      return updatedAntrag;
+    });
   };
 
   const handlePersonalFreigabeChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -763,21 +799,24 @@ export const KonfAntragEigenschaftenPanel = ({
       addNotification(t('Info'), t('GenehemigungFuehrungskraftErforderlich'), UuiServiceMessageType.Info);
       return;
     }
-    const updatedAntrag = { ...konfAntrag, isPersonalFreigabePflicht: event.target.checked };
-    setKonfAntrag(updatedAntrag);
-    pruefeAntragAufAenderung(antrag, updatedAntrag, onUnsavedChanges);
+    setKonfAntrag((prev) => {
+      const updatedAntrag = { ...prev, isPersonalFreigabePflicht: event.target.checked };
+      pruefeAntraegeAufAenderungen(antrag, updatedAntrag, ermittleAntraegeMitAenderungen);
+      return updatedAntrag;
+    });
   };
 
   const handleDocumentUploadChange = (event: ChangeEvent<HTMLInputElement>) => {
     const checked = event.target.checked;
-    const updatedAntrag = {
-      ...konfAntrag,
-      isDocumentUpload: checked,
-      isDocumentUploadPflicht: checked ? konfAntrag.isDocumentUploadPflicht : false,
-    };
-
-    setKonfAntrag(updatedAntrag);
-    pruefeAntragAufAenderung(antrag, updatedAntrag, onUnsavedChanges);
+    setKonfAntrag((prev) => {
+      const updatedAntrag = {
+        ...prev,
+        isDocumentUpload: checked,
+        isDocumentUploadPflicht: checked ? konfAntrag.isDocumentUploadPflicht : false,
+      };
+      pruefeAntraegeAufAenderungen(antrag, updatedAntrag, ermittleAntraegeMitAenderungen);
+      return updatedAntrag;
+    });
   };
 
   const handleGanztaegigChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -785,9 +824,11 @@ export const KonfAntragEigenschaftenPanel = ({
       addNotification(t('Info'), t('AktionAktivieren'), UuiServiceMessageType.Info);
       return;
     }
-    const updatedAntrag = { ...konfAntrag, isGanztaegig: event.target.checked };
-    setKonfAntrag(updatedAntrag);
-    pruefeAntragAufAenderung(antrag, updatedAntrag, onUnsavedChanges);
+    setKonfAntrag((prev) => {
+      const updatedAntrag = { ...prev, isGanztaegig: event.target.checked };
+      pruefeAntraegeAufAenderungen(antrag, updatedAntrag, ermittleAntraegeMitAenderungen);
+      return updatedAntrag;
+    });
   };
 
   const handleUhrzeitChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -795,51 +836,56 @@ export const KonfAntragEigenschaftenPanel = ({
       addNotification(t('Info'), t('AktionAktivieren'), UuiServiceMessageType.Info);
       return;
     }
-    const updatedAntrag = { ...konfAntrag, isUhrzeit: event.target.checked };
-    setKonfAntrag(updatedAntrag);
-    pruefeAntragAufAenderung(antrag, updatedAntrag, onUnsavedChanges);
+    setKonfAntrag((prev) => {
+      const updatedAntrag = { ...prev, isUhrzeit: event.target.checked };
+      pruefeAntraegeAufAenderungen(antrag, updatedAntrag, ermittleAntraegeMitAenderungen);
+      return updatedAntrag;
+    });
   };
 
   const handleAblageOrtSelect = (event: SelectChangeEvent) => {
-    const updatedAntrag = {
-      ...konfAntrag,
-      epaArt: event.target.value,
-    };
-    setKonfAntrag(updatedAntrag);
-    pruefeAntragAufAenderung(antrag, updatedAntrag, onUnsavedChanges);
+    setKonfAntrag((prev) => {
+      const updatedAntrag = { ...prev, epaArt: event.target.value };
+      pruefeAntraegeAufAenderungen(antrag, updatedAntrag, ermittleAntraegeMitAenderungen);
+      return updatedAntrag;
+    });
   };
 
   const handleAnzahlTageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const anzahlTage = event.target.value;
     if (anzahlTage === '') {
-      const updatedAntrag = {
-        ...konfAntrag,
-        anzahlTageRueckwirkenderKorrektur: 0,
-      };
-      setKonfAntrag(updatedAntrag);
-      pruefeAntragAufAenderung(antrag, updatedAntrag, onUnsavedChanges);
+      setKonfAntrag((prev) => {
+        const updatedAntrag = { ...prev, anzahlTageRueckwirkenderKorrektur: 0 };
+        pruefeAntraegeAufAenderungen(antrag, updatedAntrag, ermittleAntraegeMitAenderungen);
+        return updatedAntrag;
+      });
       return;
     }
 
     const parsedAnzahlTage = parseInt(anzahlTage, 10);
     if (!Number.isInteger(parsedAnzahlTage) || parsedAnzahlTage < 0 || parsedAnzahlTage > 180) {
-      const updatedAntrag = { ...konfAntrag, anzahlTageRueckwirkenderKorrektur: parsedAnzahlTage };
       setAnzahlTageError(true);
-      setKonfAntrag(updatedAntrag);
-      pruefeAntragAufAenderung(antrag, updatedAntrag, onUnsavedChanges);
+      setKonfAntrag((prev) => {
+        const updatedAntrag = { ...prev, anzahlTageRueckwirkenderKorrektur: parsedAnzahlTage };
+        pruefeAntraegeAufAenderungen(antrag, updatedAntrag, ermittleAntraegeMitAenderungen);
+        return updatedAntrag;
+      });
       return;
     }
-    const updatedAntrag = { ...konfAntrag, anzahlTageRueckwirkenderKorrektur: parsedAnzahlTage };
     setAnzahlTageError(false);
-    setKonfAntrag(updatedAntrag);
-    pruefeAntragAufAenderung(antrag, updatedAntrag, onUnsavedChanges);
+    setKonfAntrag((prev) => {
+      const updatedAntrag = { ...prev, anzahlTageRueckwirkenderKorrektur: parsedAnzahlTage };
+      pruefeAntraegeAufAenderungen(antrag, updatedAntrag, ermittleAntraegeMitAenderungen);
+      return updatedAntrag;
+    });
   };
 
   const handleUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    const updatedAntrag = { ...konfAntrag, url: value };
-    setKonfAntrag(updatedAntrag);
-    pruefeAntragAufAenderung(antrag, updatedAntrag, onUnsavedChanges);
+    setKonfAntrag((prev) => {
+      const updatedAntrag = { ...prev, url: event.target.value };
+      pruefeAntraegeAufAenderungen(antrag, updatedAntrag, ermittleAntraegeMitAenderungen);
+      return updatedAntrag;
+    });
   };
 
   const handleUrlBlur = () => {
@@ -889,13 +935,7 @@ export const KonfAntragEigenschaftenPanel = ({
       personalserviceBezeichnung: konfAntrag.personalserviceBezeichnung,
       personalserviceKommentar: konfAntrag.personalserviceKommentar,
     };
-    if (!pruefeAntragAufAenderung(antrag, konfAntrag)) {
-      console.log(pruefeAntragAufAenderung(antrag, konfAntrag));
-      console.log('nur navigieren');
-      navigateToPskKonfiguration(workflowService);
-      return;
-    }
-    console.log('updaten');
+    console.log('KonfWrite --> ', konfAntragWrite);
     updateKonfAntrag(konfAntragWrite).then(() => navigateToPskKonfiguration(workflowService));
   };
 
@@ -935,7 +975,7 @@ export const KonfAntragEigenschaftenPanel = ({
             beschreibung={t('KommentarAlsPflichtfeld')}
             status={konfAntrag.isKommentarPflicht}
             name={'isKommentarPflicht'}
-            onChange={updateEigenschaft}
+            onChange={handleKommentarPflicht}
             disabled={hasPersonalSchluessel}
           />
 
@@ -977,7 +1017,7 @@ export const KonfAntragEigenschaftenPanel = ({
               beschreibung={t('DokumentenUploadPflicht')}
               status={konfAntrag.isDocumentUploadPflicht}
               name={'isDocumentUploadPflicht'}
-              onChange={updateEigenschaft}
+              onChange={handleKommentarPflicht}
               disabled={hasPersonalSchluessel}
               indent={true}
             />
@@ -1056,17 +1096,17 @@ export const KonfAntragEigenschaftenPanel = ({
     </TableContainer>
   );
 };
-===============================
+===========================================================
 import { KonfAntragRead } from '../../../apl/pzw/konfigUiModule/KonfAntragRead';
 
-type OnUnsavedChanges = (antragId: string, hasChanges: boolean) => void;
+type ErmittleAntraegeMitAenderungen = (antragId: string, hasChanges: boolean) => void;
 
-export const pruefeAntragAufAenderung = (
+export const pruefeAntraegeAufAenderungen = (
   antrag: KonfAntragRead,
   updatedAntrag: KonfAntragRead,
-  onUnsavedChanges?: OnUnsavedChanges | undefined
+  ermittleAntraegeMitAenderungen?: ErmittleAntraegeMitAenderungen | undefined
 ): boolean => {
-  const hasChanges =
+  const isAenderungenVorhanden =
     antrag.isFuehrungskraftFreigabePflicht !== updatedAntrag.isFuehrungskraftFreigabePflicht ||
     antrag.isPersonalFreigabePflicht !== updatedAntrag.isPersonalFreigabePflicht ||
     antrag.isKommentarPflicht !== updatedAntrag.isKommentarPflicht ||
@@ -1077,8 +1117,9 @@ export const pruefeAntragAufAenderung = (
     antrag.epaArt !== updatedAntrag.epaArt ||
     antrag.anzahlTageRueckwirkenderKorrektur !== updatedAntrag.anzahlTageRueckwirkenderKorrektur ||
     antrag.url !== updatedAntrag.url;
-  onUnsavedChanges?.(antrag.id, hasChanges);
-  return hasChanges;
+  ermittleAntraegeMitAenderungen?.(antrag.id, isAenderungenVorhanden);
+  return isAenderungenVorhanden;
 };
+============================
 
 
