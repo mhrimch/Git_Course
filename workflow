@@ -1,0 +1,781 @@
+package osplus.pzw.workflows.konfiguration;
+
+import kotlin.Unit;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+import osplus.apl.cpl.api.mapi.v2.annotation.Expose;
+import osplus.apl.cpl.api.mapi.v2.context.EnterStateContext;
+import osplus.apl.cpl.api.mapi.v2.context.PlatformContext;
+import osplus.apl.cpl.api.mapi.v2.description.TypeInfo;
+import osplus.apl.cpl.api.mapi.v2.flow.Bookmark;
+import osplus.apl.cpl.api.mapi.v2.flow.FlowKey;
+import osplus.apl.cpl.api.mapi.v2.navigation.NavigationCommand;
+import osplus.apl.cpl.api.mapi.v2.restriction.AuthenticationStatus;
+import osplus.apl.cpl.api.mapi.v2.restriction.Channel;
+import osplus.apl.cpl.api.mapi.v2.restriction.RestrictAuthenticationStatus;
+import osplus.apl.cpl.api.mapi.v2.restriction.RestrictionValidator;
+import osplus.apl.cpl.api.mapi.v2.runtime.Page;
+import osplus.apl.cpl.api.mapi.v2.utils.KotlinTools;
+import osplus.psk.api.UserUiModuleCplApi;
+import osplus.psk.core.model.kurs.KursAttribut;
+import osplus.psk.kurs.KursRechtConstants;
+import osplus.pzw.PzwCplConstants;
+import osplus.pzw.PzwCplWorkflows;
+import osplus.pzw.workflows.FehlendeBerechtigungenReference;
+
+import java.util.List;
+
+public class KonfAntragArtPage implements Page<KonfAntragArtPage> {
+
+    @Expose
+    private Boolean canReadUebersicht;
+    @Expose
+    private Boolean canReadMeinBereich;
+    @Expose
+    private Boolean canReadZeitwirtschaft;
+    @Expose
+    private Boolean canReadKonfiguration;
+
+    @NonNull
+    @Override
+    public FlowKey getKey() {
+        return new FlowKey(PzwCplWorkflows.KONFIGURATION_ANTRAGART.appId, PzwCplWorkflows.KONFIGURATION_ANTRAGART.workflow, PzwCplWorkflows.KONFIGURATION_ANTRAGART.workflowVersion);
+    }
+
+    @Nullable
+    @Override
+    public Bookmark getBookmark() {
+        return new Bookmark(PzwCplConstants.Bookmarks.KONFIGURATION_ANTRAGART);
+    }
+
+    @NonNull
+    @Override
+    public String title(@NonNull PlatformContext platformContext) {
+        return platformContext.getI18n().get("Zeitwirtschaft.Konfiguration.Antragart");
+    }
+
+    @NonNull
+    @Override
+    public List<Channel> getAllowedChannels() {
+        return List.of(
+                Channel.STATIONAER,
+                Channel.UNKNOWN
+        );
+    }
+
+    @NonNull
+    @Override
+    public List<RestrictionValidator> restrictions() {
+        return List.of(
+                new RestrictAuthenticationStatus(AuthenticationStatus.FULL_AUTHENTICATION)
+        );
+    }
+
+    @NonNull
+    @Override
+    public TypeInfo<KonfAntragArtPage> getInputType() {
+        return KotlinTools.typeOf(KonfAntragArtPage.class);
+    }
+
+    @NonNull
+    @Override
+    public NavigationCommand enter(@NonNull EnterStateContext<KonfAntragArtPage> context) {
+        final var hasKursRechtPeMa = UserUiModuleCplApi.hasKursRecht(context.getUuiClient(), KursRechtConstants.PE_MA);
+        final var hasKursRechtPeZwMa = UserUiModuleCplApi.hasKursRecht(context.getUuiClient(), KursRechtConstants.PE_ZW_MA);
+        final var hasKursRechtPeKonfigMitAttributAendern = UserUiModuleCplApi.hasKursRechtMitAttribute(context.getUuiClient(), KursRechtConstants.PE_KONFIG, KursAttribut.AENDERN);
+
+        // Bei fehlenden Berechtigungen erfolgt eine Weiterleitung auf eine Hinweis (Fehlende Berechtigungen) Seite.
+        if (!hasKursRechtPeMa && !hasKursRechtPeZwMa && !hasKursRechtPeKonfigMitAttributAendern) {
+            return NavigationCommand.replace(
+                    new FehlendeBerechtigungenReference<>(),
+                    Empty.INSTANCE
+            );
+        }
+
+        context.withInput(zeitwirtschaftPage ->
+                {
+                    canReadUebersicht = hasKursRechtPeMa && hasKursRechtPeZwMa;
+                    canReadMeinBereich = hasKursRechtPeMa;
+                    canReadZeitwirtschaft = hasKursRechtPeMa && hasKursRechtPeZwMa;
+                    canReadKonfiguration = hasKursRechtPeKonfigMitAttributAendern;
+                    return Unit.INSTANCE;
+                }
+        );
+        return NavigationCommand.STAY;
+    }
+
+    public @NonNull Boolean getCanReadUebersicht() {
+        return canReadUebersicht;
+    }
+
+    public @NonNull Boolean getCanReadMeinBereich() {
+        return canReadMeinBereich;
+    }
+
+    public @NonNull Boolean getCanReadZeitwirtschaft() {
+        return canReadZeitwirtschaft;
+    }
+
+    public @NonNull Boolean getCanReadKonfiguration() {
+        return canReadKonfiguration;
+    }
+}
+
+=======================================
+package osplus.pzw.workflows.ui.konfiguration;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import osplus.apl.cpl.api.mapi.v2.annotation.UserInterface;
+import osplus.apl.cpl.api.mapi.v2.ui.UI;
+import osplus.pzw.PzwCplConstants;
+import osplus.pzw.workflows.konfiguration.KonfAntragArtPage;
+
+@UserInterface(KonfAntragArtPage.class)
+public class KonfAntragArtReactUI implements UI.ReactUI{
+
+    @Override
+    public @NotNull String getApp() {
+            return PzwCplConstants.REACT_APP_ZEITWIRTSCHAFT;
+            }
+
+    @Override
+    public @Nullable String getView() {
+        return PzwCplConstants.ReactViews.KONFIGURATION_ANTRAGART;
+    }
+}
+==========================================
+import { DynamicTypography, useInputModel } from '@finanzinformatik/cpl-module-reactlib';
+import { Grid } from '@mui/material';
+import { AppEnum, ThemeConstants } from '@personalsysteme/core';
+import { PersonalReiter, PersonalReiterConstants } from '@personalsysteme/personal-reiter';
+import { KonfPageModel } from '../models/KonfPageModel';
+
+export default function KonfAntragArtView() {
+  const inputModel = useInputModel<KonfPageModel>();
+  return (
+    <Grid container spacing={ThemeConstants.GRID_CONTAINER_SPACING} justifyContent={ThemeConstants.ALIGNMENT_CENTER}>
+      <Grid size={{ xs: 12, lg: 10 }}>
+        <PersonalReiter
+          currentApp={AppEnum.PZW}
+          selectedTab={PersonalReiterConstants.REITER_KONFIGURATION}
+          showUebersicht={inputModel?.canReadUebersicht}
+          showMeinBereich={inputModel?.canReadMeinBereich}
+          showZeitwirtschaft={inputModel?.canReadZeitwirtschaft}
+          showKonfiguration={inputModel?.canReadKonfiguration}
+        />
+      </Grid>
+      <DynamicTypography>Konfig Antragart View</DynamicTypography>
+    </Grid>
+  );
+}
+===============================================
+
+import { WorkflowService } from '@finanzinformatik/cpl-module-reactlib';
+import { IdTimestamp } from '@personalsysteme/core';
+import { App, Bookmarks } from '../constants/ServiceConstants';
+
+export const navigateToZeitwirtschaft = (workflowService: WorkflowService): void => {
+  workflowService.startBookmark(App.PZW, Bookmarks.ZEITWIRTSCHAFT);
+};
+export const navigateToKonfAntraege = (workflowService: WorkflowService): void => {
+  workflowService.startBookmark(App.PZW, Bookmarks.KONF_ANTRAEGE);
+};
+
+export const navigateToKonfAntragArt = (workflowService: WorkflowService): void => {
+  workflowService.startBookmark(App.PZW, Bookmarks.KONF_ANTRAGART);
+};
+
+export const navigateToKonfArbeitsorte = (workflowService: WorkflowService): void => {
+  workflowService.startBookmark(App.PZW, Bookmarks.KONF_ARBEITSORTE);
+};
+export const navigateToKalender = (workflowService: WorkflowService): void => {
+  workflowService.startBookmark(App.PZW, Bookmarks.KALENDER);
+};
+export const navigateToZeitereignisse = (workflowService: WorkflowService): void => {
+  workflowService.startBookmark(App.PZW, Bookmarks.ZEITEREIGNISSE);
+};
+export const navigateToAntragAnlegen = (
+  workflowService: WorkflowService,
+  params: { absVgngPrzId?: string; antragGruppeId: string; antragSchluessel?: string; beginn?: string; ende?: string }
+): void => {
+  const { absVgngPrzId, antragGruppeId, antragSchluessel: schluessel, beginn, ende } = params;
+  workflowService.startBookmark(
+    App.PZW,
+    Bookmarks.ANTRAG_ANLEGEN +
+      `?antragGruppeId=${antragGruppeId}&antragSchluessel=${schluessel ?? ''}&beginn=${beginn ?? ''}&ende=${ende ?? ''}&abs_vgng_prz_id=${absVgngPrzId ?? ''}`
+  );
+};
+export const navigateToTagesbuchungen = (
+  workflowService: WorkflowService,
+  parameter: {
+    absVgngPrzId?: string;
+    meldungsId?: string;
+    datum?: string;
+    meldungstyp?: string;
+    meldungsart?: string;
+    personalnummer?: string;
+  }
+): void => {
+  workflowService.startBookmark(
+    App.PZW,
+    Bookmarks.ZEITKORREKTUR +
+      `/${parameter.meldungsId ?? ''}?abs_vgng_prz_id=${parameter.absVgngPrzId ?? ''}&datum=${parameter.datum ?? ''}&meldungstyp=${parameter.meldungstyp ?? ''}&meldungsart=${parameter.meldungsart ?? ''}&personalnummer=${parameter.personalnummer ?? ''}`
+  );
+};
+
+export const navigateToZeitkorrekturOhneMeldung = (workflowService: WorkflowService, datum: string) => {
+  workflowService.startBookmark(App.PZW, Bookmarks.ZEITKORREKTUR_OHNE_MELDUNG + `?korrekturdatum=${datum}`);
+};
+
+export const navigateToFreigabe = (
+  workflowService: WorkflowService,
+  parameter: {
+    absVgngPrzId: IdTimestamp;
+    zuVertretendePersonalnummer?: string;
+    absVgngStrId?: IdTimestamp;
+    absVgngAtgId?: IdTimestamp;
+    absAtgName?: string;
+  }
+) => {
+  workflowService
+    .startBookmark(
+      App.PZW,
+      Bookmarks.FREIGABE +
+        `/?abs_vgng_prz_id=${parameter.absVgngPrzId}&abs_vgng_str_id=${parameter.absVgngStrId ?? ''}&abs_vgng_atg_Id=${parameter.absVgngAtgId ?? ''}&abs_atg_name=${parameter.absAtgName ?? ''}&zuVertretendePersonalnummer=${parameter.zuVertretendePersonalnummer ?? ''}`
+    )
+    .then();
+};
+export const navigateToAntragAnzeigen = (
+  workflowService: WorkflowService,
+  searchParams: {
+    beginn: string;
+    ende: string;
+    erstellungszeitpunkt?: string;
+    bezeichnung?: string;
+    iconNr?: number;
+    mitarbeiterPersonalnummer?: string;
+    zuVertretendePersonalnummer?: string;
+    meldungAbsVgngPrzId?: string;
+  }
+): void => {
+  const {
+    meldungAbsVgngPrzId,
+    beginn,
+    ende,
+    erstellungszeitpunkt,
+    bezeichnung,
+    iconNr,
+    mitarbeiterPersonalnummer,
+    zuVertretendePersonalnummer,
+  } = searchParams;
+  workflowService.startBookmark(
+    App.PZW,
+    Bookmarks.ANTRAG_ANZEIGEN +
+      `?beginn=${beginn}&ende=${ende}&erstellungszeitpunkt=${erstellungszeitpunkt ?? ''}&bezeichnung=${bezeichnung ?? ''}&iconNr=${iconNr ?? ''}&mitarbeiterPersonalnummer=${mitarbeiterPersonalnummer ?? ''}&zuVertretendePersonalnummer=${zuVertretendePersonalnummer ?? ''}&meldungAbsVgngPrzId=${meldungAbsVgngPrzId ?? ''}`
+  );
+};
+export const navigateToPskMeinBereich = (workflowService: WorkflowService): void => {
+  workflowService.startBookmark(App.PSK, Bookmarks.PSK_MEIN_BEREICH);
+};
+export const navigateToPskKonfiguration = (workflowService: WorkflowService): void => {
+  workflowService.startBookmark(App.PSK, Bookmarks.PSK_KONFIGURATION);
+};
+
+=================================================
+export const App = {
+  PSK: 'psk',
+  PRZ: 'prz',
+  PPL: 'ppl',
+  PZW: 'pzw',
+} as const;
+
+export const QueryParams = {
+  ID: 'id',
+};
+
+export const Bookmarks = {
+  ZEITWIRTSCHAFT: '/zeitwirtschaft',
+  KONF_ANTRAEGE: '/konfiguration/antraege',
+  KONF_ANTRAGART: '/Konfiguration/antragart',
+  KONF_ARBEITSORTE: '/konfiguration/arbeitsorte',
+  KALENDER: '/kalender',
+  ZEITEREIGNISSE: '/zeitereignisse',
+  ANTRAG_ANLEGEN: '/antrag/anlegen',
+  ANTRAG_ANZEIGEN: '/antrag',
+  ZEITKORREKTUR: '/zeitkorrektur',
+  ZEITKORREKTUR_OHNE_MELDUNG: '/zeitkorrektur/ohne-meldung',
+  FREIGABE: '/freigabe',
+  PSK_KONFIGURATION: '/konfiguration',
+  PSK_MEIN_BEREICH: '/mein-bereich',
+  PSK_UEBERSICHT: '/uebersicht',
+} as const;
+
+export const enum WorkflowAction {
+  Back = 'back',
+}
+
+export const Services = {
+  AntragUiModule: {
+    module: 'AntragUiModule',
+    services: {
+      createDocument: 'createDocument',
+      createAntragAbwesenheit: 'createAntragAbwesenheit',
+      createAntragZeitgutschrift: 'createAntragZeitgutschrift',
+      createAntragVerfallszeitgutschrift: 'createAntragVerfallszeitgutschrift',
+      validateUrlaubszeitraum: 'validateUrlaubszeitraum',
+      readAntraege: 'readAntraege',
+      readAntraegeUeberAntragKlasse: 'readAntraegeUeberAntragKlasse',
+      updateAntragAbwesenheitStatus: 'updateAntragAbwesenheitStatus',
+    },
+  },
+  AuswertungUiModule: {
+    module: 'AuswertungUiModule',
+    services: {
+      readAuswertungen: 'readAuswertungen',
+      readZeitnachweis: 'readZeitnachweis',
+      readZeitsalden: 'readZeitsalden',
+    },
+  },
+  BenutzerUiModule: {
+    module: 'BenutzerUiModule',
+    services: {
+      readBenutzer: 'readBenutzer',
+      readBenutzerStatus: 'readBenutzerStatus',
+      readBenutzerEinstellungen: 'readBenutzerEinstellungen',
+    },
+  },
+  BuchungUiModule: {
+    module: 'BuchungUiModule',
+    services: {
+      readBuchung: 'readBuchung',
+      createBuchung: 'createBuchung',
+      readBuchungen: 'readBuchungen',
+      readBuchungspaare: 'readBuchungspaare',
+      readFirstAndLastBuchungenPerDay: 'readFirstAndLastBuchungenPerDay',
+    },
+  },
+  FreigabeUiModule: {
+    module: 'FreigabeUiModule',
+    services: {
+      readFreigabe: 'readFreigabe',
+    },
+  },
+  KalenderUiModule: {
+    module: 'KalenderUiModule',
+    services: {
+      readKalenderUebersicht: 'readKalenderUebersicht',
+      readKalendertag: 'readKalendertag',
+    },
+  },
+  KonfAntraegeUiModule: {
+    module: 'KonfAntraegeUiModule',
+    services: {
+      readKonfAntraege: 'readKonfAntraege',
+      isPersonalserviceAktiv: 'isPersonalserviceAktiv',
+      updateKonfAntrag: 'updateKonfAntrag',
+    },
+  },
+  KonfArbeitsorteUiModule: {
+    module: 'KonfArbeitsorteUiModule',
+    services: {
+      readKonfArbeitsorte: 'readKonfArbeitsorte',
+      updateKonfArbeitsorte: 'updateKonfArbeitsorte',
+    },
+  },
+  KonfSchwellenwerteUiModule: {
+    module: 'KonfSchwellenwerteUiModule',
+    services: {
+      readKonfSchwellenwerte: 'readKonfSchwellenwerte',
+      updateKonfSchwellenwerte: 'updateKonfSchwellenwerte',
+    },
+  },
+  DokumenteUiModule: {
+    module: 'DokumenteUiModule',
+    services: {
+      uploadFileByBase64: 'uploadFileByBase64',
+      downloadFileByDownloadToken: 'downloadFileByDownloadToken',
+    },
+  },
+  MitarbeiterUiModule: {
+    module: 'MitarbeiterUiModule',
+    services: {
+      readMitarbeiter: 'readMitarbeiter',
+      readMitarbeiterList: 'readMitarbeiterList',
+    },
+  },
+  VertreterUiModule: {
+    module: 'VertreterUiModule',
+    services: {
+      readVertreter: 'readVertreter',
+    },
+  },
+  ZeitkorrekturUiModule: {
+    module: 'ZeitkorrekturUiModule',
+    services: {
+      createZeitkorrektur: 'createZeitkorrektur',
+      createZeitgutschrift: 'createZeitgutschrift',
+      readZeitkorrekturbuchungen: 'readZeitkorrekturbuchungen',
+      beendeZeitkorrektur: 'beendeZeitkorrektur',
+      readMeldungen: 'readMeldungen',
+    },
+  },
+  ZeitkontoUiModule: {
+    module: 'ZeitkontoUiModule',
+    services: {
+      readZeitkonto: 'readZeitkonto',
+      readAnzahlMitarbeiterRotbereich: 'readAnzahlMitarbeiterRotbereich',
+      readResturlaubStatus: 'readResturlaubStatus',
+    },
+  },
+};
+
+===================================================
+package osplus.pzw.workflows.konfiguration;
+
+import kotlin.Unit;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+import osplus.apl.cpl.api.mapi.v2.annotation.CplComponent;
+import osplus.apl.cpl.api.mapi.v2.annotation.Expose;
+import osplus.apl.cpl.api.mapi.v2.context.EnterStateContext;
+import osplus.apl.cpl.api.mapi.v2.context.PlatformContext;
+import osplus.apl.cpl.api.mapi.v2.description.TypeInfo;
+import osplus.apl.cpl.api.mapi.v2.flow.Bookmark;
+import osplus.apl.cpl.api.mapi.v2.flow.FlowKey;
+import osplus.apl.cpl.api.mapi.v2.navigation.NavigationCommand;
+import osplus.apl.cpl.api.mapi.v2.restriction.AuthenticationStatus;
+import osplus.apl.cpl.api.mapi.v2.restriction.Channel;
+import osplus.apl.cpl.api.mapi.v2.restriction.RestrictAuthenticationStatus;
+import osplus.apl.cpl.api.mapi.v2.restriction.RestrictionValidator;
+import osplus.apl.cpl.api.mapi.v2.runtime.Page;
+import osplus.apl.cpl.api.mapi.v2.utils.KotlinTools;
+import osplus.psk.api.UserUiModuleCplApi;
+import osplus.psk.core.model.kurs.KursAttribut;
+import osplus.psk.kurs.KursRechtConstants;
+import osplus.pzw.PzwCplConstants;
+import osplus.pzw.PzwCplWorkflows;
+import osplus.pzw.workflows.FehlendeBerechtigungenReference;
+
+import java.util.List;
+
+@CplComponent
+public class KonfAntraegePage implements Page<KonfAntraegePage> {
+    @Expose
+    private Boolean canReadUebersicht;
+    @Expose
+    private Boolean canReadMeinBereich;
+    @Expose
+    private Boolean canReadZeitwirtschaft;
+    @Expose
+    private Boolean canReadKonfiguration;
+
+    @NonNull
+    @Override
+    public FlowKey getKey() {
+        return new FlowKey(PzwCplWorkflows.KONFIGURATION_ANTRAEGE.appId, PzwCplWorkflows.KONFIGURATION_ANTRAEGE.workflow, PzwCplWorkflows.KONFIGURATION_ANTRAEGE.workflowVersion);
+    }
+
+    @Nullable
+    @Override
+    public Bookmark getBookmark() {
+        return new Bookmark(PzwCplConstants.Bookmarks.KONFIGURATION_ANTRAEGE);
+    }
+
+    @NonNull
+    @Override
+    public String title(@NonNull PlatformContext platformContext) {
+        return platformContext.getI18n().get("Zeitwirtschaft.Konfiguration.Antraege");
+    }
+
+    @NonNull
+    @Override
+    public List<Channel> getAllowedChannels() {
+        return List.of(
+                Channel.STATIONAER,
+                Channel.UNKNOWN
+        );
+    }
+
+    @NonNull
+    @Override
+    public List<RestrictionValidator> restrictions() {
+        return List.of(
+                new RestrictAuthenticationStatus(AuthenticationStatus.FULL_AUTHENTICATION)
+        );
+    }
+
+    @NonNull
+    @Override
+    public TypeInfo<KonfAntraegePage> getInputType() {
+        return KotlinTools.typeOf(KonfAntraegePage.class);
+    }
+
+    @NonNull
+    @Override
+    public NavigationCommand enter(@NonNull EnterStateContext<KonfAntraegePage> context) {
+        final var hasKursRechtPeMa = UserUiModuleCplApi.hasKursRecht(context.getUuiClient(), KursRechtConstants.PE_MA);
+        final var hasKursRechtPeZwMa = UserUiModuleCplApi.hasKursRecht(context.getUuiClient(), KursRechtConstants.PE_ZW_MA);
+        final var hasKursRechtPeKonfigMitAttributAendern = UserUiModuleCplApi.hasKursRechtMitAttribute(context.getUuiClient(), KursRechtConstants.PE_KONFIG, KursAttribut.AENDERN);
+
+        // Bei fehlenden Berechtigungen erfolgt eine Weiterleitung auf eine Hinweis (Fehlende Berechtigungen) Seite.
+        if (!hasKursRechtPeMa && !hasKursRechtPeZwMa && !hasKursRechtPeKonfigMitAttributAendern) {
+            return NavigationCommand.replace(
+                    new FehlendeBerechtigungenReference<>(),
+                    Empty.INSTANCE
+            );
+        }
+
+        context.withInput(zeitwirtschaftPage ->
+                {
+                    canReadUebersicht = hasKursRechtPeMa && hasKursRechtPeZwMa;
+                    canReadMeinBereich = hasKursRechtPeMa;
+                    canReadZeitwirtschaft = hasKursRechtPeMa && hasKursRechtPeZwMa;
+                    canReadKonfiguration = hasKursRechtPeKonfigMitAttributAendern;
+                    return Unit.INSTANCE;
+                }
+        );
+        return NavigationCommand.STAY;
+    }
+
+    public @NonNull Boolean getCanReadUebersicht() {
+        return canReadUebersicht;
+    }
+
+    public @NonNull Boolean getCanReadMeinBereich() {
+        return canReadMeinBereich;
+    }
+
+    public @NonNull Boolean getCanReadZeitwirtschaft() {
+        return canReadZeitwirtschaft;
+    }
+
+    public @NonNull Boolean getCanReadKonfiguration() {
+        return canReadKonfiguration;
+    }
+}
+
+========================================
+package osplus.pzw.workflows.ui.konfiguration;
+
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+import osplus.apl.cpl.api.mapi.v2.annotation.UserInterface;
+import osplus.apl.cpl.api.mapi.v2.ui.UI;
+import osplus.pzw.PzwCplConstants;
+import osplus.pzw.workflows.konfiguration.KonfAntraegePage;
+
+@UserInterface(KonfAntraegePage.class)
+public class KonfAntraegeReactUI implements UI.ReactUI {
+
+    @NonNull
+    @Override
+    public String getApp() {
+        return PzwCplConstants.REACT_APP_ZEITWIRTSCHAFT;
+    }
+
+    @Nullable
+    @Override
+    public String getView() {
+        return PzwCplConstants.ReactViews.KONFIGURATION_ANTRAEGE;
+    }
+}
+=================================
+package osplus.pzw;
+
+import osplus.psk.Anwendung;
+
+public enum PzwCplWorkflows {
+
+    DEFAULT(Anwendung.PZW.toString(), "Default", 1, "Zeitwirtschaft - Default"),
+    ZEITWIRTSCHAFT(Anwendung.PZW.toString(), "Zeitwirtschaft", 1, "Zeitwirtschaft - Zeitwirtschaft"),
+    ZEITWIRTSCHAFT_IF(Anwendung.PZW.toString(), "MeinBereich", 1, "Zeitwirtschaft - Zeitwirtschaft"),
+    KONFIGURATION_ANTRAEGE(Anwendung.PZW.toString(), "KonfigurationAntraege", 1, "Zeitwirtschaft - Konfiguration Anträge"),
+    KONFIGURATION_ANTRAGART(Anwendung.PZW.toString(), "KonfigurationAntragArt", 1, "Zeitwirtschaft - Konfiguration Antragart"),
+    KONFIGURATION_ARBEITSORTE(Anwendung.PZW.toString(), "KonfigurationArbeitsorte", 1, "Zeitwirtschaft - Konfiguration Arbeitsorte"),
+    KONFIGURATION_SCHWELLENWERTE(Anwendung.PZW.toString(), "KonfigurationSchwellenwerte", 1, "Zeitwirtschaft - Konfiguration Schwellenwerte"),
+    ZEITEREIGNISSE(Anwendung.PZW.toString(), "Zeitereignisse", 1, "Zeitwirtschaft - Zeitereignisse und Anträge"),
+    ANTRAG_ANLEGEN(Anwendung.PZW.toString(), "AntragAnlegen", 1, "Zeitwirtschaft - Antrag anlegen"),
+    ANTRAGDETAILS(Anwendung.PZW.toString(), "AntragDetails", 1, "Zeitwirtschaft - Antragdetails"),
+    ZEITKORREKTUR(Anwendung.PZW.toString(), "Zeitkorrektur", 1, "Zeitwirtschaft - Zeitkorrektur"),
+    ZEITKORREKTUR_OHNE_MELDUNG(Anwendung.PZW.toString(), "ZeitkorrekturOhneMeldung", 1, "Zeitwirtschaft - Zeitkorrektur ohne Meldung"),
+    ZEITKORREKTUR_ANWESEND_OBWOHL_FREI(Anwendung.PZW.toString(), "AnwesendObwohlFrei", 1, "Zeitwirtschaft - Zeitkorrektur Anwesend obwohl frei"),
+    ZEITKORREKTUR_ANWESEND_OBWOHL_FEIERTAG(Anwendung.PZW.toString(), "AnwesendObwohlFeiertag", 1, "Zeitwirtschaft - Zeitkorrektur Anwesend obwohl Feiertag"),
+    ZEITKORREKTUR_MITARBEITER_NICHT_ANWESEND(Anwendung.PZW.toString(), "ZeitkorrekturMitarbeiterNichtAnwesend", 1, "Zeitwirtschaft - Zeitkorrektur Mitarbeiter nicht anwesend"),
+    ZEITKORREKTUR_STEMPELUNG_FEHLT(Anwendung.PZW.toString(), "ZeitkorrekturStempelungFehlt", 1, "Zeitwirtschaft - Zeitkorrektur Stempelung fehlt"),
+    ZEITKORREKTUR_TROTZ_ABWESENHEIT_ANWESEND(Anwendung.PZW.toString(), "ZeitkorrekturTrotzAbwesenheitAnwesend", 1, "Zeitwirtschaft - Zeitkorrektur Trotz Abwesenheit anwesend"),
+    FREIGABE(Anwendung.PZW.toString(), "Freigabe", 1, "Zeitwirtschaft - Freigabe"),
+    FEHLENDE_BERECHTIGUNGEN(Anwendung.PZW.toString(), "FehlendeBerechtigungen", 1, "Zeitwirtschaft - Fehlende Berechtigungen");
+
+    public final String appId;
+    public final String workflow;
+    public final Integer workflowVersion;
+    public final String workflowTitle;
+
+    PzwCplWorkflows(String appId, String workflow, Integer workflowVersion, String workflowTitle) {
+        this.appId = appId;
+        this.workflow = workflow;
+        this.workflowVersion = workflowVersion;
+        this.workflowTitle = workflowTitle;
+    }
+}
+
+===============================
+package osplus.pzw;
+
+public interface PzwCplConstants {
+    String REACT_APP_ZEITWIRTSCHAFT = "zeitwirtschaft";
+
+    interface Bookmarks {
+        String DEFAULT = "/";
+        String ZEITWIRTSCHAFT = "/zeitwirtschaft";
+        String ZEITWIRTSCHAFT_IF = "/zeitwirtschaft-if";
+        String KONFIGURATION = "/konfiguration";
+        String KONFIGURATION_ANTRAEGE = KONFIGURATION + "/antraege";
+        String KONFIGURATION_ANTRAGART = KONFIGURATION + "/antragart" ;
+        String KONFIGURATION_ARBEITSORTE = KONFIGURATION + "/arbeitsorte";
+        String KONFIGURATION_SCHWELLENWERTE = KONFIGURATION + "/schwellenwerte";
+        String ZEITEREIGNISSE = "/zeitereignisse";
+        String ANTRAG_ANLEGEN = "/antrag/anlegen?"
+                + PathFragments.QUERY_ANTRAG_GRUPPE_ID + "&"
+                + PathFragments.QUERY_ANTRAG_SCHLUESSEL + "&"
+                + PathFragments.QUERY_BEGINN + "&"
+                + PathFragments.QUERY_ENDE + "&"
+                + PathFragments.QUERY_ABS_VGNG_PRZ_ID;
+        String ANTRAG_ANZEIGEN = "/antrag?"
+                + PathFragments.QUERY_BEGINN + "&"
+                + PathFragments.QUERY_ENDE + "&"
+                + PathFragments.QUERY_ERSTELLUNGSZEITPUNKT + "&"
+                + PathFragments.QUERY_BEZEICHNUNG + "&"
+                + PathFragments.QUERY_ICON_NR + "&"
+                + PathFragments.QUERY_MELDUNG_ABS_VGNG_PRZ_ID + "&"
+                + PathFragments.QUERY_MITARBEITER_PERSONALNUMMER + "&"
+                + PathFragments.QUERY_ZU_VERTRETENDE_PERSONALNUMMER;
+        String ZEITKORREKTUR = "/zeitkorrektur?"
+                + PathFragments.QUERY_ABS_VGNG_PRZ_ID + "&"
+                + PathFragments.QUERY_ABS_ATG_NAME + "&"
+                + PathFragments.QUERY_DATUM + "&"
+                + PathFragments.QUERY_PERSONALNUMMER + "&"
+                + PathFragments.QUERY_MELDUNGSART + "&"
+                + PathFragments.QUERY_MELDUNGSTYP;
+        String FREIGABE = "/freigabe" + "?"
+                + PathFragments.QUERY_ABS_VGNG_PRZ_ID + "&"
+                + PathFragments.QUERY_ABS_VGNG_STR_ID + "&"
+                + PathFragments.QUERY_ABS_VGNG_ATG_ID + "&"
+                + PathFragments.QUERY_ABS_ATG_NAME + "&"
+                + PathFragments.QUERY_ZU_VERTRETENDE_PERSONALNUMMER;
+        String FEHLENDE_BERECHTIGUNGEN = "/fehlende-berechtigungen";
+    }
+
+    interface ReactViews {
+        String ZEITWIRTSCHAFT = "ZeitwirtschaftView";
+        String ZEITWIRTSCHAFT_IF = "ZeitwirtschaftIFView";
+        String KONFIGURATION_ANTRAEGE = "KonfAntraegeView";
+        String KONFIGURATION_ANTRAGART = "KonfAntragArtView";
+        String KONFIGURATION_ARBEITSORTE = "KonfArbeitsorteView";
+        String KONFIGURATION_SCHWELLENWERTE = "KonfSchwellenwerteView";
+        String ZEITEREIGNISSE = "ZeitereignisseView";
+        String ANTRAG_ANLEGEN = "AntragAnlegenView";
+        String ANTRAG_ANZEIGEN = "AntragAnzeigenView";
+        String FREIGABE = "FreigabeView";
+        String ZEITKORREKTUR = "ZeitkorrekturView";
+        String FEHLENDE_BERECHTIGUNGEN = "FehlendeBerechtigungenView";
+    }
+
+    interface QueryParameters {
+        String ABS_VGNG_PRZ_ID = "abs_vgng_prz_id";
+        String ABS_VGNG_STR_ID = "abs_vgng_str_id";
+        String ABS_VGNG_ATG_ID = "abs_vgng_atg_id";
+        String ABS_ATG_NAME = "abs_atg_name";
+        String ANTRAG_GRUPPE_ID = "antragGruppeId";
+        String ANTRAG_SCHLUESSEL = "antragSchluessel";
+        String BEGINN = "beginn";
+        String ENDE = "ende";
+        String ERSTELLUNGSZEITPUNKT = "erstellungszeitpunkt";
+        String BEZEICHNUNG = "bezeichnung";
+        String ICON_NR = "iconNr";
+        String DATUM = "datum";
+        String PERSONALNUMMER = "personalnummer";
+        String MITARBEITER_PERSONALNUMMER = "mitarbeiterPersonalnummer";
+        String ZU_VERTRETENDE_PERSONALNUMMER = "zuVertretendePersonalnummer";
+        String MELDUNG_ABS_VGNG_PRZ_ID = "meldungAbsVgngPrzId";
+        String MELDUNGSART = "meldungsart";
+        String MELDUNGSTYP = "meldungstyp";
+    }
+
+    interface PathFragments {
+        String QUERY_ABS_VGNG_PRZ_ID = "{" + QueryParameters.ABS_VGNG_PRZ_ID + "}";
+        String QUERY_ABS_VGNG_STR_ID = "{" + QueryParameters.ABS_VGNG_STR_ID + "}";
+        String QUERY_ABS_VGNG_ATG_ID = "{" + QueryParameters.ABS_VGNG_ATG_ID + "}";
+        String QUERY_ABS_ATG_NAME = "{" + QueryParameters.ABS_ATG_NAME + "}";
+        String QUERY_ANTRAG_GRUPPE_ID = "{" + QueryParameters.ANTRAG_GRUPPE_ID + "}";
+        String QUERY_ANTRAG_SCHLUESSEL = "{" + QueryParameters.ANTRAG_SCHLUESSEL + "}";
+        String QUERY_BEGINN = "{" + QueryParameters.BEGINN + "}";
+        String QUERY_ENDE = "{" + QueryParameters.ENDE + "}";
+        String QUERY_ERSTELLUNGSZEITPUNKT = "{" + QueryParameters.ERSTELLUNGSZEITPUNKT + "}";
+        String QUERY_BEZEICHNUNG = "{" + QueryParameters.BEZEICHNUNG + "}";
+        String QUERY_ICON_NR = "{" + QueryParameters.ICON_NR + "}";
+        String QUERY_DATUM = "{" + QueryParameters.DATUM + "}";
+        String QUERY_PERSONALNUMMER = "{" + QueryParameters.PERSONALNUMMER + "}";
+        String QUERY_MITARBEITER_PERSONALNUMMER = "{" + QueryParameters.MITARBEITER_PERSONALNUMMER + "}";
+        String QUERY_ZU_VERTRETENDE_PERSONALNUMMER = "{" + QueryParameters.ZU_VERTRETENDE_PERSONALNUMMER + "}";
+        String QUERY_MELDUNG_ABS_VGNG_PRZ_ID = "{" + QueryParameters.MELDUNG_ABS_VGNG_PRZ_ID + "}";
+        String QUERY_MELDUNGSART = "{" + QueryParameters.MELDUNGSART + "}";
+        String QUERY_MELDUNGSTYP = "{" + QueryParameters.MELDUNGSTYP + "}";
+    }
+
+    interface Actions {
+        String BACK = "back";
+    }
+}
+
+=============================
+Zeitwirtschaft.Antrag-anlegen=Zeitwirtschaft - Antrag anlegen
+Zeitwirtschaft.Antragdetails=Zeitwirtschaft - Antragdetails
+Zeitwirtschaft.Fehlende-Berechtigungen=Zeitwirtschaft - Fehlende Berechtigungen
+Zeitwirtschaft.Freigabe=Zeitwirtschaft - Freigabe Anträge
+Zeitwirtschaft.Kalender=Zeitwirtschaft - Kalender
+Zeitwirtschaft.Konfiguration.Antraege=Zeitwirtschaft - Konfiguration Anträge
+Zeitwirtschaft.Konfiguration.Antragart=Zeitwirtschaft - Konfiguration Antragart
+Zeitwirtschaft.Konfiguration.Arbeitsorte=Zeitwirtschaft - Konfiguration Arbeitsorte
+Zeitwirtschaft.Konfiguration.Schwellenwerte=Zeitwirtschaft - Konfiguration Schwellenwerte
+Zeitwirtschaft.Zeitereignisse=Zeitwirtschaft - Zeitereignisse
+Zeitwirtschaft.Zeitkorrektur=Zeitwirtschaft - Zeitkorrektur
+Zeitwirtschaft.Zeitwirtschaft=Zeitwirtschaft - Zeitwirtschaft
+Zeitwirtschaft=Zeitwirtschaft
+
+===================================
+export interface KonfPageModel {
+  canReadUebersicht: boolean;
+  canReadMeinBereich: boolean;
+  canReadZeitwirtschaft: boolean;
+  canReadKonfiguration: boolean;
+}
+
+===========================
+import { useInputModel } from '@finanzinformatik/cpl-module-reactlib';
+import { Grid } from '@mui/material';
+import { AppEnum, ThemeConstants } from '@personalsysteme/core';
+import { PersonalReiter, PersonalReiterConstants } from '@personalsysteme/personal-reiter';
+import { KonfAntraege } from '../components/konfiguration/konfigurationAntraege/KonfAntraege';
+import { KonfPageModel } from '../models/KonfPageModel';
+
+export default function KonfAntraegeView() {
+  const inputModel = useInputModel<KonfPageModel>();
+  return (
+    <Grid container spacing={ThemeConstants.GRID_CONTAINER_SPACING} justifyContent={ThemeConstants.ALIGNMENT_CENTER}>
+      <Grid size={{ xs: 12, lg: 10 }}>
+        <PersonalReiter
+          currentApp={AppEnum.PZW}
+          selectedTab={PersonalReiterConstants.REITER_KONFIGURATION}
+          showUebersicht={inputModel?.canReadUebersicht}
+          showMeinBereich={inputModel?.canReadMeinBereich}
+          showZeitwirtschaft={inputModel?.canReadZeitwirtschaft}
+          showKonfiguration={inputModel?.canReadKonfiguration}
+        />
+      </Grid>
+      <Grid size={{ xs: 12, lg: 10 }}>{inputModel?.canReadKonfiguration && <KonfAntraege />}</Grid>
+    </Grid>
+  );
+}
+
